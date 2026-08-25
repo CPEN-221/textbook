@@ -1,5 +1,10 @@
 # Chapter 2 | Types and Specifications
 
+> When I use a word ... it means just what I choose it to mean—neither more nor
+> less.
+>
+> <cite>Lewis Carroll, *Through the Looking-Glass*</cite>
+
 Our trip planner asks for two coordinates:
 
 ```java
@@ -440,6 +445,7 @@ prevent a normal result.
 
 ## References
 
+- Lewis Carroll, [*Through the Looking-Glass*, Chapter VI](https://www.gutenberg.org/files/12/12-h/12-h.htm#CHAPTER_VI)
 - [Java Language Specification, Java Platform, Standard Edition (Java SE) 25](https://docs.oracle.com/javase/specs/jls/se25/html/)
 - [Java SE 25 record classes](https://docs.oracle.com/en/java/javase/25/language/records.html)
 - [`java.util.Objects` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Objects.html)

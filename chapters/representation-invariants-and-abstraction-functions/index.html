@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 5ce162443a8e444f534c4aaa63dbfabcba8e3279ebc4df2468418b1ebf03f16d -->
+  <!-- source-sha256: 0a12accac553223fd2394291adfdf29a64a82167a73f329b7a7443ae6ff60356 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -67,15 +67,12 @@
       <div class="chapter-number" aria-hidden="true">6</div>
       <header class="chapter-header">
         <h1>Representation Invariants and Abstraction Functions</h1>
-        <p class="deck">The abstraction function states what a representation means; the invariant states which representations may occur.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Core reading</li>
-          <li>About 20 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/chapter-06-representation-invariants-and-abstraction-functions.md">Markdown source</a></li>
-        </ul>
       </header>
 
+<blockquote class="epigraph">
+<p>A map is not the territory it represents, but, if correct, it has a similar structure to the territory.</p>
+<p><cite>Alfred Korzybski, <em>Science and Sanity</em></cite></p>
+</blockquote>
 <p>The <code>TransitNetwork</code> interface prevents clients from accessing the adjacency map. The implementation still has to construct and query that map correctly.</p>
 <p>Suppose one destination set contains <code>ALMA</code>, but <code>ALMA</code> is not a key in the map. <code>directDestinationsFrom(UBC)</code> may include it, while <code>directDestinationsFrom(ALMA)</code> rejects it as an unknown stop. These two results are inconsistent.</p>
 <p>Private fields prevent a client from creating that state directly. They do not prevent a constructor or producer from creating it by mistake. We need to state which concrete states are meaningful and how each meaningful state corresponds to the graph promised by the abstract data type (ADT).</p>
@@ -269,6 +266,7 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <p>The next chapter will ask when two separately represented ADT values count as equal, how that decision interacts with hashing, and what subtypes may promise without surprising their clients.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Alfred Korzybski, <a href="https://archive.org/details/sciencesanityint00korz"><em>Science and Sanity</em></a></li>
 <li>Barbara Liskov and John Guttag, <em>Program Development in Java: Abstraction, Specification, and Object-Oriented Design</em>, Addison-Wesley, 2001</li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.10">Java Language Specification, Java Platform, Standard Edition (Java SE) 25: assertions</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html#copyOf(java.util.Map)">Java SE 25 <code>Map.copyOf</code></a></li>

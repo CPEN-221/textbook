@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 0a1e4a343b1871ef610470ab0b60992191146932a16f116789db3c4a728a6402 -->
+  <!-- source-sha256: 107d7481e5eb9d80c04a937597bc662c8dab00527b049575817fe1a07b1abb02 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -66,18 +66,15 @@
       <div class="chapter-number" aria-hidden="true">1</div>
       <header class="chapter-header">
         <h1>Engineering Reliable Software</h1>
-        <p class="deck">Correctness begins with a failure we can reproduce, inspect, and preserve as evidence.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Core reading</li>
-          <li>About 15 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/chapter-01-engineering-reliable-software.md">Markdown source</a></li>
-        </ul>
       </header>
 
-<p>The arrival board says the next bus is <strong>−3 minutes away</strong>.</p>
-<p>The computing system executed the arithmetic operations correctly. The program subtracted the current time from a prediction, converted the result to minutes, and printed the number. And someone standing in the Vancouver rain saw something that did not make sense.</p>
-<p>The program ran, but its output was not useful. Software construction requires code that expresses the right problem, rejects bad states, survives change, and gives us enough evidence to find mistakes.</p>
+<blockquote class="epigraph">
+<p>Truth emerges more readily from error than confusion.</p>
+<p><cite>Francis Bacon, <em>Novum Organum</em></cite></p>
+</blockquote>
+<p>The arrival board says that the next bus is −3 minutes away.</p>
+<p>The program subtracted the current time from a prediction, converted the result to minutes, and printed the number. The arithmetic was correct, and someone standing in the Vancouver rain saw a value that did not make sense.</p>
+<p>The program ran and produced an unusable result. Software construction has to produce code that states the intended problem, rejects invalid states, and supplies enough evidence to locate the mistakes that remain.</p>
 <p>We will start by building one small part of a transit information system and using it to establish a repeatable development workflow for individual and team changes.</p>
 <section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
 <li>distinguish source code, a build, a test, and a running program;</li>
@@ -105,7 +102,7 @@ public final class ArrivalStatus {
         return &quot;ON TIME&quot;;
     }
 }</code></pre></div>
-<p>It compiles. It returns <code>"LATE"</code> when a bus is two minutes late. It also calls a bus that is seven minutes early <code>"ON TIME"</code>. The code has no branch for an early arrival, so no input can produce the missing answer.</p>
+<p>The class compiles, and <code>describe(600, 602)</code> returns <code>"LATE"</code> for a bus two minutes late. The same method returns <code>"ON TIME"</code> for <code>describe(600, 593)</code>, a bus seven minutes early. The method has no branch that returns an early status, so no input can produce that answer.</p>
 <p>The failure comes from a mismatch among three things:</p>
 <ol type="1">
 <li>the behaviour we need;</li>
@@ -121,12 +118,12 @@ public final class ArrivalStatus {
 <p>Suppose the transit agency later defines arrivals within one minute of schedule as <code>ON_TIME</code>. The repaired method from the previous section would then be wrong for predictions at minutes 599 and 601, even if every test based on the old contract passed. We would need to update the specification, implementation, and tests. The same output can satisfy one contract and violate another.</p>
 <h3 id="comprehensible"><a href="#comprehensible">Comprehensible</a></h3>
 <p>Software is <strong>comprehensible</strong> when another person can form an accurate model of it without reconstructing every detail. Names, types, small methods, specifications, and tests all help. Developers read, review, debug, and change existing code throughout its lifetime. Comprehensibility reduces the work required for those tasks.</p>
-<p>Compare <code>difference</code> with <code>x</code>, or <code>predictedMinute</code> with <code>b</code>. The longer names do not make the calculation more sophisticated. They make its meaning available.</p>
+<p>Compare <code>difference</code> with <code>x</code>, or <code>predictedMinute</code> with <code>b</code>. The longer names do not change the calculation. They tell a reader which quantity each value holds, so the reader does not have to recover that from the arithmetic.</p>
 <h3 id="changeable"><a href="#changeable">Changeable</a></h3>
 <p>Software is <strong>changeable</strong> when we can alter one decision without causing unintended changes elsewhere. Transit data and requirements may change because of a new route, a renamed stop, an accessibility rule, a feed-format revision, or a different way to classify lateness. Modules and specifications let us change one part while preserving the promises on which clients rely.</p>
-<p>These qualities reinforce one another. A precise contract makes code easier to test. Focused code is easier to understand. An automated test suite makes a later change safer. They can also compete: an abstraction may add complexity, or an exhaustive check may cost too much to run in production. We have to identify such trade-offs and explain each decision in the context of the system.</p>
+<p>These qualities reinforce one another: a precise contract gives a test something definite to check, and the resulting test suite makes a later change safer. They can also compete, because an abstraction may add complexity and an exhaustive check may cost too much to run in production. We have to identify such trade-offs and explain each decision in the context of the system.</p>
 <h2 id="3-a-running-example"><a href="#3-a-running-example"><span class="section-number">1.3</span>A Running Example</a></h2>
-<p>We will use, as a running example, a system for journey planning using public transit in Metro Vancouver. We will start with simple requirements so that we can achieve deterministic outcomes initially. One can later extend this approach to use General Transit Feed Specification (GTFS) data and live updates.</p>
+<p>Our running example is a journey planner for public transit in Metro Vancouver. We begin with requirements simple enough that every result is deterministic, which keeps early tests reproducible. We can extend the same example later to read General Transit Feed Specification (GTFS) data and live updates.</p>
 <p>As we develop the example, we will introduce:</p>
 <ul>
 <li>stop and route identifiers that must not be mixed;</li>
@@ -150,7 +147,7 @@ public final class ArrivalStatus {
 <p><strong>Gradle</strong> describes and runs the build. The Java <strong>toolchain</strong> setting asks Gradle to compile and test with Java 25. <strong>JUnit</strong> supplies the test model and assertions. The Gradle <strong>wrapper</strong> pins a suitable Gradle version so that the same command works for the whole team.</p>
 <p>From the project directory, one command runs the tests:</p>
 <div class="code-block"><pre class="bash"><code>./gradlew test</code></pre></div>
-<p>That command does several jobs. Gradle locates the source sets and dependencies, invokes <code>javac</code>, runs the JUnit tests, and reports whether the build succeeded. Your integrated development environment (IDE) may run the same tasks through a graphical control. Learn the command as well; it gives your laptop, a teammate's laptop, and continuous integration a common entry point.</p>
+<p>That single command performs several steps. Gradle locates the source sets and dependencies, invokes <code>javac</code>, runs the JUnit tests, and reports whether the build succeeded. Your integrated development environment (IDE) may run the same tasks through a graphical control. Learn the command as well; it gives your laptop, a teammate's laptop, and continuous integration a common entry point.</p>
 <h3 id="classify-the-first-diagnostic"><a href="#classify-the-first-diagnostic">Classify the first diagnostic</a></h3>
 <p>When a build fails, begin with the first relevant diagnostic and classify the failure before deciding what to inspect next.</p>
 <ul>
@@ -193,7 +190,7 @@ class ArrivalStatusTest {
     }
     return &quot;ON TIME&quot;;
 }</code></pre></div>
-<p>Running <code>./gradlew test</code> now gives us an observation: all three tests pass. That is better than saying they <em>should</em> pass, but it remains a bounded claim. We checked three cases against a small contract. We did not prove the method correct for every integer, and we certainly did not prove the transit system reliable.</p>
+<p>Running <code>./gradlew test</code> now gives us an observation: all three tests pass. That is better than saying they <em>should</em> pass, but it remains a bounded claim. We checked three cases against a small contract. We did not prove the method correct for every integer, and we did not prove anything about the transit system as a whole.</p>
 <p>We will design stronger tests in Chapter 3. At this stage, the work follows a short sequence: record the failure, make a focused change, and observe the result again.</p>
 <h2 id="6-use-git-to-record-changes"><a href="#6-use-git-to-record-changes"><span class="section-number">1.6</span>Use Git to Record Changes</a></h2>
 <p>Tests check behaviour after a change. Git stores snapshots of the source and tests. A <strong>repository</strong> stores a history of snapshots called <strong>commits</strong>. A useful commit records one coherent change, such as "classify early arrivals and test all three cases." Unrelated work belongs in a different commit.</p>
@@ -204,7 +201,7 @@ git add src/main src/test
 git diff --staged
 git commit -m &quot;Classify early arrival predictions&quot;</code></pre></div>
 <p><code>git status</code> tells you which files differ from the current commit. <code>git diff</code> shows the unstaged changes. <code>git add</code> selects content for the next commit; it does not send anything to a server. <code>git diff --staged</code> gives you one last review of the proposed snapshot. Only then does <code>git commit</code> add it to local history.</p>
-<p>There are two details worth making habitual.</p>
+<p>Two habits matter more than the command sequence.</p>
 <p>First, inspect before you record. Keep generated files, credentials, debug output, and unrelated unfinished work out of the commit.</p>
 <p>Second, run the tests on the content you intend to commit. A passing build from twenty minutes ago does not describe changes made after that build.</p>
 <p>Branches let us develop a change without moving the main line of work:</p>
@@ -234,7 +231,14 @@ git commit -m &quot;Classify early arrival predictions&quot;</code></pre></div>
 <p>Generated code can reduce mechanical effort. It cannot determine what "correct" means for our system unless the specification already supplies that meaning. Clear variable names and a confident explanation do not compensate for a missing contract.</p>
 <h2 id="9-a-common-misconception-green-means-correct"><a href="#9-a-common-misconception-green-means-correct"><span class="section-number">1.9</span>A Common Misconception: Green Means Correct</a></h2>
 <p>Passing tests mean that the tested executions produced the asserted observations. That is useful and precise evidence, but it does not prove the software correct.</p>
-<p>Our three tests do not establish that the integers are plausible service-day times. They do not define whether a one-minute deviation should count as on time. They use strings, so a client can mistype <code>"ON_TIME"</code>. They say nothing about stale predictions. Some of those gaps belong in more tests; others call for better types or a stronger specification.</p>
+<p>Our three tests leave four questions open:</p>
+<ul>
+<li>whether the integers denote plausible service-day times;</li>
+<li>whether a one-minute deviation should count as on time;</li>
+<li>whether a client can mistype the returned status, which the <code>String</code> return type permits;</li>
+<li>how the method should treat a stale prediction.</li>
+</ul>
+<p>The first and last of these call for more tests. The other two call for a better return type and a stronger specification, which are the subject of Chapter 2.</p>
 <p>A green build supports a limited statement: <em>these tests passed for this version in this environment</em>. State that result and then decide what risk remains.</p>
 <h2 id="try-the-loop"><a href="#try-the-loop">Try the Loop</a></h2>
 <p>Answer these before running code. Then compare the observed output with your model.</p>
@@ -264,6 +268,7 @@ ArrivalStatus.describe(600, 601)</code></pre></div>
 <p>Our example still describes times with ordinary integers and statuses with ordinary strings. The compiler cannot tell a scheduled time from a predicted time, or a route identifier from a stop identifier. In the next chapter, we will give those concepts types and contracts of their own.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Francis Bacon, <a href="https://www.gutenberg.org/files/45988/45988-h/45988-h.htm"><em>Novum Organum</em>, Book II, Aphorism XX</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/">Java Platform, Standard Edition (Java SE) 25 and Java Development Kit (JDK) 25 documentation</a></li>
 <li><a href="https://docs.gradle.org/current/userguide/compatibility.html">Gradle Java compatibility matrix</a></li>
 <li><a href="https://docs.junit.org/current/user-guide/">JUnit 6 user guide</a></li>

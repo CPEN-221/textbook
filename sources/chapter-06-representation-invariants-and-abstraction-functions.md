@@ -1,5 +1,10 @@
 # Chapter 6 | Representation Invariants and Abstraction Functions
 
+> A map is not the territory it represents, but, if correct, it has a similar
+> structure to the territory.
+>
+> <cite>Alfred Korzybski, *Science and Sanity*</cite>
+
 The `TransitNetwork` interface prevents clients from accessing the adjacency map.
 The implementation still has to construct and query that map correctly.
 
@@ -464,6 +469,7 @@ surprising their clients.
 
 ## References
 
+- Alfred Korzybski, [*Science and Sanity*](https://archive.org/details/sciencesanityint00korz)
 - Barbara Liskov and John Guttag, *Program Development in Java: Abstraction,
   Specification, and Object-Oriented Design*, Addison-Wesley, 2001
 - [Java Language Specification, Java Platform, Standard Edition (Java SE) 25: assertions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.10)

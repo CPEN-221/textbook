@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Investigate bytecode, optimized execution, thread dumps, and native stack safety.">
+  <meta name="description" content="Investigate bytecode, optimised execution, thread dumps, and native stack safety.">
   <title>Beyond the Java Call Stack · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 8d36d25be3c447af48ef2a7dba1372be87b339a7e2d37fdb76e3c36b18448722 -->
+  <!-- source-sha256: 217fae9781e7a43d39ad0052002469033371c63b79bcfc3cb2c84d04f50f5c0c -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -19,7 +19,7 @@
       <span>Software Construction</span>
     </a>
     <div class="nav-contents">
-      <p class="part-label">Optional deep dive</p>
+      <p class="part-label">Optional reading</p>
       <h2><a href="#top" aria-current="page">Beyond the Java Call Stack <small>+</small></a></h2>
       <ul>
         <li><a href="#1-separate-guarantees-from-observations"><small>+.1</small><span>Separate Guarantees from Observations</span></a></li>
@@ -67,17 +67,14 @@
     <article class="chapter">
       <div class="chapter-number" aria-hidden="true">+</div>
       <header class="chapter-header">
-        <p class="optional-kicker">Optional deep dive · Not required later</p>
+        <p class="optional-kicker">Optional reading · Not required later</p>
         <h1>Beyond the Java Call Stack</h1>
-        <p class="deck">Open the frame and compare Java guarantees with observations from bytecode, HotSpot, and native code.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Optional reading</li>
-          <li>About 35 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/optional-beyond-the-java-call-stack.md">Markdown source</a></li>
-        </ul>
       </header>
 
+<blockquote class="epigraph">
+<p>A little learning is a dangerous thing;<br> Drink deep, or taste not the Pierian spring.</p>
+<p><cite>Alexander Pope, “An Essay on Criticism”</cite></p>
+</blockquote>
 <p>In <a href="../how-java-runs/">How a Java Program Runs</a>, we treated a frame as one box on a thread's call stack. That model held enough invocation state to trace calls, recursion, and exceptions, but it omitted several implementation details.</p>
 <p>This optional chapter examines the operand stack, method invocation in bytecode, inlining, thread diagnostics, and native stack memory. Later core readings do not require these details. The goal is to distinguish source-level reasoning, Java Virtual Machine (JVM) requirements, and observations about a particular implementation.</p>
 <h2 id="1-separate-guarantees-from-observations"><a href="#1-separate-guarantees-from-observations"><span class="section-number">+.1</span>Separate Guarantees from Observations</a></h2>
@@ -598,6 +595,7 @@ java -XX:+PrintCompilation HotMethodDemo</code></pre></div>
 <p>Most debugging tasks do not require these details. Use them when the evidence points to bytecode, optimisation, thread interaction, or native memory, and keep implementation observations separate from specification guarantees.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Alexander Pope, <a href="https://www.gutenberg.org/cache/epub/7409/pg7409-images.html">“An Essay on Criticism”</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html">The Java Virtual Machine Specification, Chapter 2</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6">The Java Virtual Machine Specification, §2.6: Frames</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-6.html">The Java Virtual Machine Specification, §6.5: Invocation instructions</a></li>

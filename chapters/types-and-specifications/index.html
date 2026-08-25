@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 82cd20ba68e4a0aa0dd1a11668a74e353a2e289bdb48f952e5951ff30f08cbab -->
+  <!-- source-sha256: 304c7c242ce5670064517494940c331e6e263919168e94a5a7683a73a628850b -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -66,15 +66,12 @@
       <div class="chapter-number" aria-hidden="true">2</div>
       <header class="chapter-header">
         <h1>Types and Specifications</h1>
-        <p class="deck">Types rule out meaningless combinations; specifications divide responsibility between clients and implementations.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Core reading</li>
-          <li>About 15 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/chapter-02-types-and-specifications.md">Markdown source</a></li>
-        </ul>
       </header>
 
+<blockquote class="epigraph">
+<p>When I use a word ... it means just what I choose it to mean—neither more nor less.</p>
+<p><cite>Lewis Carroll, <em>Through the Looking-Glass</em></cite></p>
+</blockquote>
 <p>Our trip planner asks for two coordinates:</p>
 <div class="code-block"><pre class="java"><code>nearestStop(49.261, -123.249);</code></pre></div>
 <p>The first number is a latitude and the second is a longitude. Reverse them and Java still sees two <code>double</code> arguments:</p>
@@ -276,6 +273,7 @@ effects:  returns any candidate with minimal distance from origin</code></pre></
 <p>We can now state what our transit query must do. The next chapter uses that contract to select tests and to decide how the program reports inputs or external events that prevent a normal result.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Lewis Carroll, <a href="https://www.gutenberg.org/files/12/12-h/12-h.htm#CHAPTER_VI"><em>Through the Looking-Glass</em>, Chapter VI</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/">Java Language Specification, Java Platform, Standard Edition (Java SE) 25</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/language/records.html">Java SE 25 record classes</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Objects.html"><code>java.util.Objects</code> in Java SE 25</a></li>

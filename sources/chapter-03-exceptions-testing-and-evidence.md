@@ -1,5 +1,10 @@
 # Chapter 3 | Exceptions, Testing, and Evidence
 
+> Program testing can be used very effectively to show the presence of bugs but
+> never to show their absence.
+>
+> <cite>Edsger W. Dijkstra, “On the Reliability of Programs”</cite>
+
 The feed line is short:
 
 ```text
@@ -498,6 +503,7 @@ and a returned list can give a client access to an object's representation. Chap
 
 ## References
 
+- Edsger W. Dijkstra, [“On the Reliability of Programs”](https://www.cs.utexas.edu/~EWD/transcriptions/EWD03xx/EWD303.html)
 - [Java Language Specification, exceptions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html)
 - [`Exception` in Java Platform, Standard Edition (Java SE) 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html)
 - [`AutoCloseable` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/AutoCloseable.html)

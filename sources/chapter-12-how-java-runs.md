@@ -1,5 +1,10 @@
 # Chapter 12 | How a Java Program Runs
 
+> We can only see a short distance ahead, but we can see plenty there that needs to
+> be done.
+>
+> <cite>Alan Turing, “Computing Machinery and Intelligence”</cite>
+
 The following method can fail even though it contains only one expression:
 
 ```java
@@ -554,6 +559,7 @@ examines bytecode, inlining, thread dumps, and native frames.
 
 ## References
 
+- Alan Turing, [“Computing Machinery and Intelligence”](https://cbmm.mit.edu/sites/default/files/documents/turing.pdf)
 - [The Java Virtual Machine Specification, §2.5.2: Java Virtual Machine Stacks](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.5.2)
 - [The Java Virtual Machine Specification, §2.6: Frames](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6)
 - [`javap` documentation for Java Development Kit (JDK) 25](https://docs.oracle.com/en/java/javase/25/docs/specs/man/javap.html)

@@ -1,15 +1,18 @@
 # Chapter 1 | Engineering Reliable Software
 
-The arrival board says the next bus is **−3 minutes away**.
+> Truth emerges more readily from error than confusion.
+>
+> <cite>Francis Bacon, *Novum Organum*</cite>
 
-The computing system executed the arithmetic operations correctly. The program
-subtracted the current time from a prediction, converted the result to minutes, and
-printed the number. And someone standing in the Vancouver rain saw something that
-did not make sense.
+The arrival board says that the next bus is −3 minutes away.
 
-The program ran, but its output was not useful. Software construction requires code
-that expresses the right problem, rejects bad states, survives change, and gives us
-enough evidence to find mistakes.
+The program subtracted the current time from a prediction, converted the result to
+minutes, and printed the number. The arithmetic was correct, and someone standing in
+the Vancouver rain saw a value that did not make sense.
+
+The program ran and produced an unusable result. Software construction has to
+produce code that states the intended problem, rejects invalid states, and supplies
+enough evidence to locate the mistakes that remain.
 
 We will start by building one small part of a transit information system and using
 it to establish a repeatable development workflow for individual and team changes.
@@ -48,9 +51,10 @@ public final class ArrivalStatus {
 }
 ```
 
-It compiles. It returns `"LATE"` when a bus is two minutes late. It also calls a bus
-that is seven minutes early `"ON TIME"`. The code has no branch for an early arrival,
-so no input can produce the missing answer.
+The class compiles, and `describe(600, 602)` returns `"LATE"` for a bus two minutes
+late. The same method returns `"ON TIME"` for `describe(600, 593)`, a bus seven
+minutes early. The method has no branch that returns an early status, so no input
+can produce that answer.
 
 The failure comes from a mismatch among three things:
 
@@ -93,7 +97,8 @@ tests all help. Developers read, review, debug, and change existing code through
 its lifetime. Comprehensibility reduces the work required for those tasks.
 
 Compare `difference` with `x`, or `predictedMinute` with `b`. The longer names do not
-make the calculation more sophisticated. They make its meaning available.
+change the calculation. They tell a reader which quantity each value holds, so the
+reader does not have to recover that from the arithmetic.
 
 ### Changeable
 
@@ -103,18 +108,18 @@ a renamed stop, an accessibility rule, a feed-format revision, or a different wa
 classify lateness. Modules and specifications let us change one part while preserving
 the promises on which clients rely.
 
-These qualities reinforce one another. A precise contract makes code easier to test.
-Focused code is easier to understand. An automated test suite makes a later change
-safer. They can also compete: an abstraction may add complexity, or an exhaustive
-check may cost too much to run in production. We have to identify such trade-offs
-and explain each decision in the context of the system.
+These qualities reinforce one another: a precise contract gives a test something
+definite to check, and the resulting test suite makes a later change safer. They can
+also compete, because an abstraction may add complexity and an exhaustive check may
+cost too much to run in production. We have to identify such trade-offs and explain
+each decision in the context of the system.
 
 ## 3. A Running Example
 
-We will use, as a running example, a system for journey planning using public
-transit in Metro Vancouver. We will start with simple requirements so that we can
-achieve deterministic outcomes initially. One can later extend this approach to use
-General Transit Feed Specification (GTFS) data and live updates.
+Our running example is a journey planner for public transit in Metro Vancouver. We
+begin with requirements simple enough that every result is deterministic, which
+keeps early tests reproducible. We can extend the same example later to read General
+Transit Feed Specification (GTFS) data and live updates.
 
 As we develop the example, we will introduce:
 
@@ -164,7 +169,7 @@ From the project directory, one command runs the tests:
 ./gradlew test
 ```
 
-That command does several jobs. Gradle locates the source sets and dependencies,
+That single command performs several steps. Gradle locates the source sets and dependencies,
 invokes `javac`, runs the JUnit tests, and reports whether the build succeeded. Your
 integrated development environment (IDE) may run the same tasks through a graphical
 control. Learn the command as well; it gives your laptop, a teammate's laptop, and
@@ -234,7 +239,7 @@ public static String describe(int scheduledMinute, int predictedMinute) {
 Running `./gradlew test` now gives us an observation: all three tests pass. That is
 better than saying they *should* pass, but it remains a bounded claim. We checked
 three cases against a small contract. We did not prove the method correct for every
-integer, and we certainly did not prove the transit system reliable.
+integer, and we did not prove anything about the transit system as a whole.
 
 We will design stronger tests in Chapter 3. At this stage, the work follows a short
 sequence: record the failure, make a focused change, and observe the result again.
@@ -262,7 +267,7 @@ the unstaged changes. `git add` selects content for the next commit; it does not
 anything to a server. `git diff --staged` gives you one last review of the proposed
 snapshot. Only then does `git commit` add it to local history.
 
-There are two details worth making habitual.
+Two habits matter more than the command sequence.
 
 First, inspect before you record. Keep generated files, credentials, debug output,
 and unrelated unfinished work out of the commit.
@@ -333,11 +338,16 @@ variable names and a confident explanation do not compensate for a missing contr
 Passing tests mean that the tested executions produced the asserted observations.
 That is useful and precise evidence, but it does not prove the software correct.
 
-Our three tests do not establish that the integers are plausible service-day times.
-They do not define whether a one-minute deviation should count as on time. They use
-strings, so a client can mistype `"ON_TIME"`. They say nothing about stale
-predictions. Some of those gaps belong in more tests; others call for better types or
-a stronger specification.
+Our three tests leave four questions open:
+
+- whether the integers denote plausible service-day times;
+- whether a one-minute deviation should count as on time;
+- whether a client can mistype the returned status, which the `String` return type
+  permits;
+- how the method should treat a stale prediction.
+
+The first and last of these call for more tests. The other two call for a better
+return type and a stronger specification, which are the subject of Chapter 2.
 
 A green build supports a limited statement: *these tests passed for this version in
 this environment*. State that result and then decide what risk remains.
@@ -405,6 +415,7 @@ types and contracts of their own.
 
 ## References
 
+- Francis Bacon, [*Novum Organum*, Book II, Aphorism XX](https://www.gutenberg.org/files/45988/45988-h/45988-h.htm)
 - [Java Platform, Standard Edition (Java SE) 25 and Java Development Kit (JDK) 25 documentation](https://docs.oracle.com/en/java/javase/25/docs/)
 - [Gradle Java compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html)
 - [JUnit 6 user guide](https://docs.junit.org/current/user-guide/)

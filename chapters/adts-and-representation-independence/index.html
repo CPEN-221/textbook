@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: ba41de649e47c33ebed4212c4ffb2ae231b214833dbff8c68283d89430658371 -->
+  <!-- source-sha256: 650f648822c9b3cd52ae5452e7996660df8ddf15ff366cba09bd7e9156f9156a -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -67,15 +67,12 @@
       <div class="chapter-number" aria-hidden="true">5</div>
       <header class="chapter-header">
         <h1>ADTs and Representation Independence</h1>
-        <p class="deck">A useful abstraction lets clients speak about stops and connections instead of maps and sets.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Core reading</li>
-          <li>About 20 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/chapter-05-adts-and-representation-independence.md">Markdown source</a></li>
-        </ul>
       </header>
 
+<blockquote class="epigraph">
+<p>If a data abstraction such as stack is specified as a single entity, much of the extraneous detail can be eliminated.</p>
+<p><cite>Barbara Liskov and Stephen Zilles, “Specification Techniques for Data Abstractions”</cite></p>
+</blockquote>
 <p>Our first transit network is a map:</p>
 <div class="code-block"><pre class="java"><code>Map&lt;StopId, Set&lt;StopId&gt;&gt; outgoing = new HashMap&lt;&gt;();</code></pre></div>
 <p>The keys are stops. Each value is the set of stops reachable by one direct trip. We initially pass this map to the route finder, map viewer, feed loader, and tests. Several of those clients begin to inspect or mutate it directly.</p>
@@ -292,6 +289,7 @@ TransitNetwork c = b.withConnection(UBC, WESBROOK);</code></pre></div>
 <p>That freedom is representation independence. Access control, specifications, immutable boundaries, and contract tests all help preserve it. The next question is how an implementer determines whether a particular map or pair of sets represents a valid network. Chapter 6 defines that relationship between concrete fields and abstract values.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Barbara Liskov and Stephen Zilles, <a href="https://csg.csail.mit.edu/CSGArchives/memos/Memo-117.pdf">“Specification Techniques for Data Abstractions”</a></li>
 <li>Barbara Liskov and Stephen Zilles, “Programming with Abstract Data Types,” <em>Association for Computing Machinery Special Interest Group on Programming Languages (ACM SIGPLAN) Notices</em> 9(4), 1974, digital object identifier (DOI) <code>10.1145/942572.807045</code></li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6">Java Language Specification, access control</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html">Java Platform, Standard Edition (Java SE) 25 <code>Set</code> interface</a></li>

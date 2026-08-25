@@ -24,9 +24,7 @@ class Chapter:
     number: str
     title: str
     description: str
-    deck: str
     part: str
-    reading_time: str
     optional: bool = False
 
 
@@ -37,9 +35,7 @@ CHAPTERS = (
         "1",
         "Engineering Reliable Software",
         "Build a short Java feedback loop around an observed transit-system failure.",
-        "Correctness begins with a failure we can reproduce, inspect, and preserve as evidence.",
         "Foundations",
-        "About 15 minutes",
     ),
     Chapter(
         "chapter-02-types-and-specifications.md",
@@ -47,9 +43,7 @@ CHAPTERS = (
         "2",
         "Types and Specifications",
         "Use domain types and behavioural contracts to state what transit software means.",
-        "Types rule out meaningless combinations; specifications divide responsibility between clients and implementations.",
         "Foundations",
-        "About 15 minutes",
     ),
     Chapter(
         "chapter-03-exceptions-testing-and-evidence.md",
@@ -57,9 +51,7 @@ CHAPTERS = (
         "3",
         "Exceptions, Testing, and Evidence",
         "Design failure paths and derive useful tests from a transit-feed contract.",
-        "Exceptions name failed obligations, while tests turn specifications into bounded evidence.",
         "Foundations",
-        "About 20 minutes",
     ),
     Chapter(
         "chapter-04-mutability-aliasing-and-debugging.md",
@@ -67,9 +59,7 @@ CHAPTERS = (
         "4",
         "Mutability, Aliasing, and Debugging",
         "Follow references, close representation leaks, and debug mutable state with evidence.",
-        "A reference can carry a mutation farther than the code that performed it.",
         "State and abstraction",
-        "About 20 minutes",
     ),
     Chapter(
         "chapter-05-adts-and-representation-independence.md",
@@ -77,9 +67,7 @@ CHAPTERS = (
         "5",
         "ADTs and Representation Independence",
         "Design an immutable transit-network ADT whose clients do not depend on its data structures.",
-        "A useful abstraction lets clients speak about stops and connections instead of maps and sets.",
         "State and abstraction",
-        "About 20 minutes",
     ),
     Chapter(
         "chapter-06-representation-invariants-and-abstraction-functions.md",
@@ -87,9 +75,7 @@ CHAPTERS = (
         "6",
         "Representation Invariants and Abstraction Functions",
         "Connect concrete transit-network fields to valid abstract graph values.",
-        "The abstraction function states what a representation means; the invariant states which representations may occur.",
         "State and abstraction",
-        "About 20 minutes",
     ),
     Chapter(
         "chapter-12-how-java-runs.md",
@@ -97,19 +83,15 @@ CHAPTERS = (
         "12",
         "How a Java Program Runs",
         "Trace Java calls, frames, recursion, exceptions, and shared reachable objects.",
-        "A call-stack model explains method calls and failures without pretending to be a photograph of memory.",
         "The running program",
-        "About 20 minutes",
     ),
     Chapter(
         "optional-beyond-the-java-call-stack.md",
         "beyond-java-call-stack",
         "+",
         "Beyond the Java Call Stack",
-        "Investigate bytecode, optimized execution, thread dumps, and native stack safety.",
-        "Open the frame and compare Java guarantees with observations from bytecode, HotSpot, and native code.",
-        "Optional deep dive",
-        "About 35 minutes",
+        "Investigate bytecode, optimised execution, thread dumps, and native stack safety.",
+        "Optional reading",
         optional=True,
     ),
 )
@@ -161,6 +143,13 @@ def rewrite_markdown_links(markdown: str) -> str:
 
 
 def transform_body(body: str, chapter: Chapter) -> tuple[str, list[tuple[str, str, str]]]:
+    body = re.sub(
+        r"<blockquote>(?=\s*<p>.*?</p>\s*<p><cite>)",
+        '<blockquote class="epigraph">',
+        body,
+        count=1,
+        flags=re.DOTALL,
+    )
     body = re.sub(
         r"<p>(<img\s+[^>]+\s*/>)</p>\n<p><em>(Figure\s+.*?)</em></p>",
         r'<figure class="chapter-figure">\1<figcaption>\2</figcaption></figure>',
@@ -282,12 +271,10 @@ def chapter_page(
         else '<a class="next" href="../../">Return to contents ↑</a>'
     )
     optional_kicker = (
-        '        <p class="optional-kicker">Optional deep dive · Not required later</p>\n'
+        '        <p class="optional-kicker">Optional reading · Not required later</p>\n'
         if chapter.optional
         else ""
     )
-    kind = "Optional reading" if chapter.optional else "Core reading"
-    source_href = f"../../sources/{chapter.source}"
 
     return f"""<!doctype html>
 <html lang="en-CA">
@@ -336,13 +323,6 @@ def chapter_page(
       <div class="chapter-number" aria-hidden="true">{escape(chapter.number)}</div>
       <header class="chapter-header">
 {optional_kicker}        <h1>{escape(chapter.title)}</h1>
-        <p class="deck">{escape(chapter.deck)}</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>{kind}</li>
-          <li>{escape(chapter.reading_time)}</li>
-          <li>Java 25</li>
-          <li><a href="{source_href}">Markdown source</a></li>
-        </ul>
       </header>
 
 {body}
@@ -365,7 +345,7 @@ def contents_page() -> str:
         item = f"""            <li>
               <span class="num">{escape(chapter.number)}</span>
               <div>
-                {('<span class="optional-label">Optional deep dive</span>' if chapter.optional else '')}
+                {('<span class="optional-label">Optional reading</span>' if chapter.optional else '')}
                 <strong><a href="chapters/{chapter.slug}/">{escape(chapter.title)}</a></strong>
                 <p>{escape(chapter.description)}</p>
               </div>

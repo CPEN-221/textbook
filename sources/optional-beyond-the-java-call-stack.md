@@ -1,5 +1,10 @@
 # Optional Reading | Beyond the Java Call Stack
 
+> A little learning is a dangerous thing;<br>
+> Drink deep, or taste not the Pierian spring.
+>
+> <cite>Alexander Pope, “An Essay on Criticism”</cite>
+
 In [How a Java Program Runs](chapter-12-how-java-runs.md), we treated a frame as one
 box on a thread's call stack. That model held enough invocation state to trace calls,
 recursion, and exceptions, but it omitted several implementation details.
@@ -802,6 +807,7 @@ implementation observations separate from specification guarantees.
 
 ## References
 
+- Alexander Pope, [“An Essay on Criticism”](https://www.gutenberg.org/cache/epub/7409/pg7409-images.html)
 - [The Java Virtual Machine Specification, Chapter 2](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html)
 - [The Java Virtual Machine Specification, §2.6: Frames](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6)
 - [The Java Virtual Machine Specification, §6.5: Invocation instructions](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-6.html)

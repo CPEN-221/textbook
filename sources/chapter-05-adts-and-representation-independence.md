@@ -1,5 +1,11 @@
 # Chapter 5 | ADTs and Representation Independence
 
+> If a data abstraction such as stack is specified as a single entity, much of the
+> extraneous detail can be eliminated.
+>
+> <cite>Barbara Liskov and Stephen Zilles, “Specification Techniques for Data
+> Abstractions”</cite>
+
 Our first transit network is a map:
 
 ```java
@@ -438,6 +444,7 @@ abstract values.
 
 ## References
 
+- Barbara Liskov and Stephen Zilles, [“Specification Techniques for Data Abstractions”](https://csg.csail.mit.edu/CSGArchives/memos/Memo-117.pdf)
 - Barbara Liskov and Stephen Zilles, “Programming with Abstract Data Types,”
   *Association for Computing Machinery Special Interest Group on Programming
   Languages (ACM SIGPLAN) Notices* 9(4), 1974, digital object identifier (DOI)

@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: f12861244869e7ef5f3c971b7e48a7e135c7e4cd1f34bd3300495fced7fc37b5 -->
+  <!-- source-sha256: 51d421c64ba3e6ace2c20ee4391031e97a7c8a4a7b573cd526dd2b9dbd170eee -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -67,15 +67,12 @@
       <div class="chapter-number" aria-hidden="true">3</div>
       <header class="chapter-header">
         <h1>Exceptions, Testing, and Evidence</h1>
-        <p class="deck">Exceptions name failed obligations, while tests turn specifications into bounded evidence.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Core reading</li>
-          <li>About 20 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/chapter-03-exceptions-testing-and-evidence.md">Markdown source</a></li>
-        </ul>
       </header>
 
+<blockquote class="epigraph">
+<p>Program testing can be used very effectively to show the presence of bugs but never to show their absence.</p>
+<p><cite>Edsger W. Dijkstra, “On the Reliability of Programs”</cite></p>
+</blockquote>
 <p>The feed line is short:</p>
 <div class="code-block"><pre class="text"><code>UBC_EXCHANGE|soon</code></pre></div>
 <p>Our parser expects a stop identifier, a vertical bar, and a non-negative number of minutes. <code>UBC_EXCHANGE</code> is a valid stop identifier, but the parser cannot convert <code>soon</code> to an integer.</p>
@@ -358,6 +355,7 @@ PredictionParser.parse(&quot;UBC_EXCHANGE|-1&quot;)</code></pre></div>
 <p>Our parser now produces records and lists, but those declarations alone do not make all reachable state immutable. A final field can still refer to a mutable object, and a returned list can give a client access to an object's representation. Chapter 4 examines those references.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Edsger W. Dijkstra, <a href="https://www.cs.utexas.edu/~EWD/transcriptions/EWD03xx/EWD303.html">“On the Reliability of Programs”</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html">Java Language Specification, exceptions</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html"><code>Exception</code> in Java Platform, Standard Edition (Java SE) 25</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/AutoCloseable.html"><code>AutoCloseable</code> in Java SE 25</a></li>

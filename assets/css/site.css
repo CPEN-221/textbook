@@ -305,24 +305,10 @@ svg {
   text-transform: uppercase;
 }
 
-.chapter-header .deck,
 .contents-header .deck {
   margin: 1.1rem 0 0;
   color: #547e9c;
   font: italic 1.25rem/1.5 var(--serif);
-}
-
-.chapter-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 1rem;
-  margin: 0.8rem 0 0;
-  padding: 0;
-  color: var(--muted);
-  font: 500 0.68rem/1.4 var(--sans);
-  letter-spacing: 0.07em;
-  list-style: none;
-  text-transform: uppercase;
 }
 
 .chapter p,
@@ -590,6 +576,23 @@ blockquote::after {
 blockquote p {
   margin-inline: 2.7rem !important;
   font: italic 1.25rem/1.5 var(--serif);
+}
+
+blockquote.epigraph {
+  margin: 1.8rem 0 3.2rem;
+}
+
+blockquote.epigraph p:last-child {
+  margin-top: 0.65rem !important;
+  color: var(--muted);
+  font: 500 0.72rem/1.4 var(--sans);
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+blockquote.epigraph cite {
+  font-style: normal;
 }
 
 .contents-header {

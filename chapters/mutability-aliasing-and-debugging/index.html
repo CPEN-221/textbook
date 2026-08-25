@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: f55892a8086d2a5570e8e688c8c186903db5aec112fc104e447e6ca16ddc6e22 -->
+  <!-- source-sha256: c3ad6aa39b02574069a86f18b4aaca2f289d67752ed18c25b17177714ea829f4 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -67,15 +67,12 @@
       <div class="chapter-number" aria-hidden="true">4</div>
       <header class="chapter-header">
         <h1>Mutability, Aliasing, and Debugging</h1>
-        <p class="deck">A reference can carry a mutation farther than the code that performed it.</p>
-        <ul class="chapter-meta" aria-label="Chapter information">
-          <li>Core reading</li>
-          <li>About 20 minutes</li>
-          <li>Java 25</li>
-          <li><a href="../../sources/chapter-04-mutability-aliasing-and-debugging.md">Markdown source</a></li>
-        </ul>
       </header>
 
+<blockquote class="epigraph">
+<p>Something there is that doesn't love a wall.</p>
+<p><cite>Robert Frost, “Mending Wall”</cite></p>
+</blockquote>
 <p>The arrival-board specification requires the board to preserve feed order. A display client wants the same departures sorted by waiting time, so it does this:</p>
 <div class="code-block"><pre class="java"><code>List&lt;Departure&gt; display = board.upcoming();
 display.sort(Comparator.comparingInt(Departure::minutesUntilArrival));</code></pre></div>
@@ -302,6 +299,7 @@ source.add(&quot;14&quot;);</code></pre></div>
 <p>We now have a feedback loop, meaningful types, explicit contracts and failure paths, and controlled mutable state. The next chapter uses these tools to define abstract data types whose clients can depend on behaviour without depending on representation.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
+<li>Robert Frost, <a href="https://www.poetryfoundation.org/poems/44266/mending-wall">“Mending Wall”</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html">Java Language Specification, Java Platform, Standard Edition (Java SE) 25: values and types</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection)"><code>List.copyOf</code> and unmodifiable lists in Java SE 25</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/core/creating-immutable-lists-sets-and-maps.html">Java SE 25 guide to unmodifiable collections</a></li>

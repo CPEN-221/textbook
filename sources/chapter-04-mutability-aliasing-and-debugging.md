@@ -1,5 +1,9 @@
 # Chapter 4 | Mutability, Aliasing, and Debugging
 
+> Something there is that doesn't love a wall.
+>
+> <cite>Robert Frost, “Mending Wall”</cite>
+
 The arrival-board specification requires the board to preserve feed order. A display
 client wants the same departures sorted by waiting time, so it does this:
 
@@ -488,6 +492,7 @@ data types whose clients can depend on behaviour without depending on representa
 
 ## References
 
+- Robert Frost, [“Mending Wall”](https://www.poetryfoundation.org/poems/44266/mending-wall)
 - [Java Language Specification, Java Platform, Standard Edition (Java SE) 25: values and types](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html)
 - [`List.copyOf` and unmodifiable lists in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection))
 - [Java SE 25 guide to unmodifiable collections](https://docs.oracle.com/en/java/javase/25/core/creating-immutable-lists-sets-and-maps.html)
