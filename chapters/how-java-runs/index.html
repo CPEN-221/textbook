@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Trace Java calls, frames, recursion, exceptions, and shared reachable objects.">
-  <title>How a Java Program Runs · CPEN 221 Notes</title>
+  <title>How a Java Program Runs · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: a66fb071883be4a473d9f878fce6dafb977a20e405c06e098fd08839b03cc60f -->
+  <!-- source-sha256: dcb7e27baca3c8c8c686ed3a0e978797aa258554c00cad0b0367a429c2cc4903 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -34,7 +34,7 @@
         <li><a href="#10-design-implications"><small>12.10</small><span>Design Implications</span></a></li>
         <li><a href="#try-the-model"><small>§</small><span>Try the Model</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../representation-invariants-and-abstraction-functions/">← Previous</a>
@@ -378,9 +378,7 @@ public static void main(String[] args) {
 <p>We can now account for the sequence from a method call to a failure. A call adds a frame; a return removes it. Recursion repeats that mechanism, exceptions unwind it, and a stack trace records the active call chain.</p>
 <p>Frames keep invocation state separate, but references in those frames may still reach the same mutable objects. That distinction connects this chapter to both abstraction and concurrency. Java's bounds checks add another boundary: an invalid array access produces a defined exception rather than an arbitrary memory write.</p>
 <p>The model is limited to information needed for reasoning about calls; it does not reproduce a JVM's optimized memory layout. That is sufficient for the debugging and design tasks in this chapter. The <a href="../beyond-java-call-stack/">optional deep dive</a> examines bytecode, inlining, thread dumps, and native frames.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>We wrote this chapter anew for CPEN 221. It does not reproduce the prose, diagrams, or worked examples from the previous Chapter 12.</p>
-<p>Technical reference material:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.5.2">The Java Virtual Machine Specification, §2.5.2: Java Virtual Machine Stacks</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6">The Java Virtual Machine Specification, §2.6: Frames</a></li>

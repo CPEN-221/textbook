@@ -284,6 +284,14 @@ tools can reveal concrete classes. We do not pretend implementations are physica
 indistinguishable. We design ordinary program dependencies so clients need not rely
 on those differences.
 
+Consider replacing the adjacency-map implementation after the system has been
+deployed. A client that uses only `TransitNetwork` operations requires no source
+change. A client that casts the result to `AdjacencyMapNetwork` must change with the
+implementation. This is the practical value of representation independence: the
+implementation can respond to measured workloads without requiring every caller to
+migrate. The replacement must still preserve stop membership, edge direction,
+exception behaviour, immutability, and returned-collection guarantees.
+
 ## 8. Run Contract Tests Against Both Implementations
 
 To test representation independence, the companion project supplies both factories
@@ -309,6 +317,8 @@ The test observes promises: old value unchanged, new edge present, correct direc
 destination. It does not inspect fields, assert a concrete class, or depend on set
 iteration order. The same tests also cover isolated stops, direction, invalid
 arguments, duplicate additions, input aliasing, and unmodifiable results.
+These tests make representative contract obligations executable. Review remains
+necessary for obligations and inputs that the test suite does not cover.
 
 White-box tests still have a place. An implementation may need focused tests for a
 complicated private algorithm. Every implementation must also pass the shared
@@ -426,21 +436,10 @@ how an implementer determines whether a particular map or pair of sets represent
 valid network. Chapter 6 defines that relationship between concrete fields and
 abstract values.
 
-## Sources and provenance
-
-This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old
-manuscript's central ideas that an ADT is defined by its specification, that ADT
-operations can be classified by their relationship to the abstract type, and that
-clients should be independent of representation. The outline, prose, transit-network
-API, two implementations, tests, and examples are new. No old `MyString`, `Map`,
-hash-table, car-control, or inherited figure was reused. Equality and hashing are
-deliberately deferred to Chapter 7.
-
-Technical references:
+## References
 
 - Barbara Liskov and Stephen Zilles, “Programming with Abstract Data Types,”
   *SIGPLAN Notices* 9(4), 1974, DOI `10.1145/942572.807045`
-- [MIT 6.031: Abstract Data Types](https://web.mit.edu/6.031/www/sp21/classes/10-abstract-data-types/)
 - [Java Language Specification, access control](https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6)
 - [Java SE 25 `Set` interface](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html)
 - [JUnit 6.1.3 User Guide, parameterized tests](https://docs.junit.org/6.1.3/writing-tests/parameterized-classes-and-tests.html)

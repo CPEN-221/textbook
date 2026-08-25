@@ -1,7 +1,7 @@
 # Chapters 5–6 companion project
 
 This project contains the complete executable versions of the Java excerpts and
-JUnit tests used in Chapters 5 and 6 of the revised CPEN 221 notes.
+JUnit tests used in Chapters 5 and 6 of the revised CPEN 221 readings.
 
 Requirements:
 

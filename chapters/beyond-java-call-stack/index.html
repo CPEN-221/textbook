@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Investigate bytecode, optimized execution, thread dumps, and native stack safety.">
-  <title>Beyond the Java Call Stack · CPEN 221 Notes</title>
+  <title>Beyond the Java Call Stack · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: d8fc6b00602b124e55945b357f300a547915350c9cd2a413aa62c24fa0191983 -->
+  <!-- source-sha256: 6d8b50bbd19a7e50ac941dd3c2b0b7269806aa854e56713ec6ae0be2d0b2d13f -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -35,7 +35,7 @@
         <li><a href="#11-summary-of-the-model"><small>+.11</small><span>Summary of the Model</span></a></li>
         <li><a href="#experiments"><small>§</small><span>Experiments</span></a></li>
         <li><a href="#summary-of-the-experiments"><small>§</small><span>Summary of the Experiments</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../how-java-runs/">← Previous</a>
@@ -596,9 +596,7 @@ java -XX:+PrintCompilation HotMethodDemo</code></pre></div>
 <p>Bytecode uses local slots and an operand stack, calls cross frame boundaries, and the JVM resolves symbolic references before using them. A JVM may optimize physical execution while preserving Java-level semantics.</p>
 <p>Stack depth depends on an implementation and a particular run. Suppressed exceptions follow language semantics. Thread stacks expose cross-thread dependencies only when we examine them together. Native out-of-bounds writes follow C's undefined-behaviour rules rather than Java's exception guarantees.</p>
 <p>Most debugging tasks do not require these details. Use them when the evidence points to bytecode, optimization, thread interaction, or native memory, and keep implementation observations separate from specification guarantees.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>We wrote this optional chapter anew for CPEN 221. It uses original examples and diagrams and does not reproduce the prose or illustrations from the former stack material.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html">The Java Virtual Machine Specification, Chapter 2</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6">The Java Virtual Machine Specification, §2.6: Frames</a></li>

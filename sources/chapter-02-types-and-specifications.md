@@ -435,15 +435,7 @@ We can now state what our transit query must do. The next chapter uses that cont
 to select tests and to decide how the program reports inputs or external events that
 prevent a normal result.
 
-## Sources and provenance
-
-This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old
-manuscript's central ideas that types combine values with operations and that
-specifications act as client–implementer contracts. The outline, prose, transit
-setting, `GeoPoint`/`StopId` examples, and Figure 2.1 are new. No old image or worked
-example was reused.
-
-Technical references:
+## References
 
 - [Java Language Specification, Java SE 25](https://docs.oracle.com/javase/specs/jls/se25/html/)
 - [Java SE 25 record classes](https://docs.oracle.com/en/java/javase/25/language/records.html)

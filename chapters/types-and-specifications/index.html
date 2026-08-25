@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Use domain types and behavioural contracts to state what transit software means.">
-  <title>Types and Specifications · CPEN 221 Notes</title>
+  <title>Types and Specifications · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 3161dedbdbfa875fec4dae1db72017262ae368938909a9289a6c60554929d385 -->
+  <!-- source-sha256: 5435cfc02c7ad2eb141cb0b8e784aa658e939db1ff116b480f509938bbbdddb3 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -33,7 +33,7 @@
         <li><a href="#9-common-misconception-type-checking-does-not-prove-correctness"><small>2.9</small><span>Common Misconception: Type-Checking Does Not Prove Correctness</span></a></li>
         <li><a href="#try-the-contract"><small>§</small><span>Try the Contract</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../engineering-reliable-software/">← Previous</a>
@@ -275,9 +275,7 @@ effects:  returns any candidate with minimal distance from origin</code></pre></
 <p>Types define values and permitted operations. Static checks reject ill-typed program text; dynamic checks validate facts available only while the program runs. Application-specific types such as <code>StopId</code> and <code>GeoPoint</code> make important distinctions explicit and reject invalid values when those values are constructed.</p>
 <p>Specifications define client and implementer responsibilities, describe normal and exceptional outcomes, and state whether mutation is allowed. Declarative specifications preserve implementation freedom. The appropriate degree of determinism and specification strength depends on client needs.</p>
 <p>We can now state what our transit query must do. The next chapter uses that contract to select tests and to decide how the program reports inputs or external events that prevent a normal result.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's central ideas that types combine values with operations and that specifications act as client–implementer contracts. The outline, prose, transit setting, <code>GeoPoint</code>/<code>StopId</code> examples, and Figure 2.1 are new. No old image or worked example was reused.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/">Java Language Specification, Java SE 25</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/language/records.html">Java SE 25 record classes</a></li>

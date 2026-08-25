@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Follow references, close representation leaks, and debug mutable state with evidence.">
-  <title>Mutability, Aliasing, and Debugging · CPEN 221 Notes</title>
+  <title>Mutability, Aliasing, and Debugging · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 531cc90019956d8d19e8322c974fce48a6dabb868a04599e324c9a099d25cdd4 -->
+  <!-- source-sha256: 401edd28ef2755add55ae32063ef6e6218ad33993d5fd25c8bf0078f63c4ff9f -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -34,7 +34,7 @@
         <li><a href="#10-review-generated-classes-with-mutable-state"><small>4.10</small><span>Review Generated Classes with Mutable State</span></a></li>
         <li><a href="#try-the-references"><small>§</small><span>Try the References</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../exceptions-testing-and-evidence/">← Previous</a>
@@ -301,9 +301,7 @@ source.add(&quot;14&quot;);</code></pre></div>
 <p>Representation exposure occurs when a class retains or returns a mutable alias to its internal state. We repaired <code>ArrivalBoard</code> with an unmodifiable snapshot and immutable elements. Shallow copies, deep copies, views, and snapshots provide different guarantees; name the one the design actually needs.</p>
 <p>When a state-related failure appears, reproduce it, study evidence, form a falsifiable hypothesis, run a discriminating experiment, repair the cause, and preserve the failure as a regression test. Confining mutation reduces the number of operations and aliases that must be examined when such a failure occurs.</p>
 <p>We now have a feedback loop, meaningful types, explicit contracts and failure paths, and controlled mutable state. The next chapter uses these tools to define abstract data types whose clients can depend on behaviour without depending on representation.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's important distinctions among primitive values, references, aliasing, mutation, reassignment, final references, representation exposure, defensive copying, and hypothesis-driven debugging. The chapter uses a new outline, arrival-board example, tests, prose, and original figures. No old instance diagram, mutable-list example, student record, or inherited image was reused.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html">Java Language Specification, values and types</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection)"><code>List.copyOf</code> and unmodifiable lists in Java SE 25</a></li>

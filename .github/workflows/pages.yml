@@ -1,4 +1,4 @@
-name: Publish notes website
+name: Publish readings website
 
 on:
   push:

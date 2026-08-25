@@ -294,6 +294,12 @@ commit contains one idea, review can focus on that idea. If the build is reprodu
 we can distinguish a code failure from a teammate's private machine setup. These
 tools affect design decisions because they make some mistakes faster to detect.
 
+Different feedback mechanisms answer different questions. Compilation checks
+whether the program satisfies the language's static rules. A focused test checks one
+specified behaviour for selected inputs. The full test suite looks for effects on
+other components. Review can question the requirement or design itself. Choose the
+feedback that addresses the current risk.
+
 Our first design principle follows:
 
 > **Design principle: obtain trustworthy feedback soon after each design or
@@ -398,14 +404,7 @@ strings. The compiler cannot tell a scheduled time from a predicted time, or a r
 identifier from a stop identifier. In the next chapter, we will give those concepts
 types and contracts of their own.
 
-## Sources and provenance
-
-This chapter was written anew for the Fall 2026 CPEN 221 notes. It keeps the former
-manuscript's course-wide goals of correctness, comprehensibility, and changeability,
-but it does not reuse the old chapter's prose, historical incidents, images, or
-worked examples. The transit example and Figure 1.1 are original CPEN 221 material.
-
-Technical references:
+## References
 
 - [Java SE 25 and JDK 25 documentation](https://docs.oracle.com/en/java/javase/25/docs/)
 - [Gradle Java compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html)

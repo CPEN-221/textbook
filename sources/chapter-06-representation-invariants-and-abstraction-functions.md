@@ -462,19 +462,8 @@ The next chapter will ask when two separately represented ADT values count as eq
 how that decision interacts with hashing, and what subtypes may promise without
 surprising their clients.
 
-## Sources and provenance
+## References
 
-This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old
-manuscript's core distinction among representation space, abstract value space,
-representation invariants, and abstraction functions, together with the practical
-role of an executable rep checker. The outline, prose, directed transit-network
-example, dual representations, invariant checkers, tests, and practice problems are
-new. No old character-set, rational-number, student, card, bank-account, line-segment,
-or inherited figure was reused.
-
-Technical references:
-
-- [MIT 6.031: Abstraction Functions and Rep Invariants](https://web.mit.edu/6.031/www/sp21/classes/11-abstraction-functions-rep-invariants/)
 - Barbara Liskov and John Guttag, *Program Development in Java: Abstraction,
   Specification, and Object-Oriented Design*, Addison-Wesley, 2001
 - [Java Language Specification, assertions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.10)

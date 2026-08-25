@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Connect concrete transit-network fields to valid abstract graph values.">
-  <title>Representation Invariants and Abstraction Functions · CPEN 221 Notes</title>
+  <title>Representation Invariants and Abstraction Functions · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: ad3790bd1bcfd3c3538d1c4f30b2ea5e006f62125b740b343e114881ac0f518b -->
+  <!-- source-sha256: d7433cb8f33f55e93a457d32642e6e3371aee3a25dadcc1371c1c4bf2f368f23 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -34,7 +34,7 @@
         <li><a href="#10-review-generated-representation-code"><small>6.10</small><span>Review Generated Representation Code</span></a></li>
         <li><a href="#try-the-representation"><small>§</small><span>Try the Representation</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../adts-and-representation-independence/">← Previous</a>
@@ -268,11 +268,8 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <p>For the adjacency map, the AF defines keys as vertices and destination memberships as edges. The RI rules out null parts, outside destinations, and self-connections. The constructor snapshots and checks its input, the producer preserves the conditions, and observers expose only immutable values. A connection-set implementation needs a different AF and RI while keeping the same public ADT.</p>
 <p>Invariant checking reports malformed internal states when <code>checkRep</code> runs. It does not prove postconditions or replace contract tests. Together, AF, RI, operation reasoning, and tests form a correctness argument that can be inspected and updated.</p>
 <p>The next chapter will ask when two separately represented ADT values count as equal, how that decision interacts with hashing, and what subtypes may promise without surprising their clients.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's core distinction among representation space, abstract value space, representation invariants, and abstraction functions, together with the practical role of an executable rep checker. The outline, prose, directed transit-network example, dual representations, invariant checkers, tests, and practice problems are new. No old character-set, rational-number, student, card, bank-account, line-segment, or inherited figure was reused.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
-<li><a href="https://web.mit.edu/6.031/www/sp21/classes/11-abstraction-functions-rep-invariants/">MIT 6.031: Abstraction Functions and Rep Invariants</a></li>
 <li>Barbara Liskov and John Guttag, <em>Program Development in Java: Abstraction, Specification, and Object-Oriented Design</em>, Addison-Wesley, 2001</li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.10">Java Language Specification, assertions</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html#copyOf(java.util.Map)">Java SE 25 <code>Map.copyOf</code></a></li>

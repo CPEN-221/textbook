@@ -495,16 +495,7 @@ all reachable state immutable. A final field can still refer to a mutable object
 and a returned list can give a client access to an object's representation. Chapter
 4 examines those references.
 
-## Sources and provenance
-
-This chapter was written anew for the Fall 2026 CPEN 221 notes. It preserves the old
-manuscript's emphasis on explicit failure, specification-derived testing,
-partitioning, boundaries, regression tests, and exception chaining. The chapter has
-a new outline, transit parser, tests, prose, and sequence diagram; it does not reuse
-the old birthday-book, substring-counting, or report-writer examples or any old
-image.
-
-Technical references:
+## References
 
 - [Java Language Specification, exceptions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html)
 - [`Exception` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html)

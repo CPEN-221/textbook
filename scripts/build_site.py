@@ -295,7 +295,7 @@ def chapter_page(
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{escape(chapter.description)}">
-  <title>{escape(chapter.title)} · CPEN 221 Notes</title>
+  <title>{escape(chapter.title)} · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
@@ -378,8 +378,8 @@ def contents_page() -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Revised CPEN 221 Software Construction notes for Fall 2026.">
-  <title>CPEN 221 Notes · Software Construction</title>
+  <meta name="description" content="Revised CPEN 221 Software Construction readings for Fall 2026.">
+  <title>CPEN 221 Readings · Software Construction</title>
   <link rel="stylesheet" href="assets/fonts/fonts.css">
   <link rel="stylesheet" href="assets/css/site.css">
   <script src="assets/js/typeface-switcher.js"></script>
@@ -393,7 +393,7 @@ def contents_page() -> str:
       <span>Software Construction</span>
     </a>
     <div class="nav-contents">
-      <p class="part-label">Fall 2026 notes</p>
+      <p class="part-label">Fall 2026 readings</p>
       <h2><a href="#top" aria-current="page">Contents</a></h2>
       <ul>
         <li><a href="chapters/engineering-reliable-software/"><small>1</small><span>Begin the core readings</span></a></li>
@@ -442,11 +442,6 @@ def contents_page() -> str:
         </section>
       </div>
 
-      <aside id="about" class="prototype-note" aria-labelledby="about-heading">
-        <h2 id="about-heading">About these notes</h2>
-        <p>These are the current Fall 2026 readings. Each chapter includes its complete prose, practice questions, sources, and provenance. The linked Java projects target Java 25 and are checked before publication.</p>
-      </aside>
-
       <footer class="book-footer">
         <a class="next" href="chapters/engineering-reliable-software/">Begin Chapter 1 →</a>
         CPEN 221 · University of British Columbia · Fall 2026
@@ -493,7 +488,7 @@ def example_index(project_name: str, title: str) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Downloadable Java sources for {escape(title)}.">
-  <title>{escape(title)} · CPEN 221 Notes</title>
+  <title>{escape(title)} · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
 </head>
@@ -503,7 +498,7 @@ def example_index(project_name: str, title: str) -> str:
       <header class="chapter-header">
         <p class="optional-kicker">Downloadable Java project</p>
         <h1>{escape(title)}</h1>
-        <p class="deck">Complete sources and tests used by the revised notes.</p>
+        <p class="deck">Complete sources and tests used by the revised readings.</p>
       </header>
       <p><a href="../../">← Return to the book contents</a></p>
       <ul class="file-list">{''.join(links)}</ul>

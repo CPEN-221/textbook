@@ -533,11 +533,7 @@ reproduce a JVM's optimized memory layout. That is sufficient for the debugging 
 design tasks in this chapter. The [optional deep dive](optional-beyond-the-java-call-stack.md)
 examines bytecode, inlining, thread dumps, and native frames.
 
-## Sources and provenance
-
-We wrote this chapter anew for CPEN 221. It does not reproduce the prose, diagrams, or worked examples from the previous Chapter 12.
-
-Technical reference material:
+## References
 
 - [The Java Virtual Machine Specification, §2.5.2: Java Virtual Machine Stacks](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.5.2)
 - [The Java Virtual Machine Specification, §2.6: Frames](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6)

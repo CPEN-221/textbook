@@ -91,7 +91,7 @@ def main() -> None:
         local_blocks.append("/* {} */\n{}".format(subset, local_block))
 
     header = """/*
- * Self-hosted typefaces for the CPEN 221 notes prototype.
+ * Self-hosted typefaces for the CPEN 221 readings prototype.
  * Retrieved from Google Fonts on {retrieved}; Latin and Latin Extended only.
  * The original CSS request and update procedure are recorded in README.md.
  */

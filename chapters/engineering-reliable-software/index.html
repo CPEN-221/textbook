@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Build a short Java feedback loop around an observed transit-system failure.">
-  <title>Engineering Reliable Software · CPEN 221 Notes</title>
+  <title>Engineering Reliable Software · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 4321b30e4a3f22e701ce02430b0e267328592d24e459834d2fb50c5ce5d9fb67 -->
+  <!-- source-sha256: f3ecbb794150e3fb3b695730d13daf7db60e90ae648e031365b6c421aa0d4138 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -33,7 +33,7 @@
         <li><a href="#9-a-common-misconception-green-means-correct"><small>1.9</small><span>A Common Misconception: Green Means Correct</span></a></li>
         <li><a href="#try-the-loop"><small>§</small><span>Try the Loop</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../../">← Contents</a>
@@ -216,6 +216,7 @@ git commit -m &quot;Classify early arrival predictions&quot;</code></pre></div>
 <h2 id="7-use-short-feedback-loops"><a href="#7-use-short-feedback-loops"><span class="section-number">1.7</span>Use Short Feedback Loops</a></h2>
 <p>Builds, tests, and commits are part of the design process. A short feedback loop changes which designs are practical.</p>
 <p>If a method can be tested in isolation, we can explore an alternative quickly. If a commit contains one idea, review can focus on that idea. If the build is reproducible, we can distinguish a code failure from a teammate's private machine setup. These tools affect design decisions because they make some mistakes faster to detect.</p>
+<p>Different feedback mechanisms answer different questions. Compilation checks whether the program satisfies the language's static rules. A focused test checks one specified behaviour for selected inputs. The full test suite looks for effects on other components. Review can question the requirement or design itself. Choose the feedback that addresses the current risk.</p>
 <p>Our first design principle follows:</p>
 <blockquote class="design-note"><p><strong>Design principle: obtain trustworthy feedback soon after each design or implementation decision.</strong></p>
 </blockquote>
@@ -262,9 +263,7 @@ ArrivalStatus.describe(600, 601)</code></pre></div>
 <p>Software construction connects an intended behaviour, an implementation, and evidence. We want programs that are correct with respect to their contracts, comprehensible to their maintainers, and changeable without causing unrelated failures.</p>
 <p>Java 25, Gradle, JUnit, and Git support one repeatable loop: edit, build, test, inspect, and record. Short feedback makes it more likely that we find an incorrect assumption soon after we introduce it.</p>
 <p>Our example still describes times with ordinary integers and statuses with ordinary strings. The compiler cannot tell a scheduled time from a predicted time, or a route identifier from a stop identifier. In the next chapter, we will give those concepts types and contracts of their own.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It keeps the former manuscript's course-wide goals of correctness, comprehensibility, and changeability, but it does not reuse the old chapter's prose, historical incidents, images, or worked examples. The transit example and Figure 1.1 are original CPEN 221 material.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/">Java SE 25 and JDK 25 documentation</a></li>
 <li><a href="https://docs.gradle.org/current/userguide/compatibility.html">Gradle Java compatibility matrix</a></li>

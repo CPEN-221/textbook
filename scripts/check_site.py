@@ -118,8 +118,8 @@ for path, page in pages.items():
 
     source_digest = re.search(r"source-sha256:\s*([0-9a-f]{64})", page_source)
     if path.parent.parent == SITE_ROOT / "chapters":
-        if "sources-and-provenance" not in page.ids:
-            failures.append(f"{display_name}: missing sources and provenance section")
+        if "references" not in page.ids:
+            failures.append(f"{display_name}: missing references section")
         if source_digest is None:
             failures.append(f"{display_name}: missing source digest")
         source_links = [

@@ -484,16 +484,7 @@ We now have a feedback loop, meaningful types, explicit contracts and failure pa
 and controlled mutable state. The next chapter uses these tools to define abstract
 data types whose clients can depend on behaviour without depending on representation.
 
-## Sources and provenance
-
-This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old
-manuscript's important distinctions among primitive values, references, aliasing,
-mutation, reassignment, final references, representation exposure, defensive copying,
-and hypothesis-driven debugging. The chapter uses a new outline, arrival-board
-example, tests, prose, and original figures. No old instance diagram, mutable-list
-example, student record, or inherited image was reused.
-
-Technical references:
+## References
 
 - [Java Language Specification, values and types](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html)
 - [`List.copyOf` and unmodifiable lists in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection))

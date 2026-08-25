@@ -1,7 +1,7 @@
-# CPEN 221 notes website
+# CPEN 221 readings website
 
 This repository publishes the Fall 2026 revision of the CPEN 221 Software
-Construction I notes at <https://cpen-221.github.io/>.
+Construction I readings at <https://cpen-221.github.io/>.
 
 The site is static and uses stable, unnumbered chapter URLs. It includes every
 current revised chapter, the optional call-stack investigation, original SVG

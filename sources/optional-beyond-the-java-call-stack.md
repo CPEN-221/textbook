@@ -771,11 +771,7 @@ Most debugging tasks do not require these details. Use them when the evidence po
 to bytecode, optimization, thread interaction, or native memory, and keep
 implementation observations separate from specification guarantees.
 
-## Sources and provenance
-
-We wrote this optional chapter anew for CPEN 221. It uses original examples and diagrams and does not reproduce the prose or illustrations from the former stack material.
-
-Technical references:
+## References
 
 - [The Java Virtual Machine Specification, Chapter 2](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html)
 - [The Java Virtual Machine Specification, §2.6: Frames](https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6)

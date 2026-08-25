@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Design an immutable transit-network ADT whose clients do not depend on its data structures.">
-  <title>ADTs and Representation Independence · CPEN 221 Notes</title>
+  <title>ADTs and Representation Independence · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 67188932f165b6397d62f7fd5a0fec978c24ed76fe0cb3f09f0bf42900898fc5 -->
+  <!-- source-sha256: 8a900e7aef52eee74b1f8b91ccdddca77f0a6b2df00d61efbe1e47d1cb736486 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -34,7 +34,7 @@
         <li><a href="#10-review-a-generated-adt"><small>5.10</small><span>Review a Generated ADT</span></a></li>
         <li><a href="#try-the-abstraction-boundary"><small>§</small><span>Try the Abstraction Boundary</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../mutability-aliasing-and-debugging/">← Previous</a>
@@ -229,6 +229,7 @@ true</code></pre></div>
 <p>The observation does not reveal a map or a connection set. That is <strong>representation independence</strong>: client behaviour depends on the ADT specification, not on which valid representation implements it.</p>
 <p>Representation independence has requirements. The implementations must realize the same abstract values, satisfy the same operation specifications, and prevent clients from observing representation-only differences. A public downcast, leaked mutable collection, promised iteration order, or implementation-specific exception can make client behaviour depend on the representation.</p>
 <p>It also has limits. Performance can be observable and may matter to a specification with explicit complexity bounds. Serialization formats, reflection, and debugging tools can reveal concrete classes. We do not pretend implementations are physically indistinguishable. We design ordinary program dependencies so clients need not rely on those differences.</p>
+<p>Consider replacing the adjacency-map implementation after the system has been deployed. A client that uses only <code>TransitNetwork</code> operations requires no source change. A client that casts the result to <code>AdjacencyMapNetwork</code> must change with the implementation. This is the practical value of representation independence: the implementation can respond to measured workloads without requiring every caller to migrate. The replacement must still preserve stop membership, edge direction, exception behaviour, immutability, and returned-collection guarantees.</p>
 <h2 id="8-run-contract-tests-against-both-implementations"><a href="#8-run-contract-tests-against-both-implementations"><span class="section-number">5.8</span>Run Contract Tests Against Both Implementations</a></h2>
 <p>To test representation independence, the companion project supplies both factories to one parameterized test suite. One of its tests is:</p>
 <div class="code-block"><pre class="java"><code>@ParameterizedTest(name = &quot;{0}: producer leaves original unchanged&quot;)
@@ -244,7 +245,7 @@ void producerLeavesOriginalUnchanged(
     assertEquals(Set.of(WESBROOK),
             extended.directDestinationsFrom(UBC));
 }</code></pre></div>
-<p>The test observes promises: old value unchanged, new edge present, correct direct destination. It does not inspect fields, assert a concrete class, or depend on set iteration order. The same tests also cover isolated stops, direction, invalid arguments, duplicate additions, input aliasing, and unmodifiable results.</p>
+<p>The test observes promises: old value unchanged, new edge present, correct direct destination. It does not inspect fields, assert a concrete class, or depend on set iteration order. The same tests also cover isolated stops, direction, invalid arguments, duplicate additions, input aliasing, and unmodifiable results. These tests make representative contract obligations executable. Review remains necessary for obligations and inputs that the test suite does not cover.</p>
 <p>White-box tests still have a place. An implementation may need focused tests for a complicated private algorithm. Every implementation must also pass the shared contract tests before the factory can substitute it for another implementation. The shared factory also keeps implementation-specific setup out of individual test cases.</p>
 <p>Our design principle is:</p>
 <blockquote class="design-note"><p><strong>Design principle: expose only the operations clients need, and keep the representation data structures private.</strong></p>
@@ -290,12 +291,9 @@ TransitNetwork c = b.withConnection(UBC, WESBROOK);</code></pre></div>
 <p>An ADT is defined by abstract values and specified operations. Creators introduce values, producers derive values, observers reveal information, and mutators change existing values. Our immutable network needs no mutators.</p>
 <p>The <code>TransitNetwork</code> interface gives clients a small transit vocabulary. A factory returns that abstraction while a package-private implementation snapshots and owns its representation. We can store an adjacency map or separate stop and connection sets without changing contract-respecting clients.</p>
 <p>That freedom is representation independence. Access control, specifications, immutable boundaries, and contract tests all help preserve it. The next question is how an implementer determines whether a particular map or pair of sets represents a valid network. Chapter 6 defines that relationship between concrete fields and abstract values.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's central ideas that an ADT is defined by its specification, that ADT operations can be classified by their relationship to the abstract type, and that clients should be independent of representation. The outline, prose, transit-network API, two implementations, tests, and examples are new. No old <code>MyString</code>, <code>Map</code>, hash-table, car-control, or inherited figure was reused. Equality and hashing are deliberately deferred to Chapter 7.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li>Barbara Liskov and Stephen Zilles, “Programming with Abstract Data Types,” <em>SIGPLAN Notices</em> 9(4), 1974, DOI <code>10.1145/942572.807045</code></li>
-<li><a href="https://web.mit.edu/6.031/www/sp21/classes/10-abstract-data-types/">MIT 6.031: Abstract Data Types</a></li>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6">Java Language Specification, access control</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html">Java SE 25 <code>Set</code> interface</a></li>
 <li><a href="https://docs.junit.org/6.1.3/writing-tests/parameterized-classes-and-tests.html">JUnit 6.1.3 User Guide, parameterized tests</a></li>

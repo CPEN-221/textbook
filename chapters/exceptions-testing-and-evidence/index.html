@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Design failure paths and derive useful tests from a transit-feed contract.">
-  <title>Exceptions, Testing, and Evidence · CPEN 221 Notes</title>
+  <title>Exceptions, Testing, and Evidence · CPEN 221 Readings</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 7b429d3fc0fed3bc707a87b6e74d20c1b1954f9443ac68031943312071779a5e -->
+  <!-- source-sha256: 26311aa16fe31489cc6401c8ec1170f3a5dc59838710279ac3f303c0497f7de7 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -34,7 +34,7 @@
         <li><a href="#10-test-generated-parsers-at-the-boundaries"><small>3.10</small><span>Test Generated Parsers at the Boundaries</span></a></li>
         <li><a href="#try-the-failure-paths"><small>§</small><span>Try the Failure Paths</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
-        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="../types-and-specifications/">← Previous</a>
@@ -357,9 +357,7 @@ PredictionParser.parse(&quot;UBC_EXCHANGE|-1&quot;)</code></pre></div>
 <p>Exception types identify failures, and exceptions use a separate control-flow path. Checked and unchecked exceptions differ by Java hierarchy and compiler treatment; choosing between them is an API design decision. Catch only where the program can recover, translate while preserving a cause, or report at an owning boundary. Use try-with-resources to tie resource cleanup to scope.</p>
 <p>Tests turn contracts into executable observations. Partition the input space, probe boundaries, add implementation-aware cases without depending on private behaviour, and interpret coverage as a prompt for investigation. Passing tests provide evidence about tested executions; they do not prove that the program has no other bugs.</p>
 <p>Our parser now produces records and lists, but those declarations alone do not make all reachable state immutable. A final field can still refer to a mutable object, and a returned list can give a client access to an object's representation. Chapter 4 examines those references.</p>
-<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It preserves the old manuscript's emphasis on explicit failure, specification-derived testing, partitioning, boundaries, regression tests, and exception chaining. The chapter has a new outline, transit parser, tests, prose, and sequence diagram; it does not reuse the old birthday-book, substring-counting, or report-writer examples or any old image.</p>
-<p>Technical references:</p>
+<h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html">Java Language Specification, exceptions</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html"><code>Exception</code> in Java SE 25</a></li>
