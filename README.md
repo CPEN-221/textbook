@@ -4,8 +4,9 @@ This repository publishes the Fall 2026 revision of the CPEN 221 Software
 Construction I readings at <https://cpen-221.github.io/>.
 
 The site is static and uses stable, unnumbered chapter URLs. It includes every
-current revised chapter, the optional call-stack investigation, original SVG
-figures, the human-edited Markdown sources, and complete Java 25 companion projects.
+current revised chapter, the supplemental readings, original SVG figures, the
+human-edited Markdown sources, and a Java 25 companion project for each core
+chapter.
 
 ## Preview locally
 
@@ -22,10 +23,10 @@ Before publishing, run the dependency-free site check and compile the downloadab
 examples:
 
 ```bash
-python3 www/scripts/check_site.py
+python3 scripts/check_site.py
 javac -d /tmp/cpen221-example-classes \
-  www/examples/how-java-runs/FrameDemo.java \
-  www/examples/beyond-java-call-stack/BytecodeDemo.java
+  examples/how-java-runs/FrameDemo.java \
+  examples/beyond-java-call-stack/BytecodeDemo.java
 ```
 
 ## Build the chapter pages
@@ -54,8 +55,11 @@ python3 scripts/check_site.py
 Run the Java 25 companion suites:
 
 ```bash
-examples/chapters-01-04/gradlew -p examples/chapters-01-04 test
-examples/chapters-01-04/gradlew -p examples/chapters-05-06 test
+for project in examples/*; do
+  if test -x "$project/gradlew"; then
+    "$project/gradlew" -p "$project" --no-daemon test
+  fi
+done
 ```
 
 The GitHub Actions workflow repeats those checks, compiles the standalone stack
@@ -67,7 +71,8 @@ push to `main`.
 - `chapters/` contains the generated HTML pages.
 - `sources/` contains the published Markdown source for each page.
 - `assets/` contains the stylesheet, JavaScript, fonts, and static SVG figures.
-- `examples/` contains downloadable and testable Java projects.
+- `examples/` contains one downloadable and testable Java project for each core
+  chapter, plus the standalone examples for the supplemental readings.
 - `scripts/build_site.py` performs the deterministic Markdown-to-HTML build.
 - `scripts/check_site.py` checks links, fragments, page landmarks, image text,
   source freshness, and SVG metadata.

@@ -707,6 +707,12 @@ blockquote.epigraph cite {
   overflow-wrap: anywhere;
 }
 
+.chapter-examples {
+  margin: 2.5rem 0 -2rem;
+  font: 600 0.76rem/1.4 var(--sans);
+  letter-spacing: 0.04em;
+}
+
 .book-footer {
   position: relative;
   width: 32rem;

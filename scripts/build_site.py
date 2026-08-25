@@ -383,6 +383,8 @@ def chapter_page(
 
 {body}
 
+      <p class="chapter-examples"><a href="../../examples/{escape(chapter.slug)}/">Java examples for this reading →</a></p>
+
       <footer class="book-footer">
         {footer_next}
         CPEN 221 · Software Construction I · Fall 2026
@@ -502,7 +504,16 @@ def copy_publication_assets() -> None:
         shutil.copytree(external_figures, published_figures)
 
     external_examples = COURSE_ROOT / "examples"
-    for project_name in ("chapters-01-04", "chapters-05-06", "chapters-07-13"):
+    legacy_projects = ("chapters-01-04", "chapters-05-06", "chapters-07-13")
+    for project_name in legacy_projects:
+        target = SITE_ROOT / "examples" / project_name
+        if target.exists():
+            shutil.rmtree(target)
+
+    for chapter in CHAPTERS:
+        if chapter.optional:
+            continue
+        project_name = chapter.slug
         source = external_examples / project_name
         target = SITE_ROOT / "examples" / project_name
         if source.is_dir():
@@ -583,9 +594,12 @@ def build() -> None:
     (SITE_ROOT / "index.html").write_text(contents_page(), encoding="utf-8")
 
     example_pages = {
-        "chapters-01-04": "Chapters 1–4 companion project",
-        "chapters-05-06": "Chapters 5–6 companion project",
-        "chapters-07-13": "Chapters 7–13 companion project",
+        chapter.slug: (
+            f"Chapter {chapter.number}: {chapter.title} examples"
+            if not chapter.optional
+            else f"{chapter.title} examples"
+        )
+        for chapter in CHAPTERS
     }
     for project_name, title in example_pages.items():
         project = SITE_ROOT / "examples" / project_name

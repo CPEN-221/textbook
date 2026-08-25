@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 107d7481e5eb9d80c04a937597bc662c8dab00527b049575817fe1a07b1abb02 -->
+  <!-- source-sha256: 1de780ee79f4c91948c6451d1d43e7399b01621313e58a008ffbaa3efcead6f4 -->
   <!-- source-file: chapter-01-engineering-reliable-software.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
@@ -138,8 +138,8 @@ public final class ArrivalStatus {
 <h2 id="4-build-test-and-inspect"><a href="#4-build-test-and-inspect"><span class="section-number">1.4</span>Build, Test, and Inspect</a></h2>
 <p>A modern Java project needs a repeatable process for turning source files into checked results (Figure 1.1).</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg" alt="A developer edits source, compiles it, and runs tests. A failure leads to another edit; a successful result leads to diff inspection and a small Git commit." /><figcaption>Figure 1.1: A feedback loop for software development. Compilation and test failures inform the next source-code revision.</figcaption></figure>
-<p>The companion project for Chapters 1–4 lives in <a href="../../examples/chapters-01-04/"><code>examples/chapters-01-04</code></a>. Its important pieces are:</p>
-<div class="code-block"><pre class="text"><code>examples/chapters-01-04/
+<p>The companion project for this chapter lives in <a href="../../examples/engineering-reliable-software/"><code>examples/engineering-reliable-software</code></a>. Its important pieces are:</p>
+<div class="code-block"><pre class="text"><code>examples/engineering-reliable-software/
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── src/
@@ -276,6 +276,8 @@ ArrivalStatus.describe(600, 601)</code></pre></div>
 <li><a href="https://git-scm.com/docs">Git reference</a></li>
 <li><a href="https://gtfs.org/getting-started/what-is-gtfs/">General Transit Feed Specification overview</a></li>
 </ul>
+
+      <p class="chapter-examples"><a href="../../examples/engineering-reliable-software/">Java examples for this reading →</a></p>
 
       <footer class="book-footer">
         <a class="next" href="../types-and-specifications/">Types and Specifications →</a>

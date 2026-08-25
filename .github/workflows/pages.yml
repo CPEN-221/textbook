@@ -37,11 +37,25 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Test Chapters 1–4 examples
-        run: examples/chapters-01-04/gradlew -p examples/chapters-01-04 --no-daemon test
-
-      - name: Test Chapters 5–6 examples
-        run: examples/chapters-01-04/gradlew -p examples/chapters-05-06 --no-daemon test
+      - name: Test chapter examples
+        run: |
+          for project in \
+            engineering-reliable-software \
+            types-and-specifications \
+            exceptions-testing-and-evidence \
+            mutability-aliasing-and-debugging \
+            adts-and-representation-independence \
+            representation-invariants-and-abstraction-functions \
+            equality-hashing-and-behavioural-subtyping \
+            composition-delegation-and-api-design \
+            recursion-and-recursive-datatypes \
+            functions-streams-and-data-transformations \
+            systems-model-and-network-protocols \
+            parallelism-concurrency-and-virtual-threads \
+            thread-safety-integration-and-reliability
+          do
+            "examples/$project/gradlew" -p "examples/$project" --no-daemon test
+          done
 
       - name: Compile stack examples
         run: |
@@ -61,4 +75,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
-

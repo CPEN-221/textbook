@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: b138ad294cdc5347c77b959cbf50b39c1914e0d346bec51f7891c9466c8025a3 -->
+  <!-- source-sha256: 5eb4a652cb8f9a155f261621a271854a26798ce96fb5913c308801b182dd650c -->
   <!-- source-file: chapter-05-adts-and-representation-independence.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
@@ -114,7 +114,7 @@
     boolean hasDirectConnection(StopId from, StopId to);
     TransitNetwork withConnection(StopId from, StopId to);
 }</code></pre></div>
-<p>The complete interface in the <a href="../../examples/chapters-05-06/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java">companion project</a> includes the specifications. The public operations refer to stops, direct destinations, and connections. No method returns the representation.</p>
+<p>The complete interface in the <a href="../../examples/adts-and-representation-independence/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java">companion project</a> includes the specifications. The public operations refer to stops, direct destinations, and connections. No method returns the representation.</p>
 <p>This interface is one Java expression of the ADT, but an ADT is not the same thing as a Java interface. A final class with private fields and a well-specified public API can implement an ADT. An interface is useful here because it gives the compiler one client-facing type while we experiment with multiple implementations.</p>
 <h2 id="3-classify-the-operations"><a href="#3-classify-the-operations"><span class="section-number">5.3</span>Classify the Operations</a></h2>
 <p>Four categories help us check whether the API can create, inspect, and transform its values. Let <code>T</code> stand for the ADT.</p>
@@ -296,6 +296,8 @@ TransitNetwork c = b.withConnection(UBC, WESBROOK);</code></pre></div>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html">Java Platform, Standard Edition (Java SE) 25 <code>Set</code> interface</a></li>
 <li><a href="https://docs.junit.org/6.1.3/writing-tests/parameterized-classes-and-tests.html">JUnit 6.1.3 User Guide, parameterized tests</a></li>
 </ul>
+
+      <p class="chapter-examples"><a href="../../examples/adts-and-representation-independence/">Java examples for this reading →</a></p>
 
       <footer class="book-footer">
         <a class="next" href="../representation-invariants-and-abstraction-functions/">Representation Invariants and Abstraction Functions →</a>

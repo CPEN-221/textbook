@@ -89,7 +89,7 @@ public interface TransitNetwork {
 ```
 
 The complete interface in the [companion
-project](../../examples/chapters-05-06/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java)
+project](../../examples/adts-and-representation-independence/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java)
 includes the specifications. The public operations refer to stops, direct destinations,
 and connections. No method returns the representation.
 

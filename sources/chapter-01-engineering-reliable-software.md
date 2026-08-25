@@ -146,11 +146,12 @@ commit.](../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg)
 *Figure 1.1: A feedback loop for software development. Compilation and test
 failures inform the next source-code revision.*
 
-The companion project for Chapters 1–4 lives in
-[`examples/chapters-01-04`](../../examples/chapters-01-04/). Its important pieces are:
+The companion project for this chapter lives in
+[`examples/engineering-reliable-software`](../../examples/engineering-reliable-software/).
+Its important pieces are:
 
 ```text
-examples/chapters-01-04/
+examples/engineering-reliable-software/
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── src/
