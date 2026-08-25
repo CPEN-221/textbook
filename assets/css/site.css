@@ -691,6 +691,100 @@ blockquote.epigraph cite {
   margin: 0;
 }
 
+.archive-note {
+  margin: 1.2rem 0 2.5rem;
+  padding: 0.85rem 1rem;
+  color: #4d555b;
+  background: var(--note-green);
+  border-radius: 3px;
+  font: 0.82rem/1.5 var(--sans);
+}
+
+.archive-note strong {
+  color: #314956;
+}
+
+.lab-contents > section {
+  margin-top: 2.6rem;
+}
+
+.lab-contents > section > h2 {
+  margin: 0 0 0.55rem;
+  font: 650 0.92rem/1.4 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lab-list li {
+  grid-template-columns: 3.7rem 1fr;
+}
+
+.home-labs {
+  margin-top: 2.4rem;
+  padding: 0.9rem 1rem;
+  background: var(--note-green);
+  border-radius: 3px;
+}
+
+.home-labs h2 {
+  margin: 0;
+  color: #40596b;
+  font: 650 0.78rem/1.4 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-labs p {
+  margin: 0.25rem 0 0;
+  font: 0.88rem/1.45 var(--sans);
+}
+
+.lab-page .lab-callout {
+  margin: 1.6rem -0.7rem;
+  padding: 0.8rem 1rem;
+  color: #444;
+  background: var(--note-blue);
+  border-radius: 3px;
+  font: 0.9rem/1.55 var(--sans);
+}
+
+.lab-page .lab-callout .lab-callout {
+  margin: 0.6rem 0;
+  padding: 0 0 0 0.8rem;
+  background: transparent;
+  border-left: 2px solid var(--rule);
+}
+
+.lab-page .lab-callout > :first-child {
+  margin-top: 0;
+}
+
+.lab-page .lab-callout > :last-child {
+  margin-bottom: 0;
+}
+
+.lab-page .lab-callout h2,
+.lab-page .lab-callout h3 {
+  margin-top: 0;
+  font: 650 0.82rem/1.4 var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lab-page img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.6rem auto;
+}
+
+.lab-page math[display="block"] {
+  display: block;
+  max-width: 100%;
+  margin: 1.4rem 0;
+  overflow-x: auto;
+}
+
 .example-index {
   margin-inline: auto;
 }
