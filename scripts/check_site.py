@@ -23,6 +23,8 @@ from site_contract import (
     read_provenance,
 )
 
+TYPEFACE_CHOICES = ("plex", "google-sans")
+
 
 class PageParser(HTMLParser):
     def __init__(self) -> None:
@@ -119,6 +121,14 @@ for path, page in pages.items():
         failures.append(f"{display_name}: contains an unexpected control character")
     if "fonts.googleapis.com" in page_source or "fonts.gstatic.com" in page_source:
         failures.append(f"{display_name}: loads a font from an external Google host")
+    if "data-typeface-picker" in page_source:
+        observed_choices = set(
+            re.findall(r'<option value="([^"]+)">', page_source)
+        )
+        if observed_choices != set(TYPEFACE_CHOICES):
+            failures.append(
+                f"{display_name}: typeface options do not match the contract"
+            )
 
     source_file, source_digest = read_provenance(page_source)
     if is_chapter_page(path):
@@ -172,27 +182,19 @@ for path, page in pages.items():
 expected_pages = {chapter_page(chapter) for chapter in CHAPTERS}
 published_pages = {path for path in html_files if is_chapter_page(path)}
 
-typeface_choices = (
-    "literata",
-    "newsreader",
-    "source",
-    "fraunces",
-    "plex",
-    "google-sans",
-)
 switcher_source = (SITE_ROOT / "assets" / "js" / "typeface-switcher.js").read_text(
     encoding="utf-8"
 )
-for choice in typeface_choices:
+for choice in TYPEFACE_CHOICES:
     if f'"{choice}"' not in switcher_source:
         failures.append(f"typeface switcher does not allow {choice}")
 for path in sorted(expected_pages | {SITE_ROOT / "index.html"}):
     page_source = path.read_text(encoding="utf-8")
-    for choice in typeface_choices:
-        if f'<option value="{choice}">' not in page_source:
-            failures.append(
-                f"{path.relative_to(SITE_ROOT)}: missing {choice} typeface option"
-            )
+    observed_choices = set(re.findall(r'<option value="([^"]+)">', page_source))
+    if observed_choices != set(TYPEFACE_CHOICES):
+        failures.append(
+            f"{path.relative_to(SITE_ROOT)}: typeface options do not match the contract"
+        )
 
 for chapter in CHAPTERS:
     target = chapter_page(chapter)
@@ -236,14 +238,28 @@ for css_file in css_files:
                 f"{css_file.relative_to(SITE_ROOT)}: missing target for {reference}"
             )
 
+font_styles = (SITE_ROOT / "assets" / "fonts" / "fonts.css").read_text(
+    encoding="utf-8"
+)
+declared_fonts = set(re.findall(r"url\(['\"]?files/([^)'\"]+)", font_styles))
+stored_fonts = {
+    path.name for path in (SITE_ROOT / "assets" / "fonts" / "files").glob("*.woff2")
+}
+if stored_fonts != declared_fonts:
+    failures.append("assets/fonts/files/: stored fonts do not match fonts.css")
+
 site_styles = (SITE_ROOT / "assets" / "css" / "site.css").read_text(encoding="utf-8")
-for choice in typeface_choices:
-    if f'html[data-typeface="{choice}"]' not in site_styles:
-        failures.append(f"assets/css/site.css: missing {choice} typeface mapping")
+observed_mappings = set(
+    re.findall(r'html\[data-typeface="([^"]+)"\]', site_styles)
+)
+if observed_mappings != set(TYPEFACE_CHOICES):
+    failures.append("assets/css/site.css: typeface mappings do not match the contract")
 
 for licence_name in (
     "googlesanscode-OFL.txt",
     "googlesansflex-OFL.txt",
+    "ibmplexmono-OFL.txt",
+    "ibmplexsans-OFL.txt",
     "ibmplexserif-OFL.txt",
 ):
     licence_path = SITE_ROOT / "assets" / "fonts" / "licenses" / licence_name

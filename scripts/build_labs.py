@@ -287,10 +287,8 @@ def typeface_tools(prefix: str) -> str:
     <label>
       <span>Reading type</span>
       <select data-typeface-picker aria-label="Reading typeface combination">
-        <option value="literata">Literata + IBM Plex Sans</option>
-        <option value="newsreader">Newsreader + Public Sans</option>
-        <option value="source">Source Serif 4 + Source Sans 3</option>
-        <option value="fraunces">Fraunces heads + Literata text</option>
+        <option value="plex">IBM Plex Serif + IBM Plex Sans + IBM Plex Mono</option>
+        <option value="google-sans">Google Sans Flex + Google Sans Code</option>
       </select>
     </label>
   </div>"""

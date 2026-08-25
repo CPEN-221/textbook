@@ -17,22 +17,15 @@ SITE_ROOT = Path(__file__).resolve().parent.parent
 FONT_ROOT = SITE_ROOT / "assets" / "fonts"
 FILE_ROOT = FONT_ROOT / "files"
 LICENSE_ROOT = FONT_ROOT / "licenses"
-CACHED_CSS = Path("/tmp/cpen221-google-fonts-woff2-v2.css")
+CACHED_CSS = Path("/tmp/cpen221-google-fonts-woff2-v3.css")
 RETRIEVED = "2026-08-25"
 GOOGLE_CSS_URL = (
     "https://fonts.googleapis.com/css2?"
-    "family=Fraunces:opsz,wght@9..144,600&"
     "family=Google+Sans+Code:wght@300..800&"
     "family=Google+Sans+Flex:opsz,wght@6..144,100..1000&"
     "family=IBM+Plex+Mono:wght@400;600&"
     "family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&"
     "family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&"
-    "family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&"
-    "family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&"
-    "family=Public+Sans:ital,wght@0,400;0,600;1,400&"
-    "family=Source+Code+Pro:wght@400;600&"
-    "family=Source+Sans+3:ital,wght@0,400;0,600;1,400&"
-    "family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&"
     "display=swap"
 )
 USER_AGENT = (
@@ -41,18 +34,11 @@ USER_AGENT = (
     "Chrome/131.0.0.0 Safari/537.36"
 )
 LICENSES = {
-    "fraunces": "Fraunces",
     "googlesanscode": "Google Sans Code",
     "googlesansflex": "Google Sans Flex",
     "ibmplexmono": "IBM Plex Mono",
     "ibmplexsans": "IBM Plex Sans",
     "ibmplexserif": "IBM Plex Serif",
-    "literata": "Literata",
-    "newsreader": "Newsreader",
-    "publicsans": "Public Sans",
-    "sourcecodepro": "Source Code Pro",
-    "sourcesans3": "Source Sans 3",
-    "sourceserif4": "Source Serif 4",
 }
 
 
@@ -107,14 +93,21 @@ def main() -> None:
         header + "\n\n".join(local_blocks) + "\n", encoding="utf-8"
     )
 
+    written_licences = 0
     for slug, family in LICENSES.items():
+        licence_path = LICENSE_ROOT / "{}-OFL.txt".format(slug)
+        if licence_path.exists():
+            continue
         url = "https://raw.githubusercontent.com/google/fonts/main/ofl/{}/OFL.txt".format(slug)
         license_text = download(url).decode("utf-8")
-        (LICENSE_ROOT / "{}-OFL.txt".format(slug)).write_text(
-            license_text, encoding="utf-8"
-        )
+        licence_path.write_text(license_text, encoding="utf-8")
+        written_licences += 1
 
-    print("Vendored {} WOFF2 files and {} licence files.".format(len(selected), len(LICENSES)))
+    print(
+        "Vendored {} WOFF2 files and {} new licence files.".format(
+            len(selected), written_licences
+        )
+    )
 
 
 if __name__ == "__main__":

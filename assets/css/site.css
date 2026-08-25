@@ -16,41 +16,13 @@
   --note-green: #f4f7ef;
   --optional: #a76c27;
   --focus: #ffbd3e;
-  --serif: "Literata", Georgia, serif;
-  --display: "Literata", Georgia, serif;
+  --serif: "IBM Plex Serif", Georgia, serif;
+  --display: "IBM Plex Serif", Georgia, serif;
   --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
   --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   font-family: var(--serif);
   font-size: 18px;
   line-height: 1.55;
-}
-
-html[data-typeface="literata"] {
-  --serif: "Literata", Georgia, serif;
-  --display: "Literata", Georgia, serif;
-  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
-  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-}
-
-html[data-typeface="newsreader"] {
-  --serif: "Newsreader", Georgia, serif;
-  --display: "Newsreader", Georgia, serif;
-  --sans: "Public Sans", "Segoe UI", Helvetica, Arial, sans-serif;
-  --mono: "Source Code Pro", "SFMono-Regular", Consolas, monospace;
-}
-
-html[data-typeface="source"] {
-  --serif: "Source Serif 4", Georgia, serif;
-  --display: "Source Serif 4", Georgia, serif;
-  --sans: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
-  --mono: "Source Code Pro", "SFMono-Regular", Consolas, monospace;
-}
-
-html[data-typeface="fraunces"] {
-  --serif: "Literata", Georgia, serif;
-  --display: "Fraunces", Georgia, serif;
-  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
-  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
 }
 
 html[data-typeface="plex"] {
@@ -65,11 +37,6 @@ html[data-typeface="google-sans"] {
   --display: "Google Sans Flex", "Segoe UI", Helvetica, Arial, sans-serif;
   --sans: "Google Sans Flex", "Segoe UI", Helvetica, Arial, sans-serif;
   --mono: "Google Sans Code", "SFMono-Regular", Consolas, monospace;
-}
-
-html[data-typeface="fraunces"] .chapter-header h1,
-html[data-typeface="fraunces"] .contents-header h1 {
-  font-weight: 600;
 }
 
 * {
@@ -871,6 +838,7 @@ blockquote.epigraph cite {
 
 .typeface-tools select {
   width: 100%;
+  max-width: 100%;
   min-height: 2.1rem;
   padding: 0.25rem 1.8rem 0.25rem 0.55rem;
   color: #dce8ee;
