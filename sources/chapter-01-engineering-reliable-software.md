@@ -138,8 +138,8 @@ checked results.
 return the developer to the source while successful results can become a small Git
 commit.](../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg)
 
-*Figure 1.1: The course feedback loop. A failure provides information that sends us
-back to the source.*
+*Figure 1.1: A feedback loop for software development. Compilation and test
+failures inform the next source-code revision.*
 
 The companion project for Chapters 1–4 lives in
 [`examples/chapters-01-04`](../../examples/chapters-01-04/). Its important pieces are:
