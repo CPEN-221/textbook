@@ -13,21 +13,20 @@
   <a class="skip-link" href="#main-content">Skip to the book</a>
 
   <nav class="book-nav" aria-label="Book navigation">
-    <a class="wordmark" href="./">
+    <a class="wordmark" href="./" aria-current="page">
       <strong>CPEN 221</strong>
       <span>Software Construction</span>
     </a>
     <div class="nav-contents">
-      <p class="part-label">Fall 2026 pilot</p>
+      <p class="part-label">Fall 2026 notes</p>
       <h2><a href="#top" aria-current="page">Contents</a></h2>
       <ul>
-        <li><a href="chapters/how-java-runs/"><small>12</small><span>How a Java Program Runs</span></a></li>
-        <li class="divider" aria-hidden="true"></li>
-        <li class="optional-link"><a href="chapters/beyond-java-call-stack/"><small>extra</small><span>Beyond the Java Call Stack</span></a></li>
+        <li><a href="chapters/engineering-reliable-software/"><small>1</small><span>Begin the core readings</span></a></li>
+        <li><a href="#further-exploration"><small>+</small><span>Further exploration</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="#about">About</a>
-        <a href="chapters/how-java-runs/">Read →</a>
+        <a href="chapters/engineering-reliable-software/">Read →</a>
       </div>
     </div>
   </nav>
@@ -35,7 +34,7 @@
   <nav class="book-nav-mobile" aria-label="Compact book navigation">
     <span class="mobile-arrow" aria-hidden="true">❧</span>
     <a class="mobile-title" href="./" aria-current="page">CPEN 221</a>
-    <a class="mobile-arrow" href="chapters/how-java-runs/" aria-label="Next: How a Java Program Runs">→</a>
+    <a class="mobile-arrow" href="chapters/engineering-reliable-software/" aria-label="Next: Engineering Reliable Software">→</a>
   </nav>
 
   <div class="typeface-tools">
@@ -55,28 +54,77 @@
       <header class="contents-header">
         <p class="kicker">Software Construction I · Fall 2026</p>
         <h1>CPEN 221</h1>
-        <p class="deck">Notes about building programs we can reason about, test, and change without losing the plot.</p>
+        <p class="deck">Build programs we can reason about, test, and change without losing the plot.</p>
       </header>
 
       <p>Software construction begins after the syntax starts making sense. These chapters connect Java programs to the contracts, representations, tests, and design arguments that make software dependable.</p>
 
       <div class="ornament" aria-hidden="true">❧</div>
 
-      <div class="contents-group">
-        <section aria-labelledby="pilot-heading">
-          <h2 id="pilot-heading">Pilot chapters</h2>
+      <div class="contents-group contents-group-complete">
+        <section aria-labelledby="core-heading">
+          <h2 id="core-heading">Core readings</h2>
           <ol class="contents-list">
+            <li>
+              <span class="num">1</span>
+              <div>
+                
+                <strong><a href="chapters/engineering-reliable-software/">Engineering Reliable Software</a></strong>
+                <p>Build a short Java feedback loop around an observed transit-system failure.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">2</span>
+              <div>
+                
+                <strong><a href="chapters/types-and-specifications/">Types and Specifications</a></strong>
+                <p>Use domain types and behavioural contracts to state what transit software means.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">3</span>
+              <div>
+                
+                <strong><a href="chapters/exceptions-testing-and-evidence/">Exceptions, Testing, and Evidence</a></strong>
+                <p>Design failure paths and derive useful tests from a transit-feed contract.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">4</span>
+              <div>
+                
+                <strong><a href="chapters/mutability-aliasing-and-debugging/">Mutability, Aliasing, and Debugging</a></strong>
+                <p>Follow references, close representation leaks, and debug mutable state with evidence.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">5</span>
+              <div>
+                
+                <strong><a href="chapters/adts-and-representation-independence/">ADTs and Representation Independence</a></strong>
+                <p>Design an immutable transit-network ADT whose clients do not depend on its data structures.</p>
+              </div>
+            </li>
+            <li>
+              <span class="num">6</span>
+              <div>
+                
+                <strong><a href="chapters/representation-invariants-and-abstraction-functions/">Representation Invariants and Abstraction Functions</a></strong>
+                <p>Connect concrete transit-network fields to valid abstract graph values.</p>
+              </div>
+            </li>
             <li>
               <span class="num">12</span>
               <div>
+                
                 <strong><a href="chapters/how-java-runs/">How a Java Program Runs</a></strong>
-                <p>Calls, frames, exceptions, recursion, and the boundary between local references and shared objects.</p>
+                <p>Trace Java calls, frames, recursion, exceptions, and shared reachable objects.</p>
               </div>
             </li>
           </ol>
         </section>
 
-        <section aria-labelledby="extra-heading">
+        <section id="further-exploration" aria-labelledby="extra-heading">
           <h2 id="extra-heading">Further exploration</h2>
           <ol class="contents-list">
             <li>
@@ -84,21 +132,21 @@
               <div>
                 <span class="optional-label">Optional deep dive</span>
                 <strong><a href="chapters/beyond-java-call-stack/">Beyond the Java Call Stack</a></strong>
-                <p>Bytecode, optimization, thread dumps, native frames, and experiments you can run.</p>
+                <p>Investigate bytecode, optimized execution, thread dumps, and native stack safety.</p>
               </div>
             </li>
           </ol>
         </section>
       </div>
 
-      <aside id="about" class="prototype-note" aria-labelledby="prototype-heading">
-        <h2 id="prototype-heading">About this prototype</h2>
-        <p>This pilot tests a book-like reading experience, chapter navigation, margin notes, code downloads, optional material, phone layouts, and print output. The pages contain representative extracts while the Markdown-to-site build remains under design.</p>
+      <aside id="about" class="prototype-note" aria-labelledby="about-heading">
+        <h2 id="about-heading">About these notes</h2>
+        <p>These are the current Fall 2026 readings. Each chapter includes its complete prose, practice questions, sources, and provenance. The linked Java projects target Java 25 and are checked before publication.</p>
       </aside>
 
       <footer class="book-footer">
-        <a class="next" href="chapters/how-java-runs/">Begin Chapter 12 →</a>
-        CPEN 221 · University of British Columbia · Fall 2026 pilot
+        <a class="next" href="chapters/engineering-reliable-software/">Begin Chapter 1 →</a>
+        CPEN 221 · University of British Columbia · Fall 2026
       </footer>
     </article>
   </main>

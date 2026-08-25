@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
+from hashlib import sha256
 from pathlib import Path
 from typing import Optional
 from urllib.parse import unquote, urlsplit
@@ -12,6 +13,7 @@ import xml.etree.ElementTree as ET
 
 
 SITE_ROOT = Path(__file__).resolve().parent.parent
+IGNORED_PARTS = {".git", ".gradle", "build"}
 
 
 class PageParser(HTMLParser):
@@ -92,7 +94,11 @@ def check_svg(path: Path, failures: list[str]) -> None:
         failures.append(f"{path.relative_to(SITE_ROOT)}: missing a non-empty description")
 
 
-html_files = sorted(SITE_ROOT.rglob("*.html"))
+def is_published(path: Path) -> bool:
+    return not IGNORED_PARTS.intersection(path.relative_to(SITE_ROOT).parts)
+
+
+html_files = sorted(path for path in SITE_ROOT.rglob("*.html") if is_published(path))
 pages = {path: parse_page(path) for path in html_files}
 failures: list[str] = []
 
@@ -105,8 +111,33 @@ for path, page in pages.items():
     if not "".join(page.title_parts).strip():
         failures.append(f"{display_name}: missing a non-empty title")
     page_source = path.read_text(encoding="utf-8")
+    if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", page_source):
+        failures.append(f"{display_name}: contains an unexpected control character")
     if "fonts.googleapis.com" in page_source or "fonts.gstatic.com" in page_source:
         failures.append(f"{display_name}: loads a font from an external Google host")
+
+    source_digest = re.search(r"source-sha256:\s*([0-9a-f]{64})", page_source)
+    if path.parent.parent == SITE_ROOT / "chapters":
+        if "sources-and-provenance" not in page.ids:
+            failures.append(f"{display_name}: missing sources and provenance section")
+        if source_digest is None:
+            failures.append(f"{display_name}: missing source digest")
+        source_links = [
+            reference
+            for reference in page.references
+            if reference.startswith("../../sources/") and reference.endswith(".md")
+        ]
+        if len(source_links) != 1:
+            failures.append(f"{display_name}: expected exactly one Markdown source link")
+        elif source_digest is not None:
+            source_target, _ = local_target(path, source_links[0])
+            if source_target is not None and source_target.is_file():
+                observed_digest = sha256(source_target.read_bytes()).hexdigest()
+                if observed_digest != source_digest.group(1):
+                    failures.append(
+                        f"{display_name}: generated page is stale relative to "
+                        f"{source_target.relative_to(SITE_ROOT)}"
+                    )
 
     for identifier in set(page.ids):
         if page.ids.count(identifier) > 1:
@@ -134,10 +165,11 @@ for path, page in pages.items():
                     f"{target.relative_to(SITE_ROOT)}"
                 )
 
-for svg_file in sorted(SITE_ROOT.rglob("*.svg")):
+svg_files = sorted(path for path in SITE_ROOT.rglob("*.svg") if is_published(path))
+for svg_file in svg_files:
     check_svg(svg_file, failures)
 
-css_files = sorted(SITE_ROOT.rglob("*.css"))
+css_files = sorted(path for path in SITE_ROOT.rglob("*.css") if is_published(path))
 for css_file in css_files:
     css = css_file.read_text(encoding="utf-8")
     for reference in re.findall(r"url\(\s*['\"]?([^'\")]+)", css):
@@ -157,6 +189,6 @@ if failures:
 
 print(
     f"Checked {len(html_files)} HTML pages, {len(css_files)} CSS files, and "
-    f"{len(list(SITE_ROOT.rglob('*.svg')))} SVG files: local links, fragments, "
+    f"{len(svg_files)} SVG files: local links, fragments, "
     "font assets, image text, and page landmarks are valid."
 )

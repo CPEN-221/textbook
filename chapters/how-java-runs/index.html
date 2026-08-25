@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A practical model of Java calls, frames, exceptions, and stack traces.">
+  <meta name="description" content="Trace Java calls, frames, recursion, exceptions, and shared reachable objects.">
   <title>How a Java Program Runs · CPEN 221 Notes</title>
   <link rel="stylesheet" href="../../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../../assets/css/site.css">
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
+  <!-- source-sha256: 623a1bba3df18e9c5dbfc4dc51d10e95c7655fe1ca7720e04d34659e2220e3ba -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -21,15 +22,22 @@
       <p class="part-label">The running program</p>
       <h2><a href="#top" aria-current="page">How a Java Program Runs <small>12</small></a></h2>
       <ul>
-        <li><a href="#small-mystery"><small>12.1</small><span>A small mystery</span></a></li>
-        <li><a href="#call-stack"><small>12.2</small><span>The call stack</span></a></li>
-        <li><a href="#frames"><small>12.3</small><span>Frames come and go</span></a></li>
-        <li><a href="#design-principle"><small>12.4</small><span>What the model buys us</span></a></li>
-        <li class="divider" aria-hidden="true"></li>
-        <li class="optional-link"><a href="../beyond-java-call-stack/"><small>extra</small><span>Beyond the Java Call Stack</span></a></li>
+        <li><a href="#1-from-source-code-to-execution"><small>12.1</small><span>From Source Code to Execution</span></a></li>
+        <li><a href="#2-the-call-stack"><small>12.2</small><span>The Call Stack</span></a></li>
+        <li><a href="#3-what-is-in-a-frame"><small>12.3</small><span>What Is in a Frame?</span></a></li>
+        <li><a href="#4-references-objects-stacks-and-the-heap"><small>12.4</small><span>References, Objects, Stacks, and the Heap</span></a></li>
+        <li><a href="#5-recursion-repeats-method-invocation"><small>12.5</small><span>Recursion Repeats Method Invocation</span></a></li>
+        <li><a href="#6-exceptions-unwind-the-stack"><small>12.6</small><span>Exceptions Unwind the Stack</span></a></li>
+        <li><a href="#7-each-thread-has-a-stack"><small>12.7</small><span>Each Thread Has a Stack</span></a></li>
+        <li><a href="#8-java-memory-safety-and-native-stack-corruption"><small>12.8</small><span>Java Memory Safety and Native Stack Corruption</span></a></li>
+        <li><a href="#9-debugging-with-the-stack-model"><small>12.9</small><span>Debugging with the Stack Model</span></a></li>
+        <li><a href="#10-design-lessons"><small>12.10</small><span>Design Lessons</span></a></li>
+        <li><a href="#try-the-model"><small>§</small><span>Try the Model</span></a></li>
+        <li><a href="#where-we-have-arrived"><small>§</small><span>Where We Have Arrived</span></a></li>
+        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
       </ul>
       <div class="prev-next">
-        <a href="../../">← Contents</a>
+        <a href="../representation-invariants-and-abstraction-functions/">← Previous</a>
         <a href="../../">Up</a>
         <a href="../beyond-java-call-stack/">Next →</a>
       </div>
@@ -37,7 +45,7 @@
   </nav>
 
   <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
-    <a class="mobile-arrow" href="../../" aria-label="Previous: contents">←</a>
+    <a class="mobile-arrow" href="../representation-invariants-and-abstraction-functions/" aria-label="Previous: Representation Invariants and Abstraction Functions">←</a>
     <a class="mobile-title" href="../../">CPEN 221</a>
     <a class="mobile-arrow" href="../beyond-java-call-stack/" aria-label="Next: Beyond the Java Call Stack">→</a>
   </nav>
@@ -59,55 +67,66 @@
       <div class="chapter-number" aria-hidden="true">12</div>
       <header class="chapter-header">
         <h1>How a Java Program Runs</h1>
-        <p class="deck">A call-stack model for explaining method calls, recursion, exceptions, and shared mutable state.</p>
+        <p class="deck">A call-stack model explains method calls and failures without pretending to be a photograph of memory.</p>
         <ul class="chapter-meta" aria-label="Chapter information">
           <li>Core reading</li>
           <li>About 20 minutes</li>
           <li>Java 25</li>
+          <li><a href="../../sources/chapter-12-how-java-runs.md">Markdown source</a></li>
         </ul>
       </header>
 
-      <section class="chapter-note" aria-labelledby="outcomes-heading">
-        <h2 id="outcomes-heading">By the end of this chapter</h2>
-        <ul>
-          <li>Draw the active frames for a short Java call chain.</li>
-          <li>Trace normal returns and exception propagation.</li>
-          <li>Use a stack trace as evidence, not a wall of blame.</li>
-          <li>Explain why a local reference can still reach shared mutable state.</li>
-        </ul>
-      </section>
-
-      <section id="small-mystery">
-        <h2><a href="#small-mystery"><span class="section-number">12.1</span>A Small Mystery</a></h2>
-        <p>This method is too small to look mysterious:</p>
-        <div class="code-block"><pre><code>static int middle(int[] values) {
+<p>This method is too small to look mysterious:</p>
+<div class="code-block"><pre class="java"><code>static int middle(int[] values) {
     return values[values.length / 2];
 }</code></pre></div>
-        <p>Then it fails.</p>
-        <p>Perhaps <code>values</code> is <code>null</code>. Perhaps it is empty. The exception points at <code>middle</code>, but the bad array may have travelled through five other methods before arriving there. The failed line is only the end of the story.</p>
-        <p>To work backward, we need a picture of the computation that led to that line. We need to know which methods remain active, what each invocation remembers, and where execution goes when a method returns or throws. That picture is the <strong>call stack</strong>.</p>
-      </section>
-
-      <section id="call-stack">
-        <h2><a href="#call-stack"><span class="section-number">12.2</span>The Call Stack</a></h2>
-        <p>Suppose <code>main</code> calls <code>load</code>, which calls <code>parse</code>. While <code>parse</code> runs, <code>load</code> waits to resume, and <code>main</code> waits beneath it. The JVM remembers enough about every active invocation to continue it later.</p>
-        <aside class="margin-note">
-          <p><strong>One stack per thread.</strong> This picture follows one flow of control. A concurrent Java program has one JVM stack for each thread.</p>
-        </aside>
-        <p>Each invocation contributes a <strong>frame</strong>. The newest frame sits on top because it is currently running. Calling a method adds a frame. Returning removes it and uncovers the caller.</p>
-
-        <figure class="stack-model" aria-labelledby="stack-caption">
-          <img src="../../assets/figures/call-stack-evolution.svg" alt="Three stages of a call stack: twice appears above twicePlusOne and main, then disappears and returns 40 to twicePlusOne.">
-          <figcaption id="stack-caption">Calling <code>twice</code> adds a frame. Its return removes that frame and transfers <code>40</code> to <code>twicePlusOne</code>. Labels and line style identify the active frame without relying on colour.</figcaption>
-        </figure>
-      </section>
-
-      <section id="frames">
-        <h2><a href="#frames"><span class="section-number">12.3</span>Watch the Frames Come and Go</a></h2>
-        <p>This complete program gives us a call chain we can compile, run, and draw:</p>
-        <div class="code-block">
-          <span class="source-file"><a href="../../examples/how-java-runs/FrameDemo.java" download>Download FrameDemo.java</a></span>
-          <pre><code>public final class FrameDemo {
+<p>Then it fails.</p>
+<p>Perhaps <code>values</code> is <code>null</code>. Perhaps it is empty. The exception points at <code>middle</code>, but the bad array may have travelled through five other methods before arriving there. The line that failed is only the end of the story.</p>
+<p>To work backward, we need a picture of the computation that led to that line. We need to know which methods are active, what each invocation remembers, and where execution goes when a method returns or throws. That picture is the <strong>call stack</strong>.</p>
+<p>We will build the picture one call at a time. By the end, you will be able to draw a stack, trace ordinary and exceptional returns, use a stack trace as evidence, and explain why a local reference can still lead to shared mutable state.</p>
+<blockquote>
+<p><strong>Optional deep dive:</strong> <a href="../beyond-java-call-stack/">Beyond the Java Call Stack</a> follows the same ideas into bytecode, thread dumps, and native machine stacks. The chapters that follow do not require that material; treat it as a reward for wanting to lift the floorboards.</p>
+</blockquote>
+<h2 id="1-from-source-code-to-execution"><a href="#1-from-source-code-to-execution"><span class="section-number">12.1</span>From Source Code to Execution</a></h2>
+<p>Before a method can run, our source code has to become something the JVM understands:</p>
+<div class="code-block"><pre class="text"><code>Java source (.java)
+        |
+        | javac
+        v
+Java bytecode (.class)
+        |
+        | class loading, verification, and execution
+        v
+Running JVM</code></pre></div>
+<p><code>javac</code> translates Java source into JVM instructions called <strong>bytecode</strong>. When we run the program, the JVM loads and verifies that bytecode. It may interpret instructions directly, compile frequently executed code into native machine instructions, or mix the two approaches.</p>
+<p>That gives us our first boundary. Java source describes required behaviour; it is not a transcript of processor instructions. One source expression may expand into several bytecode instructions, and the JVM may later reorganize the work again.</p>
+<p>If you are curious, <code>javap</code> lets you peek at the bytecode:</p>
+<div class="code-block"><pre class="bash"><code>javac FrameDemo.java
+javap -c FrameDemo</code></pre></div>
+<p>The view is useful, but it is usually the wrong place to begin debugging application code. Our contracts, tests, debugger, and stack traces all speak in terms of Java methods. We will stay at that level for now and return to bytecode in the optional chapter.</p>
+<h2 id="2-the-call-stack"><a href="#2-the-call-stack"><span class="section-number">12.2</span>The Call Stack</a></h2>
+<p>Suppose <code>main</code> calls <code>load</code>, which calls <code>parse</code>. While <code>parse</code> runs, <code>load</code> has not vanished. It is waiting to resume, and <code>main</code> is waiting beneath it. The JVM needs to remember enough about every paused call to pick up exactly where it left off.</p>
+<p>For each active invocation, it must retain:</p>
+<ul>
+<li>which method is active;</li>
+<li>where that method should resume;</li>
+<li>the arguments its caller supplied;</li>
+<li>its local variables;</li>
+<li>any intermediate values the computation needs.</li>
+</ul>
+<p>The JVM organizes these active invocations as a <strong>call stack</strong>. Each invocation contributes a <strong>frame</strong>. The newest frame sits on top because it is the one currently running.</p>
+<p>The active method is at the top:</p>
+<div class="code-block"><pre class="text"><code>top     +-----------------------------+
+        | frame for current method    |
+        +-----------------------------+
+        | frame for its caller        |
+        +-----------------------------+
+        | frame for caller&#39;s caller   |
+bottom  +-----------------------------+</code></pre></div>
+<p>Calling a method adds a frame. Returning removes it and uncovers the caller. <code>parse</code> must finish before <code>load</code> can continue, and <code>load</code> must finish before <code>main</code> can continue. The stack is last-in, first-out because nested calls leave no other sensible order.</p>
+<h3 id="watching-frames-come-and-go"><a href="#watching-frames-come-and-go">Watching frames come and go</a></h3>
+<p>Here is a concrete call chain:</p>
+<div class="code-block"><pre class="java"><code>public final class FrameDemo {
     public static void main(String[] args) {
         int answer = twicePlusOne(20);
         System.out.println(answer);
@@ -121,23 +140,259 @@
     static int twice(int value) {
         return value * 2;
     }
-}</code></pre>
-        </div>
-        <p><code>twice</code> returns <code>40</code>, so its frame leaves the top. <code>twicePlusOne</code> resumes, stores <code>40</code> in <code>doubled</code>, and returns <code>41</code>. Finally, <code>main</code> resumes and prints the answer.</p>
-        <aside class="margin-note">
-          <p><strong>Model, not photograph.</strong> A just-in-time compiler may keep a value in a register, eliminate <code>doubled</code>, or inline <code>twice</code>. The furniture may move; the behaviour may not.</p>
-        </aside>
-      </section>
+}</code></pre></div>
+<p>When <code>twicePlusOne(20)</code> calls <code>twice(20)</code>, three invocations are active:</p>
+<div class="code-block"><pre class="text"><code>top     +----------------------------------+
+        | twice                            |
+        | value = 20                       |
+        +----------------------------------+
+        | twicePlusOne                     |
+        | value = 20                       |
+        | doubled = not assigned yet       |
+        +----------------------------------+
+        | main                             |
+        | args -&gt; String[]                 |
+        | answer = not assigned yet        |
+bottom  +----------------------------------+</code></pre></div>
+<p>Now unwind it. <code>twice</code> returns <code>40</code>, and its frame comes off the top. <code>twicePlusOne</code> resumes, stores <code>40</code> in <code>doubled</code>, and returns <code>41</code>. Its frame comes off too. Finally, <code>main</code> resumes and stores <code>41</code> in <code>answer</code>.</p>
+<p>We can now predict calls and returns without knowing a single machine register. That is exactly what the picture is for.</p>
+<p>It is still a model, not a photograph of RAM. The JVM specification says what a frame must support, but a just-in-time compiler may keep a value in a register, eliminate <code>doubled</code>, or inline <code>twice</code> into its caller. The furniture may move; the behaviour may not.</p>
+<h2 id="3-what-is-in-a-frame"><a href="#3-what-is-in-a-frame"><span class="section-number">12.3</span>What Is in a Frame?</a></h2>
+<p>Our stack diagram records method names and a few variables, but the JVM needs a little more machinery. Conceptually, each frame carries three kinds of information.</p>
+<h3 id="local-variables"><a href="#local-variables">Local variables</a></h3>
+<p>First, an invocation needs its parameters and local variables:</p>
+<div class="code-block"><pre class="java"><code>static int addOne(int x) {
+    int result = x + 1;
+    return result;
+}</code></pre></div>
+<p>Two calls to <code>addOne</code> may execute at the same time. One can have <code>x == 10</code> while the other has <code>x == 50</code>; each invocation owns a separate local-variable slot. This separation will matter when we introduce threads.</p>
+<h3 id="an-operand-stack"><a href="#an-operand-stack">An operand stack</a></h3>
+<p>Local variables are not enough. The JVM also needs somewhere to place values while it combines them. Bytecode commonly pushes operands onto an <strong>operand stack</strong>, performs an operation, and pushes the result. To evaluate <code>x + 1</code>, it obtains <code>x</code>, obtains <code>1</code>, adds them, and keeps the sum.</p>
+<p>The terminology is annoyingly economical: we now have a stack inside a frame inside another stack. The <strong>call stack</strong> organizes method invocations. The <strong>operand stack</strong> inside one frame organizes intermediate values.</p>
+<h3 id="return-and-bookkeeping-information"><a href="#return-and-bookkeeping-information">Return and bookkeeping information</a></h3>
+<p>Finally, the JVM must know how to resume the caller and how the current method refers to fields, methods, and constants. We can leave the linking details below the abstraction barrier for now.</p>
+<p>That is enough machinery for the rest of this chapter: each invocation has its own state, scratch space for computation, and a well-defined caller. The optional chapter opens the box further.</p>
+<h2 id="4-references-objects-stacks-and-the-heap"><a href="#4-references-objects-stacks-and-the-heap"><span class="section-number">12.4</span>References, Objects, Stacks, and the Heap</a></h2>
+<p>Frames separate invocations, but they do not automatically separate objects. Here is the smallest example that exposes the difference:</p>
+<div class="code-block"><pre class="java"><code>static void rename(StringBuilder builder) {
+    StringBuilder alias = builder;
+    alias.append(&quot;!&quot;);
+}</code></pre></div>
+<p><code>builder</code> and <code>alias</code> are distinct local variables. Their values, however, are references to the same mutable <code>StringBuilder</code>:</p>
+<div class="code-block"><pre class="text"><code>frame for rename                    shared object
++-------------------+              +------------------+
+| builder ----------+-------------&gt;| StringBuilder    |
+| alias   -----------+-------------&gt;| contents: &quot;Hi&quot;   |
++-------------------+              +------------------+</code></pre></div>
+<p>Calling <code>alias.append("!")</code> therefore changes the object that the caller passed as <code>builder</code>. A new local variable did not produce a new object; it produced one more route to the old one.</p>
+<p>Programmers often summarize this model as “locals live on the stack and objects live on the heap.” That is a useful sketch, with several limits:</p>
+<ul>
+<li>A local variable of reference type contains a reference, not the object itself.</li>
+<li>Two frames can contain references to the same object.</li>
+<li>An object reachable through a local reference can also be reachable from fields or other threads.</li>
+<li>A JVM may optimize storage as long as the optimization preserves Java's observable behaviour.</li>
+</ul>
+<p>For software design, “stack or heap?” is usually less useful than “who can reach this mutable object?” <strong>Aliasing</strong> gives multiple references access to one object. Reachability determines who can observe a mutation. We will use that question again when several threads enter the picture.</p>
+<h2 id="5-recursion-repeats-method-invocation"><a href="#5-recursion-repeats-method-invocation"><span class="section-number">12.5</span>Recursion Repeats Method Invocation</a></h2>
+<p>Recursion can look as though a method loops back into itself. It does not. Every recursive call creates a fresh invocation and therefore a fresh frame.</p>
+<div class="code-block"><pre class="java"><code>static long factorial(int n) {
+    if (n &lt; 0) {
+        throw new IllegalArgumentException(&quot;n must be non-negative&quot;);
+    }
+    if (n &lt;= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}</code></pre></div>
+<p>Trace <code>factorial(4)</code>. Each call postpones its multiplication until the smaller call returns:</p>
+<div class="code-block"><pre class="text"><code>factorial(4)
+factorial(4) -&gt; factorial(3)
+factorial(4) -&gt; factorial(3) -&gt; factorial(2)
+factorial(4) -&gt; factorial(3) -&gt; factorial(2) -&gt; factorial(1)</code></pre></div>
+<p>At <code>factorial(1)</code>, the base case can answer without another call. Now the postponed work climbs back through the frames:</p>
+<div class="code-block"><pre class="text"><code>factorial(1) returns 1
+factorial(2) returns 2 * 1  = 2
+factorial(3) returns 3 * 2  = 6
+factorial(4) returns 4 * 6  = 24</code></pre></div>
+<p>The stack makes the recursive design obligations visible. We need:</p>
+<ol type="1">
+<li>a base case that can produce an answer directly;</li>
+<li>a recursive case that reduces the problem;</li>
+<li>an argument explaining why repeated reduction must reach the base case.</li>
+</ol>
+<h3 id="stack-exhaustion"><a href="#stack-exhaustion">Stack exhaustion</a></h3>
+<p>What if the base case never gets a turn? This version keeps shortening the string but never checks whether it is empty:</p>
+<div class="code-block"><pre class="java"><code>static int length(String text) {
+    return 1 + length(text.substring(1)); // no base case
+}</code></pre></div>
+<p>Frames accumulate until the thread runs out of stack space, and the JVM throws <code>StackOverflowError</code>. Catching the error would treat the smoke alarm as a kitchen timer. Fix the missing base case or the lack of progress. If valid inputs can produce extreme depth, choose an iterative algorithm with an explicit work structure.</p>
+<p>Java does not guarantee tail-call optimization. Do not assume that a tail-recursive Java method uses constant stack space.</p>
+<h2 id="6-exceptions-unwind-the-stack"><a href="#6-exceptions-unwind-the-stack"><span class="section-number">12.6</span>Exceptions Unwind the Stack</a></h2>
+<p>So far every frame has left politely through <code>return</code>. Exceptions take the fire exit.</p>
+<p>When a method throws, the JVM looks for a matching handler in the current invocation. If it finds none, that frame ends and the search continues in the caller. Frames come off the stack until a handler accepts the exception or no Java frame remains. This process is <strong>stack unwinding</strong>.</p>
+<div class="code-block"><pre class="java"><code>public final class ParsingDemo {
+    public static void main(String[] args) {
+        printDouble(&quot;twenty&quot;);
+    }
 
-      <section id="design-principle" class="design-note">
-        <h2><a href="#design-principle">Design Note: Private Frames, Shared Objects</a></h2>
-        <p>Frames separate invocations, but they do not automatically separate objects. Two frames can hold references to the same mutable object. Ask who can reach that object and who can observe a mutation.</p>
-        <p>This distinction connects the call stack to representation exposure and, later, to thread safety.</p>
-      </section>
+    static void printDouble(String text) {
+        int value = parse(text);
+        System.out.println(2 * value);
+    }
+
+    static int parse(String text) {
+        return Integer.parseInt(text);
+    }
+}</code></pre></div>
+<p><code>Integer.parseInt("twenty")</code> cannot produce an integer, so it throws <code>NumberFormatException</code>. <code>parse</code> has no handler. Neither does <code>printDouble</code>. Their frames unwind, the exception remains uncaught, and the JVM prints a trace resembling:</p>
+<div class="code-block"><pre class="text"><code>Exception in thread &quot;main&quot; java.lang.NumberFormatException: For input string: &quot;twenty&quot;
+    at java.base/java.lang.Integer.parseInt(...)
+    at ParsingDemo.parse(ParsingDemo.java:12)
+    at ParsingDemo.printDouble(ParsingDemo.java:7)
+    at ParsingDemo.main(ParsingDemo.java:3)</code></pre></div>
+<p>Do not read the trace as a wall of blame. Read it as a call chain:</p>
+<ol type="1">
+<li>Identify the exception type and message.</li>
+<li>Find the first frame belonging to your code.</li>
+<li>Inspect that source line.</li>
+<li>Continue downward to understand how control reached the bad call.</li>
+</ol>
+<p>The first application frame shows where the failure became visible. It may not show where the defective value originated. The frames below it tell us how we arrived there.</p>
+<h3 id="preserve-causes-when-translating-exceptions"><a href="#preserve-causes-when-translating-exceptions">Preserve causes when translating exceptions</a></h3>
+<p>Sometimes an abstraction should translate a low-level failure into its own vocabulary. A configuration loader should not force every client to reason about file-system details. We can wrap the exception—but we should keep the evidence:</p>
+<div class="code-block"><pre class="java"><code>static Configuration loadConfiguration(Path path) {
+    try {
+        String text = Files.readString(path);
+        return Configuration.parse(text);
+    } catch (IOException e) {
+        throw new ConfigurationException(
+            &quot;Unable to load configuration from &quot; + path, e);
+    }
+}</code></pre></div>
+<p>The client now receives <code>ConfigurationException</code>, while a debugger or log can still follow the cause back to the original <code>IOException</code>. Translation changes the abstraction; it should not erase the trail.</p>
+<h2 id="7-each-thread-has-a-stack"><a href="#7-each-thread-has-a-stack"><span class="section-number">12.7</span>Each Thread Has a Stack</a></h2>
+<p>One call stack can describe one flow of control. A concurrent program has several flows, so each Java thread gets its own JVM stack:</p>
+<div class="code-block"><pre class="text"><code>Thread A stack          Thread B stack            shared objects
++---------------+      +---------------+         +--------------+
+| update()      |      | render()      |--------&gt;| Model        |
++---------------+      +---------------+         +--------------+
+| run()         |      | run()         |
++---------------+      +---------------+</code></pre></div>
+<p><code>update</code> has no direct access to <code>render</code>'s local-variable slots. Nevertheless, both frames may contain references to the same <code>Model</code>. Separate stacks isolate invocation state, not the objects reachable from that state.</p>
+<p>This distinction leads to a useful rule:</p>
+<blockquote>
+<p>Each thread owns its invocation state; several threads may still share reachable mutable objects.</p>
+</blockquote>
+<p>That is why one thread's trace may not solve a concurrent failure. A request thread may be waiting for a lock while another thread holds the lock and waits for network input. The first trace shows the queue; the second shows who parked the truck across the road.</p>
+<blockquote>
+<p><strong>Aside:</strong> Modern Java provides <code>StackWalker</code> for controlled inspection of the current thread's stack. It is useful for diagnostics and tooling. Business rules that depend on the exact stack shape are usually brittle, especially once optimization enters the story.</p>
+</blockquote>
+<p>We now have the bridge to concurrency: each thread owns its stack, but several threads may share mutable objects. Later chapters will show us how to control that sharing.</p>
+<h2 id="8-java-memory-safety-and-native-stack-corruption"><a href="#8-java-memory-safety-and-native-stack-corruption"><span class="section-number">12.8</span>Java Memory Safety and Native Stack Corruption</a></h2>
+<p>Programmers use the phrase <em>stack overflow</em> for two failures that sound related but behave very differently. We should separate them before the vocabulary causes trouble.</p>
+<h3 id="java-stackoverflowerror"><a href="#java-stackoverflowerror">Java <code>StackOverflowError</code></a></h3>
+<p>Too many active invocations exhaust the space available to one Java thread. The JVM detects the condition and throws <code>StackOverflowError</code>. The program does not gain permission to wander into neighbouring objects or redirect execution.</p>
+<h3 id="native-stack-buffer-overflow"><a href="#native-stack-buffer-overflow">Native stack buffer overflow</a></h3>
+<p>In a memory-unsafe native language, a program may instead write beyond the bounds of an array that a native frame stores. Depending on the platform and compiler, that write may corrupt adjacent data, including information that controls execution.</p>
+<p>Java prevents ordinary code from performing an out-of-bounds array access:</p>
+<div class="code-block"><pre class="java"><code>byte[] data = new byte[8];
+data[8] = 1; // throws ArrayIndexOutOfBoundsException</code></pre></div>
+<p>The bounds check changes the failure mode. Instead of silently writing somewhere else, Java raises a specified exception at the invalid access. Failure is not pleasant, but local, defined failure is far easier to test and diagnose than memory corruption.</p>
+<p>This does not make Java programs automatically secure. Java software can still contain injection flaws, unsafe deserialization, authorization bugs, denial-of-service vulnerabilities, races, and misuse of native libraries. Memory safety removes an important class of defects; it does not remove the need for secure design.</p>
+<blockquote>
+<p><strong>Optional direction:</strong> The companion chapter examines native frames, stack canaries, address randomization, and related mitigations. We stop here because the software-construction lesson does not need those details:</p>
+</blockquote>
+<blockquote>
+<p>Prefer language and API designs that make invalid states or dangerous operations impossible, and otherwise make failures immediate and diagnosable.</p>
+</blockquote>
+<h2 id="9-debugging-with-the-stack-model"><a href="#9-debugging-with-the-stack-model"><span class="section-number">12.9</span>Debugging with the Stack Model</a></h2>
+<p>We began with a tiny method and a failure whose origin was unclear. The stack model now gives us a disciplined way to investigate it.</p>
+<h3 id="start-from-evidence"><a href="#start-from-evidence">Start from evidence</a></h3>
+<p>First, reproduce the failure and save the complete exception and trace. Changing code before preserving the evidence is how one bug becomes a shy bug.</p>
+<h3 id="locate-the-first-relevant-frame"><a href="#locate-the-first-relevant-frame">Locate the first relevant frame</a></h3>
+<p>Library frames explain the mechanism. Application frames show where our program entered it. Start with the first frame in code you control.</p>
+<h3 id="inspect-values-and-contracts"><a href="#inspect-values-and-contracts">Inspect values and contracts</a></h3>
+<p>At the relevant frame, ask:</p>
+<ul>
+<li>Which arguments and local variables matter?</li>
+<li>Which object references are aliases?</li>
+<li>Which precondition did the code assume?</li>
+<li>Which earlier caller was responsible for establishing it?</li>
+</ul>
+<h3 id="move-down-the-call-chain-when-necessary"><a href="#move-down-the-call-chain-when-necessary">Move down the call chain when necessary</a></h3>
+<p>If a method received a bad argument, its caller may contain the defect. Walk down the trace until you find the earliest violated assumption that your code should have established.</p>
+<h3 id="add-a-regression-test"><a href="#add-a-regression-test">Add a regression test</a></h3>
+<p>Before repairing the implementation, turn the failing input into an automated test. The test records the discovery and makes the repair earn its keep.</p>
+<h2 id="10-design-lessons"><a href="#10-design-lessons"><span class="section-number">12.10</span>Design Lessons</a></h2>
+<p>The stack is implementation machinery, but it pays rent at the design level too.</p>
+<h3 id="keep-methods-small-enough-to-understand"><a href="#keep-methods-small-enough-to-understand">Keep methods small enough to understand</a></h3>
+<p>Small methods do not reduce the number of frames. They make those frames informative. A trace through <code>readFeed</code>, <code>parseTrip</code>, and <code>validateStop</code> communicates more than three consecutive methods named <code>process</code>.</p>
+<h3 id="fail-near-the-violated-assumption"><a href="#fail-near-the-violated-assumption">Fail near the violated assumption</a></h3>
+<p>Check important preconditions at the abstraction boundary. When a method rejects a bad value there, it produces a useful failure. When the method allows the same value to drift through six calls, the value tends to fail later, farther from its cause.</p>
+<h3 id="do-not-expose-mutable-representation"><a href="#do-not-expose-mutable-representation">Do not expose mutable representation</a></h3>
+<p>Local references can alias shared objects. If an observer returns a private mutable collection, client code can change the object without passing through its methods. The frame is private; the reachable collection is not.</p>
+<h3 id="preserve-diagnostic-context"><a href="#preserve-diagnostic-context">Preserve diagnostic context</a></h3>
+<p>Use informative messages, preserve causes, and avoid catch blocks that swallow failures. A stack trace can only report evidence that the program kept.</p>
+<h3 id="treat-diagrams-as-models"><a href="#treat-diagrams-as-models">Treat diagrams as models</a></h3>
+<p>Stack diagrams, heap diagrams, and bytecode listings answer different questions. Choose the smallest model that explains the behaviour. A teaching diagram is a map, not a land survey.</p>
+<h2 id="try-the-model"><a href="#try-the-model">Try the Model</a></h2>
+<p>The diagrams are useful only if you can build and challenge them yourself. These problems ask you to transfer the model rather than repeat the worked example.</p>
+<h3 id="1-draw-the-stack"><a href="#1-draw-the-stack">Draw the stack</a></h3>
+<p>Draw the active frames immediately after <code>g(1)</code> begins:</p>
+<div class="code-block"><pre class="java"><code>static int f(int x) {
+    return g(x + 1);
+}
+
+static int g(int y) {
+    return 3 * y;
+}
+
+public static void main(String[] args) {
+    System.out.println(f(0));
+}</code></pre></div>
+<p>Then show the order in which the frames complete.</p>
+<h3 id="2-find-the-alias"><a href="#2-find-the-alias">Find the alias</a></h3>
+<p>Explain why this method changes the caller's list even though <code>items</code> is a local variable:</p>
+<div class="code-block"><pre class="java"><code>static void addDefault(List&lt;String&gt; items) {
+    List&lt;String&gt; working = items;
+    working.add(&quot;default&quot;);
+}</code></pre></div>
+<p>Rewrite the method to return a new list without changing the input.</p>
+<h3 id="3-diagnose-the-recursion"><a href="#3-diagnose-the-recursion">Diagnose the recursion</a></h3>
+<p>State the intended base case, progress measure, and failure mode:</p>
+<div class="code-block"><pre class="java"><code>static int sum(int[] values, int index) {
+    if (index == values.length - 1) {
+        return values[index];
+    }
+    return values[index] + sum(values, index);
+}</code></pre></div>
+<h3 id="4-read-a-trace"><a href="#4-read-a-trace">Read a trace</a></h3>
+<p>Given a trace whose first application frame is <code>TransitFeed.parseTime</code>, but whose caller is <code>TransitFeed.loadTrip</code>, decide what evidence you would inspect before changing either method.</p>
+<h3 id="5-compare-failures"><a href="#5-compare-failures">Compare failures</a></h3>
+<p>Explain the difference between:</p>
+<ul>
+<li><code>StackOverflowError</code>;</li>
+<li><code>ArrayIndexOutOfBoundsException</code>;</li>
+<li>a native stack buffer overflow.</li>
+</ul>
+<h2 id="where-we-have-arrived"><a href="#where-we-have-arrived">Where We Have Arrived</a></h2>
+<p>We can now account for the route from a method call to a failure. A call adds a frame; a return removes it. Recursion repeats that mechanism, exceptions unwind it, and a stack trace leaves us a record of the route.</p>
+<p>Frames keep invocation state separate, but references in those frames may still reach the same mutable objects. That distinction connects this chapter to both abstraction and concurrency. Java's bounds checks add another kind of boundary: an invalid array access becomes a defined exception rather than an arbitrary memory write.</p>
+<p>The model is deliberately modest. It tells us how to reason about calls without pretending to reproduce a JVM's optimized memory layout. That is enough for debugging and design. If you want to see how bytecode, inlining, thread dumps, and native frames fit underneath it, the <a href="../beyond-java-call-stack/">optional deep dive</a> picks up from here.</p>
+<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
+<p>We wrote this chapter anew for CPEN 221. It does not reproduce the prose, diagrams, or worked examples from the previous Chapter 12.</p>
+<p>Technical reference material:</p>
+<ul>
+<li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.5.2">The Java Virtual Machine Specification, §2.5.2: Java Virtual Machine Stacks</a></li>
+<li><a href="https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html#jvms-2.6">The Java Virtual Machine Specification, §2.6: Frames</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/specs/man/javap.html"><code>javap</code> documentation for JDK 25</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StackWalker.html"><code>StackWalker</code> API documentation</a></li>
+<li><a href="https://cwe.mitre.org/data/definitions/121.html">CWE-121: Stack-based Buffer Overflow</a></li>
+</ul>
 
       <footer class="book-footer">
         <a class="next" href="../beyond-java-call-stack/">Optional: Beyond the Java Call Stack →</a>
-        CPEN 221 · Software Construction I · Fall 2026 pilot
+        CPEN 221 · Software Construction I · Fall 2026
       </footer>
     </article>
   </main>

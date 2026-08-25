@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Design an immutable transit-network ADT whose clients do not depend on its data structures.">
+  <title>ADTs and Representation Independence · CPEN 221 Notes</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: 57dd6cc73199896906bd7563003722d47bf1707b57db03d8d680db17efd2f58f -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">State and abstraction</p>
+      <h2><a href="#top" aria-current="page">ADTs and Representation Independence <small>5</small></a></h2>
+      <ul>
+        <li><a href="#1-start-with-the-abstract-value"><small>5.1</small><span>Start with the Abstract Value</span></a></li>
+        <li><a href="#2-choose-operations-for-clients"><small>5.2</small><span>Choose Operations for Clients</span></a></li>
+        <li><a href="#3-classify-the-operations"><small>5.3</small><span>Classify the Operations</span></a></li>
+        <li><a href="#4-specify-the-boundary"><small>5.4</small><span>Specify the Boundary</span></a></li>
+        <li><a href="#5-put-the-implementation-behind-a-factory"><small>5.5</small><span>Put the Implementation Behind a Factory</span></a></li>
+        <li><a href="#6-implement-without-reopening-the-boundary"><small>5.6</small><span>Implement Without Reopening the Boundary</span></a></li>
+        <li><a href="#7-change-the-representation"><small>5.7</small><span>Change the Representation</span></a></li>
+        <li><a href="#8-test-the-contract-against-both-implementations"><small>5.8</small><span>Test the Contract Against Both Implementations</span></a></li>
+        <li><a href="#9-common-misconceptions"><small>5.9</small><span>Common Misconceptions</span></a></li>
+        <li><a href="#10-reviewing-a-generated-adt"><small>5.10</small><span>Reviewing a Generated ADT</span></a></li>
+        <li><a href="#try-the-abstraction-boundary"><small>§</small><span>Try the Abstraction Boundary</span></a></li>
+        <li><a href="#where-we-have-arrived"><small>§</small><span>Where We Have Arrived</span></a></li>
+        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../mutability-aliasing-and-debugging/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../representation-invariants-and-abstraction-functions/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../mutability-aliasing-and-debugging/" aria-label="Previous: Mutability, Aliasing, and Debugging">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../representation-invariants-and-abstraction-functions/" aria-label="Next: Representation Invariants and Abstraction Functions">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">5</div>
+      <header class="chapter-header">
+        <h1>ADTs and Representation Independence</h1>
+        <p class="deck">A useful abstraction lets clients speak about stops and connections instead of maps and sets.</p>
+        <ul class="chapter-meta" aria-label="Chapter information">
+          <li>Core reading</li>
+          <li>About 20 minutes</li>
+          <li>Java 25</li>
+          <li><a href="../../sources/chapter-05-adts-and-representation-independence.md">Markdown source</a></li>
+        </ul>
+      </header>
+
+<p>Our first transit network is a map:</p>
+<div class="code-block"><pre class="java"><code>Map&lt;StopId, Set&lt;StopId&gt;&gt; outgoing = new HashMap&lt;&gt;();</code></pre></div>
+<p>The keys are stops. Each value is the set of stops reachable by one direct trip. That representation is workable, so we pass the map to the route finder, the map viewer, the feed loader, and eventually a test that repairs missing entries with <code>computeIfAbsent</code>.</p>
+<p>Then we replace the map with a compact set of connections. The representation fits the feed better, but every client breaks. Worse, some clients had learned to mutate the old map directly. Changing one data structure pulled on a thread stitched through the whole program.</p>
+<p>An <strong>abstract data type</strong>, or <strong>ADT</strong>, cuts that thread. Clients work with a set of values and specified operations. The implementation chooses how to represent those values. If the boundary holds, we can change the representation without teaching the rest of the program a new private language.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>define an ADT by its abstract values and operations;</li>
+<li>design operations from client needs instead of exposing a convenient data structure;</li>
+<li>classify operations as creators, producers, observers, or mutators;</li>
+<li>specify an immutable ADT, including exceptional behaviour and returned collections;</li>
+<li>explain representation independence and the conditions it requires;</li>
+<li>test two implementations through one public contract.</li>
+</ul></section>
+<h2 id="1-start-with-the-abstract-value"><a href="#1-start-with-the-abstract-value"><span class="section-number">5.1</span>Start with the Abstract Value</a></h2>
+<p>Before choosing fields, say what a value of the type <em>means</em>. Our <code>TransitNetwork</code> represents a finite directed graph:</p>
+<ul>
+<li>each vertex is a <code>StopId</code>;</li>
+<li>an edge <code>from -&gt; to</code> means that a vehicle can travel directly from <code>from</code> to <code>to</code> in the model;</li>
+<li>direction matters;</li>
+<li>the network has no edge from a stop to itself.</li>
+</ul>
+<p>This is the <strong>abstract value</strong>. A client can ask whether an edge exists without knowing whether the implementation stores a map, a matrix, a collection of edge records, or a tiny clerk with an immaculate filing system.</p>
+<p>The word <em>directly</em> matters. An edge from UBC to Wesbrook and one from Wesbrook to Alma do not imply a direct edge from UBC to Alma. A later route-search operation may derive reachability through several edges, but that is a different observation.</p>
+<p>We will make the network immutable. <code>withConnection</code> produces a network value; it does not change the receiver. Immutability gives clients a simple temporal rule: once they hold a network, its stops and connections do not change underneath them.</p>
+<h2 id="2-choose-operations-for-clients"><a href="#2-choose-operations-for-clients"><span class="section-number">5.2</span>Choose Operations for Clients</a></h2>
+<p>A representation-first API is easy to spot:</p>
+<div class="code-block"><pre class="java"><code>Map&lt;StopId, Set&lt;StopId&gt;&gt; adjacencyMap()</code></pre></div>
+<p>The method asks every client to understand a map of sets. It also forces the ADT to keep that shape or emulate it forever. A client trying to answer “is this a direct connection?” should not have to know which bucket owns the answer.</p>
+<p>Instead, we name the questions and transformations clients need:</p>
+<div class="code-block"><pre class="java"><code>public interface TransitNetwork {
+    static TransitNetwork empty(Set&lt;StopId&gt; stops) {
+        return AdjacencyMapNetwork.empty(stops);
+    }
+
+    Set&lt;StopId&gt; stops();
+    boolean contains(StopId stop);
+    Set&lt;StopId&gt; directDestinationsFrom(StopId stop);
+    boolean hasDirectConnection(StopId from, StopId to);
+    TransitNetwork withConnection(StopId from, StopId to);
+}</code></pre></div>
+<p>The complete interface in the <a href="../../examples/chapters-05-06/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java">companion project</a> includes the specifications. The short view above reveals the vocabulary: stops, direct destinations, and connections. No method returns “the representation.”</p>
+<p>This interface is one Java expression of the ADT, but an ADT is not the same thing as a Java interface. A final class with private fields and a well-specified public API can implement an ADT. An interface is useful here because it gives the compiler one client-facing type while we experiment with multiple implementations.</p>
+<h2 id="3-classify-the-operations"><a href="#3-classify-the-operations"><span class="section-number">5.3</span>Classify the Operations</a></h2>
+<p>Four categories help us check whether the API can create, inspect, and transform its values. Let <code>T</code> stand for the ADT.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Relationship to <code>T</code></th>
+<th>Network example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Creator</strong></td>
+<td>creates a <code>T</code> without receiving a <code>T</code></td>
+<td><code>empty(stops)</code></td>
+</tr>
+<tr>
+<td><strong>Producer</strong></td>
+<td>creates a <code>T</code> from an existing <code>T</code></td>
+<td><code>network.withConnection(from, to)</code></td>
+</tr>
+<tr>
+<td><strong>Observer</strong></td>
+<td>returns information of another type</td>
+<td><code>network.stops()</code></td>
+</tr>
+<tr>
+<td><strong>Mutator</strong></td>
+<td>changes an existing <code>T</code></td>
+<td>none in this immutable design</td>
+</tr>
+</tbody>
+</table>
+<p>The categories overlap at the edges. <code>withConnection</code> may return <code>this</code> when the connection already exists. It still acts as a producer: its contract describes the returned abstract value, not a fresh object identity. A test that insists on <code>result != network</code> would claim a promise the ADT never made.</p>
+<p>The classification also exposes omissions. If an API has a creator and three mutators but no observer, clients cannot learn anything about the value except by remembering its history. If it returns a mutable <code>Map</code> as its only observer, it has mixed observation with unrestricted mutation. The table is a design probe, not a quota; useful types do not need one operation in every box.</p>
+<h2 id="4-specify-the-boundary"><a href="#4-specify-the-boundary"><span class="section-number">5.4</span>Specify the Boundary</a></h2>
+<p>The creator has a compact promise:</p>
+<div class="code-block"><pre class="java"><code>/**
+ * Creates a network containing exactly {@code stops} and no connections.
+ *
+ * @param stops the stops to include
+ * @return a network containing exactly {@code stops} and no connections
+ * @throws NullPointerException if {@code stops} or an element is null
+ */
+static TransitNetwork empty(Set&lt;StopId&gt; stops)</code></pre></div>
+<p>“Exactly” protects isolated stops. An implementation that records only stops which occur in an edge would lose every stop in an empty network. The map might look tidy; the postcondition would still be false.</p>
+<p>The producer says what changes and, just as importantly, what does not:</p>
+<div class="code-block"><pre class="java"><code>/**
+ * @return an immutable network with the same stops and connections as this
+ *         network, plus {@code from -&gt; to}
+ * @throws NullPointerException if either argument is null
+ * @throws IllegalArgumentException if either argument is not in this network,
+ *         or if the two arguments are equal
+ */
+TransitNetwork withConnection(StopId from, StopId to)</code></pre></div>
+<p>The receiver remains unchanged because the type is immutable. Adding an existing edge has no effect on the abstract value. The specification permits the implementation to return the receiver in that case.</p>
+<p>Our observers return unmodifiable sets. They do not promise an iteration order. That omission is deliberate: a client can test set membership and equality, but it cannot turn the current hash-table order into a user-interface requirement by accident. If stable order becomes a genuine need, we can add it explicitly and pay its cost deliberately.</p>
+<p>Specifications do not need to expose every implementation failure. Running out of memory, for example, is not useful network behaviour to restate on each method. They do need to settle predictable boundary cases such as <code>null</code>, unknown stops, self-connections, mutation, and ordering.</p>
+<h2 id="5-put-the-implementation-behind-a-factory"><a href="#5-put-the-implementation-behind-a-factory"><span class="section-number">5.5</span>Put the Implementation Behind a Factory</a></h2>
+<p>The static creator returns the interface type:</p>
+<div class="code-block"><pre class="java"><code>static TransitNetwork empty(Set&lt;StopId&gt; stops) {
+    return AdjacencyMapNetwork.empty(stops);
+}</code></pre></div>
+<p><code>AdjacencyMapNetwork</code> has package access rather than <code>public</code> access. Code outside the package cannot name the class or call its constructor. Clients write:</p>
+<div class="code-block"><pre class="java"><code>TransitNetwork network = TransitNetwork.empty(Set.of(ubc, wesbrook, alma));</code></pre></div>
+<p>The declared type matters. If the factory returned <code>AdjacencyMapNetwork</code>, or clients constructed that class directly, the implementation name would leak into method signatures and tests. Changing representations would then become a migration rather than a private edit.</p>
+<p>A factory is not mystical. It is one operation that chooses an implementation while returning the abstraction. We could later make the choice depend on input size or a configuration setting, provided every returned object keeps the same contract.</p>
+<h2 id="6-implement-without-reopening-the-boundary"><a href="#6-implement-without-reopening-the-boundary"><span class="section-number">5.6</span>Implement Without Reopening the Boundary</a></h2>
+<p>Our first implementation stores an <strong>adjacency map</strong>:</p>
+<div class="code-block"><pre class="java"><code>final class AdjacencyMapNetwork implements TransitNetwork {
+    private final Map&lt;StopId, Set&lt;StopId&gt;&gt; outgoing;
+
+    private AdjacencyMapNetwork(Map&lt;StopId, Set&lt;StopId&gt;&gt; outgoing) {
+        Objects.requireNonNull(outgoing, &quot;outgoing&quot;);
+        Map&lt;StopId, Set&lt;StopId&gt;&gt; snapshot = new HashMap&lt;&gt;();
+        outgoing.forEach((stop, destinations) -&gt;
+                snapshot.put(Objects.requireNonNull(stop, &quot;stop&quot;),
+                        Set.copyOf(Objects.requireNonNull(
+                                destinations, &quot;destinations&quot;))));
+        this.outgoing = Map.copyOf(snapshot);
+        checkRep();
+    }
+}</code></pre></div>
+<p>The constructor snapshots both levels of mutable container. Copying only the map would leave aliases to its destination sets. Chapter 4 taught us to follow those arrows; an abstraction boundary does not become solid merely because we have named it.</p>
+<p>Because the stored map and its sets are unmodifiable, this observer can return one of those sets safely:</p>
+<div class="code-block"><pre class="java"><code>@Override
+public Set&lt;StopId&gt; directDestinationsFrom(StopId stop) {
+    requireMember(stop);
+    return outgoing.get(stop);
+}</code></pre></div>
+<p>That decision depends on the complete reachable representation. <code>StopId</code> is an immutable record, the destination set is unmodifiable, and no mutable input alias was retained. If any of those facts changed, returning the field's value could expose the representation.</p>
+<p>The public contract tells clients what they may assume. The private constructor and helpers may depend on representation details. Keeping those two vocabularies separate is the daily work of data abstraction.</p>
+<h2 id="7-change-the-representation"><a href="#7-change-the-representation"><span class="section-number">5.7</span>Change the Representation</a></h2>
+<p>Suppose feed import gives us a set of distinct directed connections. A second implementation stores exactly that shape:</p>
+<div class="code-block"><pre class="java"><code>final class ConnectionSetNetwork implements TransitNetwork {
+    private final Set&lt;StopId&gt; stops;
+    private final Set&lt;Connection&gt; connections;
+}</code></pre></div>
+<p>Its direct-destination observer scans and filters <code>connections</code>; the adjacency-map implementation performs a lookup. The connection set makes bulk construction and whole-edge operations natural. The map makes neighbourhood queries natural. Neither representation wins every contest.</p>
+<p>Now run ordinary client code:</p>
+<div class="code-block"><pre class="java"><code>TransitNetwork original = TransitNetwork.empty(Set.of(ubc, wesbrook));
+TransitNetwork extended = original.withConnection(ubc, wesbrook);
+
+System.out.println(original.hasDirectConnection(ubc, wesbrook));
+System.out.println(extended.hasDirectConnection(ubc, wesbrook));</code></pre></div>
+<p>On Eclipse Temurin 25.0.4.1, the complete program printed:</p>
+<div class="code-block"><pre class="text"><code>false
+true</code></pre></div>
+<p>The observation does not reveal a map or a connection set. That is <strong>representation independence</strong>: client behaviour depends on the ADT specification, not on which valid representation implements it.</p>
+<p>Representation independence has requirements. The implementations must realize the same abstract values, satisfy the same operation specifications, and prevent clients from observing representation-only differences. A public downcast, leaked mutable collection, promised iteration order, or implementation-specific exception can poke a hole through the boundary.</p>
+<p>It also has limits. Performance can be observable and may matter to a specification with explicit complexity bounds. Serialization formats, reflection, and debugging tools can reveal concrete classes. We do not pretend implementations are physically indistinguishable. We design ordinary program dependencies so clients need not rely on those differences.</p>
+<h2 id="8-test-the-contract-against-both-implementations"><a href="#8-test-the-contract-against-both-implementations"><span class="section-number">5.8</span>Test the Contract Against Both Implementations</a></h2>
+<p>Representation independence deserves better evidence than “we did not change the client.” The companion project supplies both factories to one parameterized test suite. Here is one of its tests:</p>
+<div class="code-block"><pre class="java"><code>@ParameterizedTest(name = &quot;{0}: producer leaves original unchanged&quot;)
+@MethodSource(&quot;implementations&quot;)
+void producerLeavesOriginalUnchanged(
+        String ignoredName,
+        Function&lt;Set&lt;StopId&gt;, TransitNetwork&gt; factory) {
+    TransitNetwork original = factory.apply(Set.of(UBC, WESBROOK, ALMA));
+    TransitNetwork extended = original.withConnection(UBC, WESBROOK);
+
+    assertFalse(original.hasDirectConnection(UBC, WESBROOK));
+    assertTrue(extended.hasDirectConnection(UBC, WESBROOK));
+    assertEquals(Set.of(WESBROOK),
+            extended.directDestinationsFrom(UBC));
+}</code></pre></div>
+<p>The test observes promises: old value unchanged, new edge present, correct direct destination. It does not inspect fields, assert a concrete class, or depend on set iteration order. The same tests also cover isolated stops, direction, invalid arguments, duplicate additions, input aliasing, and unmodifiable results.</p>
+<p>White-box tests still have a place. An implementation may need focused tests for a complicated private algorithm. Contract tests are the shared gate: every implementation must pass them before a factory can substitute one for another.</p>
+<p>Our design principle is:</p>
+<blockquote class="design-note"><p><strong>Design principle: make clients depend on the smallest useful behavioural vocabulary, not on the data structures that happen to implement it.</strong></p>
+</blockquote>
+<p>This principle improves more than changeability. Clients become easier to read because their operations speak in domain terms. Correctness arguments shrink because clients cannot perform arbitrary map surgery. A good boundary removes possibilities.</p>
+<h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">5.9</span>Common Misconceptions</a></h2>
+<h3 id="an-adt-is-a-class-with-private-fields"><a href="#an-adt-is-a-class-with-private-fields">“An ADT is a class with private fields”</a></h3>
+<p>Private fields are useful access control, but they do not define the abstract values or specify the operations. A class can keep every field private while returning a mutable alias, exposing representation-shaped methods, or leaving its behaviour ambiguous.</p>
+<p>The abstraction comes from the specified value space and operations. Java access control helps enforce the boundary.</p>
+<h3 id="if-two-implementations-pass-todays-tests-they-are-interchangeable"><a href="#if-two-implementations-pass-todays-tests-they-are-interchangeable">“If two implementations pass today’s tests, they are interchangeable”</a></h3>
+<p>Tests sample behaviour; the specification defines it. Two implementations may agree on every tested input and disagree on an untested boundary, mutation policy, or exception. Shared tests provide evidence, not a new definition of the ADT.</p>
+<p>Review the tests against the contract, then review each implementation's reasoning. The next chapter develops that inside view.</p>
+<h2 id="10-reviewing-a-generated-adt"><a href="#10-reviewing-a-generated-adt"><span class="section-number">5.10</span>Reviewing a Generated ADT</a></h2>
+<p>Generated code often begins with a familiar container and lets that container shape the API. Before accepting it, ask:</p>
+<ul>
+<li>What are the abstract values, stated without Java fields?</li>
+<li>Which operations do clients actually need?</li>
+<li>Does any public type, method name, return value, or exception expose the chosen representation?</li>
+<li>Are creators, producers, and observers specified at boundary cases?</li>
+<li>Can a client mutate the representation through an argument or result?</li>
+<li>Would the same contract make sense for a substantially different representation?</li>
+<li>Do the tests observe the contract or inspect the current implementation?</li>
+</ul>
+<p>Ask an assistant for alternatives if that sharpens the design, but verify the result. Renaming <code>getMap</code> to <code>getNetworkData</code> gives the leak a hat; it does not close it.</p>
+<h2 id="try-the-abstraction-boundary"><a href="#try-the-abstraction-boundary">Try the Abstraction Boundary</a></h2>
+<h3 id="1-classify-the-operations"><a href="#1-classify-the-operations">Classify the operations</a></h3>
+<p>Classify each operation on Java's immutable <code>String</code> ADT as creator, producer, or observer: <code>String.valueOf(42)</code>, <code>text.substring(1)</code>, <code>text.length()</code>, and <code>text.charAt(0)</code>. Can one operation fit more than one reasonable classification? Defend the perspective you choose.</p>
+<h3 id="2-find-the-representation-leak"><a href="#2-find-the-representation-leak">Find the representation leak</a></h3>
+<p>Suppose <code>TransitNetwork</code> adds this method:</p>
+<div class="code-block"><pre class="java"><code>HashMap&lt;StopId, HashSet&lt;StopId&gt;&gt; getOutgoingMap()</code></pre></div>
+<p>Identify three dependencies a client could acquire. Propose domain operations that serve plausible client needs without promising the map-of-sets representation.</p>
+<h3 id="3-predict-the-two-values"><a href="#3-predict-the-two-values">Predict the two values</a></h3>
+<p>Trace this code without running it:</p>
+<div class="code-block"><pre class="java"><code>TransitNetwork a = TransitNetwork.empty(Set.of(UBC, WESBROOK));
+TransitNetwork b = a.withConnection(UBC, WESBROOK);
+TransitNetwork c = b.withConnection(UBC, WESBROOK);</code></pre></div>
+<p>What must be true of the three abstract values? Which object-identity relationships are permitted but not required?</p>
+<h3 id="4-design-a-contract-test"><a href="#4-design-a-contract-test">Design a contract test</a></h3>
+<p>Write one black-box test that distinguishes a directed network from an undirected one. Write another that catches a creator which drops isolated stops. Explain which postcondition each test checks.</p>
+<h3 id="5-compare-representations"><a href="#5-compare-representations">Compare representations</a></h3>
+<p>For a sparse network with frequent direct-destination queries, compare an adjacency map with a connection set. Consider query work, construction work, memory overhead, and ease of validating the data. Choose one for that workload and state what evidence could change your choice.</p>
+<h2 id="where-we-have-arrived"><a href="#where-we-have-arrived">Where We Have Arrived</a></h2>
+<p>An ADT is defined by abstract values and specified operations. Creators introduce values, producers derive values, observers reveal information, and mutators change existing values. Our immutable network needs no mutators.</p>
+<p>The <code>TransitNetwork</code> interface gives clients a small domain vocabulary. A factory returns that abstraction while a package-private implementation snapshots and owns its representation. We can store an adjacency map or separate stop and connection sets without changing contract-respecting clients.</p>
+<p>That freedom is representation independence. Access control, specifications, immutable boundaries, and contract tests all help preserve it. One question remains: how does an implementer know that a particular map or pair of sets represents a valid network at all? Chapter 6 builds the bridge from concrete fields to abstract values.</p>
+<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
+<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's central ideas that an ADT is defined by its specification, that ADT operations can be classified by their relationship to the abstract type, and that clients should be independent of representation. The outline, prose, transit-network API, two implementations, tests, and examples are new. No old <code>MyString</code>, <code>Map</code>, hash-table, car-control, or inherited figure was reused. Equality and hashing are deliberately deferred to Chapter 7.</p>
+<p>Technical references:</p>
+<ul>
+<li>Barbara Liskov and Stephen Zilles, “Programming with Abstract Data Types,” <em>SIGPLAN Notices</em> 9(4), 1974, DOI <code>10.1145/942572.807045</code></li>
+<li><a href="https://web.mit.edu/6.031/www/sp21/classes/10-abstract-data-types/">MIT 6.031: Abstract Data Types</a></li>
+<li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6">Java Language Specification, access control</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html">Java SE 25 <code>Set</code> interface</a></li>
+<li><a href="https://docs.junit.org/6.1.3/writing-tests/parameterized-classes-and-tests.html">JUnit 6.1.3 User Guide, parameterized tests</a></li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../representation-invariants-and-abstraction-functions/">Representation Invariants and Abstraction Functions →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Design failure paths and derive useful tests from a transit-feed contract.">
+  <title>Exceptions, Testing, and Evidence · CPEN 221 Notes</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: db0aa5882533e9dd3663f3521ee4e60f5050c01112c1b530c987153c21ea62f8 -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">Foundations</p>
+      <h2><a href="#top" aria-current="page">Exceptions, Testing, and Evidence <small>3</small></a></h2>
+      <ul>
+        <li><a href="#1-name-the-failure-at-the-right-boundary"><small>3.1</small><span>Name the Failure at the Right Boundary</span></a></li>
+        <li><a href="#2-parse-in-small-observable-steps"><small>3.2</small><span>Parse in Small, Observable Steps</span></a></li>
+        <li><a href="#3-exceptions-change-control-flow"><small>3.3</small><span>Exceptions Change Control Flow</span></a></li>
+        <li><a href="#4-keep-resource-lifetimes-explicit"><small>3.4</small><span>Keep Resource Lifetimes Explicit</span></a></li>
+        <li><a href="#5-derive-tests-from-the-contract"><small>3.5</small><span>Derive Tests from the Contract</span></a></li>
+        <li><a href="#6-black-box-and-glass-box-evidence"><small>3.6</small><span>Black-Box and Glass-Box Evidence</span></a></li>
+        <li><a href="#7-assertions-are-not-argument-validation"><small>3.7</small><span>Assertions Are Not Argument Validation</span></a></li>
+        <li><a href="#8-design-for-testability"><small>3.8</small><span>Design for Testability</span></a></li>
+        <li><a href="#9-common-misconceptions"><small>3.9</small><span>Common Misconceptions</span></a></li>
+        <li><a href="#10-generated-parsers-need-adversarial-tests"><small>3.10</small><span>Generated Parsers Need Adversarial Tests</span></a></li>
+        <li><a href="#try-the-failure-paths"><small>§</small><span>Try the Failure Paths</span></a></li>
+        <li><a href="#where-we-have-arrived"><small>§</small><span>Where We Have Arrived</span></a></li>
+        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../types-and-specifications/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../mutability-aliasing-and-debugging/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../types-and-specifications/" aria-label="Previous: Types and Specifications">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../mutability-aliasing-and-debugging/" aria-label="Next: Mutability, Aliasing, and Debugging">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">3</div>
+      <header class="chapter-header">
+        <h1>Exceptions, Testing, and Evidence</h1>
+        <p class="deck">Exceptions name failed obligations, while tests turn specifications into bounded evidence.</p>
+        <ul class="chapter-meta" aria-label="Chapter information">
+          <li>Core reading</li>
+          <li>About 20 minutes</li>
+          <li>Java 25</li>
+          <li><a href="../../sources/chapter-03-exceptions-testing-and-evidence.md">Markdown source</a></li>
+        </ul>
+      </header>
+
+<p>The feed line is short:</p>
+<div class="code-block"><pre class="text"><code>UBC_EXCHANGE|soon</code></pre></div>
+<p>Our parser expects a stop identifier, a vertical bar, and a non-negative number of minutes. The stop is fine. <code>soon</code> is friendly prose and terrible arithmetic.</p>
+<p>What should happen next? Returning zero would put a phantom bus at the stop. Returning <code>null</code> would ask every client to remember what <code>null</code> means. Printing a warning inside the parser would entangle a reusable component with one user interface. Continuing with a half-created prediction would be the most adventurous choice, in the bad sense.</p>
+<p>Failures are part of a program's behaviour. We need to specify them, signal them at a useful abstraction level, and test them with the same care as ordinary results.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>distinguish precondition violations, malformed external data, and failures of the execution environment;</li>
+<li>design, throw, propagate, catch, and chain Java exceptions;</li>
+<li>choose test cases by partitioning an input space and probing boundaries;</li>
+<li>write JUnit 6 tests for normal and exceptional behaviour;</li>
+<li>distinguish black-box tests from implementation-aware tests;</li>
+<li>explain why coverage and passing tests are evidence, not proof.</li>
+</ul></section>
+<h2 id="1-name-the-failure-at-the-right-boundary"><a href="#1-name-the-failure-at-the-right-boundary"><span class="section-number">3.1</span>Name the Failure at the Right Boundary</a></h2>
+<p>Our parser has this contract:</p>
+<div class="code-block"><pre class="java"><code>/**
+ * Parses {@code stop-id|minutes-until-arrival}.
+ *
+ * @param line one prediction line
+ * @return a prediction with a nonblank stop id and non-negative minutes
+ * @throws NullPointerException if {@code line} is null
+ * @throws FeedFormatException if the line does not contain exactly two fields,
+ *         the stop id is blank, or the minutes field is not a non-negative integer
+ */
+public static ArrivalPrediction parse(String line) throws FeedFormatException</code></pre></div>
+<p>The contract distinguishes two origins of failure.</p>
+<p>Passing <code>null</code> violates our course's public API convention. The caller already has the reference and can obey the rule, so <code>NullPointerException</code> reports a programming error near its source.</p>
+<p>Malformed text is different. Even a correct caller cannot know that a downloaded line contains <code>soon</code> until something parses it. The failure is an ordinary risk of crossing the feed boundary, so we give it a domain-specific name:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+public final class FeedFormatException extends Exception {
+    public FeedFormatException(String message) {
+        super(message);
+    }
+
+    public FeedFormatException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}</code></pre></div>
+<p><code>FeedFormatException</code> is a <strong>checked exception</strong> because it extends <code>Exception</code> but not <code>RuntimeException</code>. Java requires a caller either to catch it or to declare that it may propagate. The type system therefore keeps the malformed-feed path visible in each calling contract.</p>
+<p>That was a design choice, not a universal translation table. “Checked means expected; unchecked means bug” is too categorical. Java defines the categories by their class hierarchy and compiler rules. API designers then choose between them based on client needs, recoverability, local conventions, and the cost of mandatory handling. A malformed command-line argument might reasonably produce an unchecked exception in one API and a result object in another.</p>
+<h2 id="2-parse-in-small-observable-steps"><a href="#2-parse-in-small-observable-steps"><span class="section-number">3.2</span>Parse in Small, Observable Steps</a></h2>
+<p>Here is the complete parser from the companion project:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+import java.util.Objects;
+
+public final class PredictionParser {
+    private PredictionParser() { }
+
+    public static ArrivalPrediction parse(String line) throws FeedFormatException {
+        Objects.requireNonNull(line, &quot;line&quot;);
+        String[] fields = line.split(&quot;\\|&quot;, -1);
+        if (fields.length != 2) {
+            throw new FeedFormatException(&quot;expected stop-id|minutes: &quot; + line);
+        }
+
+        try {
+            StopId stopId = new StopId(fields[0]);
+            int minutes = Integer.parseInt(fields[1]);
+            return new ArrivalPrediction(stopId, minutes);
+        } catch (IllegalArgumentException exception) {
+            throw new FeedFormatException(&quot;invalid prediction: &quot; + line, exception);
+        }
+    }
+}</code></pre></div>
+<p>The <code>-1</code> argument to <code>split</code> preserves an empty final field, so <code>"UBC_EXCHANGE|"</code> still produces two fields and reaches the integer check. Without it, Java would drop that trailing empty string. That small library detail decides which diagnostic the client sees, so it belongs in a test.</p>
+<p>The parser delegates semantic checks to domain types. <code>StopId</code> rejects a blank identifier, and <code>ArrivalPrediction</code> rejects negative minutes:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+import java.util.Objects;
+
+public record ArrivalPrediction(StopId stopId, int minutesUntilArrival) {
+    public ArrivalPrediction {
+        Objects.requireNonNull(stopId, &quot;stopId&quot;);
+        if (minutesUntilArrival &lt; 0) {
+            throw new IllegalArgumentException(
+                    &quot;minutes until arrival must be non-negative&quot;);
+        }
+    }
+}</code></pre></div>
+<p>Those constructors throw <code>IllegalArgumentException</code>. At the text boundary, the parser translates that lower-level detail into <code>FeedFormatException</code>. It also passes the original exception as the <strong>cause</strong>. Clients can depend on the feed-level abstraction while a debugger or log retains the specific reason.</p>
+<p>This is exception <strong>chaining</strong>. Dropping the cause would remove useful evidence; leaking every constructor exception would force feed clients to understand the parser's current implementation.</p>
+<h2 id="3-exceptions-change-control-flow"><a href="#3-exceptions-change-control-flow"><span class="section-number">3.3</span>Exceptions Change Control Flow</a></h2>
+<p>When <code>Integer.parseInt("soon")</code> throws, the rest of the <code>try</code> block does not execute. Java looks for a compatible <code>catch</code> in the current method. It finds one, constructs a <code>FeedFormatException</code>, and throws again. The caller then gets the same choice: catch or propagate.</p>
+<figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-03/exception-translation-sequence.svg" alt="A board loader calls the prediction parser, parseInt throws NumberFormatException, the parser wraps it as FeedFormatException, and the loader reports the bad line while preserving the cause." /><figcaption>Figure 3.1: Exceptional control returns through callers until a compatible handler acts. Translation changes the abstraction level without erasing the original cause.</figcaption></figure>
+<p>A <code>catch</code> block should run where the program has enough context to take a meaningful action. A board loader might report the line number and reject the file. A user interface might show a message. The parser cannot decide either policy without becoming coupled to a particular client.</p>
+<p>This catch is therefore suspicious:</p>
+<div class="code-block"><pre class="java"><code>try {
+    return PredictionParser.parse(line);
+} catch (FeedFormatException exception) {
+    return null;
+}</code></pre></div>
+<p>It converts a named, documented failure into ambiguous absence and discards the diagnostic. An empty <code>catch</code> is worse: it tells the program to continue after hiding the fact that an obligation failed.</p>
+<p>A useful handler must do at least one real job:</p>
+<ul>
+<li><strong>recover</strong> by producing a valid alternative state;</li>
+<li><strong>translate and rethrow</strong> at a more suitable abstraction level, preserving the cause;</li>
+<li><strong>report and terminate</strong> the current operation at a boundary responsible for user or operational feedback.</li>
+</ul>
+<p>Logging and rethrowing blindly can duplicate the same failure at every layer. Handle an exception once at the level that owns the response.</p>
+<h2 id="4-keep-resource-lifetimes-explicit"><a href="#4-keep-resource-lifetimes-explicit"><span class="section-number">3.4</span>Keep Resource Lifetimes Explicit</a></h2>
+<p>Parsing one string does not own an external resource. Loading a file does. Java's try-with-resources statement ties cleanup to the lexical scope that acquired the resource:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
+public final class PredictionFile {
+    private PredictionFile() { }
+
+    public static List&lt;ArrivalPrediction&gt; load(Path path)
+            throws IOException, FeedFormatException {
+        try (BufferedReader reader = Files.newBufferedReader(path, UTF_8)) {
+            List&lt;ArrivalPrediction&gt; predictions = new ArrayList&lt;&gt;();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                predictions.add(PredictionParser.parse(line));
+            }
+            return List.copyOf(predictions);
+        }
+    }
+}</code></pre></div>
+<p><code>BufferedReader</code> implements <code>AutoCloseable</code>, so Java calls <code>close</code> when control leaves the <code>try</code>, whether the body returns normally or throws. If both the body and <code>close</code> throw, the body's exception remains primary and the close failure is recorded as a suppressed exception.</p>
+<p>This guarantee applies to execution within the JVM's normal control model. Process termination, a crashed runtime, or failed hardware can prevent cleanup. “Always” is too strong for systems claims; state the boundary of the guarantee.</p>
+<h2 id="5-derive-tests-from-the-contract"><a href="#5-derive-tests-from-the-contract"><span class="section-number">3.5</span>Derive Tests from the Contract</a></h2>
+<p>The parser's input space contains every possible Java string—far too many examples to enumerate. Trying three memorable lines gives us three memories, not a strategy.</p>
+<p><strong>Partitioning</strong> divides the input space into subdomains whose members we expect the program to treat similarly. Boundaries between partitions deserve special attention because comparisons and indexing often fail there.</p>
+<p>The contract suggests these dimensions:</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Partitions and boundaries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Field count</td>
+<td>zero separators, exactly one, more than one</td>
+</tr>
+<tr>
+<td>Stop identifier</td>
+<td>blank, nonblank</td>
+</tr>
+<tr>
+<td>Minutes syntax</td>
+<td>integer text, empty, other text, decimal text</td>
+</tr>
+<tr>
+<td>Minutes value</td>
+<td>negative, zero, positive, <code>Integer.MAX_VALUE</code>, overflow text</td>
+</tr>
+<tr>
+<td>Reference</td>
+<td><code>null</code>, non-null</td>
+</tr>
+</tbody>
+</table>
+<p>We do not need the Cartesian product of every row. Choose a compact set in which each test has a reason. Zero is especially valuable: it sits exactly where invalid negative minutes become valid.</p>
+<p>The complete JUnit 6 test class begins like this:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.junit.jupiter.api.Test;
+
+class PredictionParserTest {
+    @Test
+    void parsesZeroMinutesAtBoundary() throws FeedFormatException {
+        ArrivalPrediction prediction = PredictionParser.parse(&quot;UBC_EXCHANGE|0&quot;);
+
+        assertEquals(new StopId(&quot;UBC_EXCHANGE&quot;), prediction.stopId());
+        assertEquals(0, prediction.minutesUntilArrival());
+    }
+
+    @Test
+    void rejectsMissingMinutes() {
+        assertThrows(FeedFormatException.class,
+                () -&gt; PredictionParser.parse(&quot;UBC_EXCHANGE|&quot;));
+    }
+
+    @Test
+    void rejectsExtraField() {
+        assertThrows(FeedFormatException.class,
+                () -&gt; PredictionParser.parse(&quot;UBC_EXCHANGE|4|EXTRA&quot;));
+    }
+
+    @Test
+    void preservesCauseForNonnumericMinutes() {
+        FeedFormatException exception = assertThrows(FeedFormatException.class,
+                () -&gt; PredictionParser.parse(&quot;UBC_EXCHANGE|soon&quot;));
+
+        assertInstanceOf(NumberFormatException.class, exception.getCause());
+    }
+
+    @Test
+    void rejectsNegativeMinutes() {
+        assertThrows(FeedFormatException.class,
+                () -&gt; PredictionParser.parse(&quot;UBC_EXCHANGE|-1&quot;));
+    }
+}</code></pre></div>
+<p>Each test follows arrange–act–assert, even when the arrangement is only a string. The method name records the rationale, not the private branch it happens to execute.</p>
+<p>The test for the cause checks a public diagnostic promise only if our contract makes cause preservation part of the API. If the contract merely promises <code>FeedFormatException</code>, insisting on <code>NumberFormatException</code> would couple the test to the current parsing technique. Tests do not receive diplomatic immunity from the abstraction barrier.</p>
+<h2 id="6-black-box-and-glass-box-evidence"><a href="#6-black-box-and-glass-box-evidence"><span class="section-number">3.6</span>Black-Box and Glass-Box Evidence</a></h2>
+<p>A <strong>black-box test</strong> chooses inputs and observations from the specification alone. The partitions above are black-box partitions: any correct parser must handle those categories, regardless of its algorithm.</p>
+<p>A <strong>glass-box test</strong> uses implementation knowledge to find additional executions. On seeing <code>split("\\|", -1)</code>, we might add cases for a trailing separator and a separator at the beginning. On seeing <code>Integer.parseInt</code>, we might test text one greater than <code>Integer.MAX_VALUE</code>.</p>
+<p>Glass-box insight is useful for finding neglected paths. The assertions still must describe public behaviour. We may use knowledge of a branch to reach it; we may not declare the branch itself part of the contract.</p>
+<h3 id="coverage-is-a-question-not-an-answer"><a href="#coverage-is-a-question-not-an-answer">Coverage is a question, not an answer</a></h3>
+<p>Coverage tools report which statements or branches a test run executed. A missed branch is a concrete prompt: why did no test reach it? One hundred percent coverage, however, says nothing about whether the assertions were meaningful.</p>
+<p>This test can execute the parser and check almost nothing:</p>
+<div class="code-block"><pre class="java"><code>@Test
+void hasExcellentPostureAndPoorJudgment() throws FeedFormatException {
+    PredictionParser.parse(&quot;UBC_EXCHANGE|4&quot;);
+}</code></pre></div>
+<p>It may improve a coverage number while failing to verify the returned stop or time. Coverage measures reach, not correctness or test quality.</p>
+<p>One quick audit is to introduce a tiny defect deliberately—after committing your work—and confirm that a relevant test fails. Change <code>&lt; 0</code> to <code>&lt;= 0</code>, for example. If the suite stays green, it did not protect the boundary you thought it protected. Restore the change when the experiment is over.</p>
+<h2 id="7-assertions-are-not-argument-validation"><a href="#7-assertions-are-not-argument-validation"><span class="section-number">3.7</span>Assertions Are Not Argument Validation</a></h2>
+<p>Java's <code>assert</code> statement checks an internal belief:</p>
+<div class="code-block"><pre class="java"><code>assert fields.length == 2 : &quot;field count checked above&quot;;</code></pre></div>
+<p>When enabled, a false condition throws <code>AssertionError</code>. Java assertions are disabled by default and can be enabled with <code>-ea</code>. Therefore:</p>
+<ul>
+<li>never put a required side effect inside an assertion expression;</li>
+<li>never rely on an assertion to validate public input;</li>
+<li>use assertions for internal invariants that correct code should already establish.</li>
+</ul>
+<p>JUnit's <code>assertEquals</code> and <code>assertThrows</code> are different methods in a testing library. They run as part of the test regardless of Java's <code>-ea</code> setting.</p>
+<p>In our parser, explicit checks and exceptions enforce the public contract. An assertion after the field-count check could document an internal fact, but it adds little because the fact is already local and obvious. Assertions should reveal a meaningful invariant, not applaud the previous line.</p>
+<h2 id="8-design-for-testability"><a href="#8-design-for-testability"><span class="section-number">3.8</span>Design for Testability</a></h2>
+<p><code>PredictionParser.parse</code> has a useful property: all input arrives through a parameter and all ordinary output leaves through a return value. It does not read a hard-coded file, consult the wall clock, modify global state, or print. A test can call it directly and observe the result.</p>
+<p><code>PredictionFile.load</code> owns file I/O separately. We can test the parser rapidly with strings and reserve a smaller set of integration tests for the file boundary. This separation is not a concession to the test framework. It is a modular design in which computation and effects have clear owners.</p>
+<p>Our design principle is:</p>
+<blockquote class="design-note"><p><strong>Design principle: make every failure an explicit part of a boundary, then derive evidence from that boundary's contract.</strong></p>
+</blockquote>
+<p>A named failure lets clients choose a response. A focused component makes that failure easy to provoke in a test. A test linked to a contract explains why its observation matters.</p>
+<h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">3.9</span>Common Misconceptions</a></h2>
+<h3 id="catch-every-exception-so-the-program-does-not-crash"><a href="#catch-every-exception-so-the-program-does-not-crash">“Catch every exception so the program does not crash”</a></h3>
+<p>Catching an exception without restoring a valid state can make the system less reliable. It removes the signal while preserving the damage. Catch narrowly where you can recover, translate, or report; otherwise let the failure propagate.</p>
+<p>Avoid catching <code>Throwable</code> or <code>Error</code> in ordinary application code. Errors such as <code>OutOfMemoryError</code> and <code>StackOverflowError</code> generally do not describe conditions from which a local method can sensibly recover.</p>
+<h3 id="all-tests-pass-so-there-are-no-bugs"><a href="#all-tests-pass-so-there-are-no-bugs">“All tests pass, so there are no bugs”</a></h3>
+<p>Tests sample executions. They can demonstrate a violation when they fail, and they can increase confidence when well-designed cases pass. They cannot establish that an unexamined input, interleaving, environment, or requirement contains no defect.</p>
+<p>The useful claim is specific: <em>the implementation produced these observations for these contract-derived cases</em>. Precision keeps confidence from quietly becoming folklore.</p>
+<h2 id="10-generated-parsers-need-adversarial-tests"><a href="#10-generated-parsers-need-adversarial-tests"><span class="section-number">3.10</span>Generated Parsers Need Adversarial Tests</a></h2>
+<p>A generated parser often handles the happy path impressively quickly. Ask it to parse <code>"UBC_EXCHANGE|4"</code>, and everyone goes for lunch. The seams are where review starts:</p>
+<ul>
+<li>empty fields;</li>
+<li>extra separators;</li>
+<li>leading or trailing whitespace;</li>
+<li>negative and overflowing numbers;</li>
+<li>non-ASCII stop identifiers if the specification allows them;</li>
+<li>exception messages that leak or erase useful context.</li>
+</ul>
+<p>Write the contract first, partition its inputs, and run the generated code against the boundaries. If the generator also writes the tests, inspect whether both artefacts made the same unsupported assumption. Two matching guesses do not form independent evidence.</p>
+<h2 id="try-the-failure-paths"><a href="#try-the-failure-paths">Try the Failure Paths</a></h2>
+<h3 id="1-predict-the-exception"><a href="#1-predict-the-exception">Predict the exception</a></h3>
+<p>For each call, name the first exception type visible to the caller and its likely cause, if any:</p>
+<div class="code-block"><pre class="java"><code>PredictionParser.parse(null)
+PredictionParser.parse(&quot;|4&quot;)
+PredictionParser.parse(&quot;UBC_EXCHANGE|2147483648&quot;)
+PredictionParser.parse(&quot;UBC_EXCHANGE|-1&quot;)</code></pre></div>
+<p>Trace control through the constructor or parsing call that fails.</p>
+<h3 id="2-complete-the-partition"><a href="#2-complete-the-partition">Complete the partition</a></h3>
+<p>Add one test for a blank stop identifier and one for a positive arrival time. Explain which partition each represents and why neither duplicates an existing test.</p>
+<h3 id="3-audit-a-catch-block"><a href="#3-audit-a-catch-block">Audit a catch block</a></h3>
+<p>A loader catches <code>Exception</code>, prints <code>"bad feed"</code>, and returns an empty list. List the different failures this code conflates. Propose a policy for malformed content and a separate policy for a missing file.</p>
+<h3 id="4-distinguish-coverage-from-checking"><a href="#4-distinguish-coverage-from-checking">Distinguish coverage from checking</a></h3>
+<p>The <code>hasExcellentPostureAndPoorJudgment</code> test executes the successful path. Write two assertions that would check the parser's public result. Then name one property that still remains untested.</p>
+<h3 id="5-place-responsibility"><a href="#5-place-responsibility">Place responsibility</a></h3>
+<p>Should <code>PredictionParser</code> skip malformed lines, should <code>PredictionFile</code> skip them, or should the application reject the whole file? There is no universal answer. Choose a policy for an arrival board, write the corresponding contract, and explain which layer has enough context to implement it.</p>
+<h2 id="where-we-have-arrived"><a href="#where-we-have-arrived">Where We Have Arrived</a></h2>
+<p>Exceptions give failures names and a separate control-flow path. Checked and unchecked exceptions differ by Java hierarchy and compiler treatment; choosing between them is an API design decision. Catch only where the program can recover, translate while preserving a cause, or report at an owning boundary. Use try-with-resources to tie resource cleanup to scope.</p>
+<p>Tests turn contracts into executable observations. Partition the input space, probe boundaries, add implementation-aware cases without depending on private behaviour, and interpret coverage as a prompt for investigation. Passing tests provide evidence about tested executions, not proof of an empty bug population.</p>
+<p>Our parser now produces trustworthy immutable-looking records and lists. That last phrase deserves suspicion. A final field can still refer to a mutable object, and a list returned from an object can give a client a path back into its representation. Chapter 4 follows those references.</p>
+<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
+<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It preserves the old manuscript's emphasis on explicit failure, specification-derived testing, partitioning, boundaries, regression tests, and exception chaining. The chapter has a new outline, transit parser, tests, prose, and sequence diagram; it does not reuse the old birthday-book, substring-counting, or report-writer examples or any old image.</p>
+<p>Technical references:</p>
+<ul>
+<li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html">Java Language Specification, exceptions</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html"><code>Exception</code> in Java SE 25</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/AutoCloseable.html"><code>AutoCloseable</code> in Java SE 25</a></li>
+<li><a href="https://docs.junit.org/current/user-guide/#writing-tests">JUnit 6 user guide: writing tests</a></li>
+<li><a href="https://docs.junit.org/current/user-guide/#running-tests-build-gradle">JUnit 6 user guide: Gradle build support</a></li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../mutability-aliasing-and-debugging/">Mutability, Aliasing, and Debugging →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

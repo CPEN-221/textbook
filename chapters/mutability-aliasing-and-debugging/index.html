@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Follow references, close representation leaks, and debug mutable state with evidence.">
+  <title>Mutability, Aliasing, and Debugging · CPEN 221 Notes</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: b97c0c377dd0a8eb6c38ca4af6493d5185a5cc7b4e72dbcad38f5ed38289842a -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">State and abstraction</p>
+      <h2><a href="#top" aria-current="page">Mutability, Aliasing, and Debugging <small>4</small></a></h2>
+      <ul>
+        <li><a href="#1-variables-hold-values-reference-values-designate-objects"><small>4.1</small><span>Variables Hold Values; Reference Values Designate Objects</span></a></li>
+        <li><a href="#2-follow-the-arrows"><small>4.2</small><span>Follow the Arrows</span></a></li>
+        <li><a href="#3-reassignment-is-not-mutation"><small>4.3</small><span>Reassignment Is Not Mutation</span></a></li>
+        <li><a href="#4-how-the-board-exposes-its-representation"><small>4.4</small><span>How the Board Exposes Its Representation</span></a></li>
+        <li><a href="#5-make-an-unmodifiable-snapshot"><small>4.5</small><span>Make an Unmodifiable Snapshot</span></a></li>
+        <li><a href="#6-snapshot-view-shallow-copy-deep-copy"><small>4.6</small><span>Snapshot, View, Shallow Copy, Deep Copy</span></a></li>
+        <li><a href="#7-debug-the-exposure-systematically"><small>4.7</small><span>Debug the Exposure Systematically</span></a></li>
+        <li><a href="#8-make-bugs-smaller-before-they-happen"><small>4.8</small><span>Make Bugs Smaller Before They Happen</span></a></li>
+        <li><a href="#9-common-misconceptions"><small>4.9</small><span>Common Misconceptions</span></a></li>
+        <li><a href="#10-reviewing-generated-state-holding-code"><small>4.10</small><span>Reviewing Generated State-Holding Code</span></a></li>
+        <li><a href="#try-the-references"><small>§</small><span>Try the References</span></a></li>
+        <li><a href="#where-we-have-arrived"><small>§</small><span>Where We Have Arrived</span></a></li>
+        <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../exceptions-testing-and-evidence/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../adts-and-representation-independence/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../exceptions-testing-and-evidence/" aria-label="Previous: Exceptions, Testing, and Evidence">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../adts-and-representation-independence/" aria-label="Next: ADTs and Representation Independence">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">4</div>
+      <header class="chapter-header">
+        <h1>Mutability, Aliasing, and Debugging</h1>
+        <p class="deck">A reference can carry a mutation farther than the code that performed it.</p>
+        <ul class="chapter-meta" aria-label="Chapter information">
+          <li>Core reading</li>
+          <li>About 20 minutes</li>
+          <li>Java 25</li>
+          <li><a href="../../sources/chapter-04-mutability-aliasing-and-debugging.md">Markdown source</a></li>
+        </ul>
+      </header>
+
+<p>The arrival board is supposed to preserve feed order. A display client wants the same departures sorted by waiting time, so it does this:</p>
+<div class="code-block"><pre class="java"><code>List&lt;Departure&gt; display = board.upcoming();
+display.sort(Comparator.comparingInt(Departure::minutesUntilArrival));</code></pre></div>
+<p>The display looks right. Later, a different client asks the board for feed order and receives the sorted order instead. No method named <code>reorderBoard</code> was called. Nothing inside <code>ArrivalBoard</code> ran when the damage happened.</p>
+<p>The bug travelled through a reference.</p>
+<p>To diagnose this class of failure, we need to distinguish variables from objects, reassignment from mutation, and a copy of a container from a copy of everything reachable through it. We will then use that model in a disciplined debugging process.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>draw references, objects, and aliases in an instance diagram;</li>
+<li>predict the difference between reassigning a variable and mutating an object;</li>
+<li>explain why <code>final</code>, records, and unmodifiable views do not automatically make an object graph immutable;</li>
+<li>identify representation exposure through arguments and return values;</li>
+<li>choose among immutability, confinement, defensive copying, and unmodifiable snapshots;</li>
+<li>debug by reproducing a failure, testing hypotheses, repairing the cause, and adding a regression test.</li>
+</ul></section>
+<h2 id="1-variables-hold-values-reference-values-designate-objects"><a href="#1-variables-hold-values-reference-values-designate-objects"><span class="section-number">4.1</span>Variables Hold Values; Reference Values Designate Objects</a></h2>
+<p>For a Java primitive variable, assignment copies the primitive value:</p>
+<div class="code-block"><pre class="java"><code>int scheduled = 600;
+int predicted = scheduled;
+predicted = 607;</code></pre></div>
+<p>After the last line, <code>scheduled</code> is still <code>600</code>. The variables are independent cells; changing which value one cell holds does not reach into the other.</p>
+<p>For a variable of reference type, assignment copies a <strong>reference value</strong>:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; feedOrder = new ArrayList&lt;&gt;(List.of(&quot;R4&quot;, &quot;99&quot;));
+List&lt;String&gt; displayOrder = feedOrder;
+displayOrder.add(&quot;14&quot;);</code></pre></div>
+<p>There is still one <code>ArrayList</code>. Both variables designate it, so adding through <code>displayOrder</code> is visible through <code>feedOrder</code>. Two references to the same object are <strong>aliases</strong>.</p>
+<p>Java's language specification deliberately does not expose a raw memory address through an ordinary reference. An address is a tempting mental shortcut, but the semantic fact we need is simpler: a reference may designate an object, and two reference values may designate the same object.</p>
+<h2 id="2-follow-the-arrows"><a href="#2-follow-the-arrows"><span class="section-number">4.2</span>Follow the Arrows</a></h2>
+<p>An <strong>instance diagram</strong> records one runtime state. We draw variables or fields as labelled cells, objects as containers, primitive values inside their cells, and references as arrows to objects.</p>
+<figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-04/arrival-board-representation-exposure.svg" alt="The board field, constructor parameter, and client variable all refer to one mutable ArrayList; sorting through the client variable therefore changes the board&#39;s representation." /><figcaption>Figure 4.1: Representation exposure before the repair. Three names do not imply three lists. Follow the arrows to count objects.</figcaption></figure>
+<p>The diagram is intentionally not a photograph of physical memory. A JVM may arrange or optimize storage in many ways. The model preserves the relationships Java makes observable: which variables can reach which objects, and where a mutation can be seen.</p>
+<p>When a stateful bug feels spooky, draw the state before and after the suspicious operation. Spooky is often ordinary aliasing with poor lighting.</p>
+<h2 id="3-reassignment-is-not-mutation"><a href="#3-reassignment-is-not-mutation"><span class="section-number">4.3</span>Reassignment Is Not Mutation</a></h2>
+<p>These operations change different parts of the diagram:</p>
+<div class="code-block"><pre class="java"><code>displayOrder = new ArrayList&lt;&gt;(); // reassign the variable
+feedOrder.add(&quot;14&quot;);              // mutate the existing object</code></pre></div>
+<p><strong>Reassignment</strong> changes which value a variable holds. In the diagram, its arrow moves to another object. Other aliases remain attached to the original object.</p>
+<p><strong>Mutation</strong> changes the state of an existing object. The arrows stay in place, so every alias can observe the new state.</p>
+<p>Method calls make this distinction easy to miss:</p>
+<div class="code-block"><pre class="java"><code>String label = &quot;R4&quot;;
+label.toLowerCase();
+
+StringBuilder message = new StringBuilder(&quot;R4&quot;);
+message.append(&quot; delayed&quot;);</code></pre></div>
+<p><code>String</code> is immutable; <code>toLowerCase</code> returns a string and the ignored result is lost. <code>StringBuilder</code> is mutable; <code>append</code> changes the existing builder. Syntax alone does not tell us whether a call mutates. The type's specification does.</p>
+<h3 id="what-final-fixes"><a href="#what-final-fixes">What <code>final</code> fixes</a></h3>
+<p><code>final</code> prevents a variable or field from being assigned again:</p>
+<div class="code-block"><pre class="java"><code>final List&lt;String&gt; routes = new ArrayList&lt;&gt;();
+routes.add(&quot;R4&quot;);                 // allowed: object mutation
+// routes = new ArrayList&lt;&gt;();    // does not compile: reassignment</code></pre></div>
+<p>The arrow cannot move, but the object at its end may still change. A <strong>final reference</strong> is not an <strong>immutable object</strong>.</p>
+<p>This distinction matters in almost every Java class. Declaring a collection field <code>final</code> guarantees that the field continues to designate the same collection. It does not guarantee that the collection keeps the same elements.</p>
+<h2 id="4-how-the-board-exposes-its-representation"><a href="#4-how-the-board-exposes-its-representation"><span class="section-number">4.4</span>How the Board Exposes Its Representation</a></h2>
+<p>Here is the broken <code>ArrivalBoard</code>:</p>
+<div class="code-block"><pre class="java"><code>public final class ArrivalBoard {
+    private final List&lt;Departure&gt; departures;
+
+    public ArrivalBoard(List&lt;Departure&gt; departures) {
+        this.departures = departures;
+    }
+
+    public List&lt;Departure&gt; upcoming() {
+        return departures;
+    }
+}</code></pre></div>
+<p>The representation is the private state used to implement the object—here, the list designated by <code>departures</code>. The <code>private</code> modifier prevents a client from naming the field directly, but the constructor stores the client's reference and <code>upcoming</code> returns that same reference. The wall has two neatly labelled doors standing open.</p>
+<p>This is <strong>representation exposure</strong>. A client gains a reference through which it can mutate an object's internal representation without using the object's specified operations.</p>
+<p>The exposure has two directions.</p>
+<h3 id="incoming-exposure"><a href="#incoming-exposure">Incoming exposure</a></h3>
+<p>The constructor retains an alias supplied by the client:</p>
+<div class="code-block"><pre class="java"><code>List&lt;Departure&gt; source = new ArrayList&lt;&gt;(departures);
+ArrivalBoard board = new ArrivalBoard(source);
+source.clear(); // also clears the broken board</code></pre></div>
+<p>Even if <code>upcoming</code> never existed, the board would remain vulnerable through <code>source</code>.</p>
+<h3 id="outgoing-exposure"><a href="#outgoing-exposure">Outgoing exposure</a></h3>
+<p>The observer returns the internal alias:</p>
+<div class="code-block"><pre class="java"><code>board.upcoming().clear(); // clears the broken board directly</code></pre></div>
+<p>A correct repair has to close both paths.</p>
+<h2 id="5-make-an-unmodifiable-snapshot"><a href="#5-make-an-unmodifiable-snapshot"><span class="section-number">4.5</span>Make an Unmodifiable Snapshot</a></h2>
+<p>For this representation, Java's <code>List.copyOf</code> gives us a compact repair:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+import java.util.List;
+import java.util.Objects;
+
+public final class ArrivalBoard {
+    private final List&lt;Departure&gt; departures;
+
+    public ArrivalBoard(List&lt;Departure&gt; departures) {
+        Objects.requireNonNull(departures, &quot;departures&quot;);
+        this.departures = List.copyOf(departures);
+    }
+
+    public List&lt;Departure&gt; upcoming() {
+        return departures;
+    }
+}</code></pre></div>
+<p><code>List.copyOf</code> returns an unmodifiable list containing the source collection's elements in iteration order. Later structural changes to the source collection do not appear in the returned list. It also rejects <code>null</code> collections and elements, which matches our course convention.</p>
+<p>We can safely return the field because clients cannot add, remove, sort, or replace elements in that list. A client that calls <code>sort</code> receives <code>UnsupportedOperationException</code>; the board remains unchanged.</p>
+<p>Why not copy again on every call to <code>upcoming</code>? We could. Returning one immutable snapshot avoids repeated allocation and is safe because the shared object cannot be mutated through its public interface. Immutability can make sharing <em>cheaper</em> than defensive copying at every boundary.</p>
+<h3 id="the-elements-still-matter"><a href="#the-elements-still-matter">The elements still matter</a></h3>
+<p><code>List.copyOf</code> makes an unmodifiable copy of the list structure. It does not recursively copy each element. Our element type is:</p>
+<div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
+
+import java.util.Objects;
+
+public record Departure(StopId stopId, String routeName,
+                        int minutesUntilArrival) {
+    public Departure {
+        Objects.requireNonNull(stopId, &quot;stopId&quot;);
+        Objects.requireNonNull(routeName, &quot;routeName&quot;);
+        if (routeName.isBlank()) {
+            throw new IllegalArgumentException(&quot;route name must not be blank&quot;);
+        }
+        if (minutesUntilArrival &lt; 0) {
+            throw new IllegalArgumentException(
+                    &quot;minutes until arrival must be non-negative&quot;);
+        }
+    }
+}</code></pre></div>
+<p><code>Departure</code> is immutable because its components are immutable values and it supplies no route to mutation. The list and every element can therefore be shared safely.</p>
+<p>If <code>Departure</code> contained a mutable <code>List&lt;String&gt;</code> component, the record's final field would protect only the component reference. A client could still mutate the list. Records are shallowly immutable data carriers, not automatic deep-freeze machinery.</p>
+<h2 id="6-snapshot-view-shallow-copy-deep-copy"><a href="#6-snapshot-view-shallow-copy-deep-copy"><span class="section-number">4.6</span>Snapshot, View, Shallow Copy, Deep Copy</a></h2>
+<p>These terms answer different questions.</p>
+<p>A <strong>shallow copy</strong> creates a new outer object and copies references to its elements. <code>List.copyOf</code> is shallow with respect to element objects. It is sufficient when those elements are immutable or otherwise safe to share.</p>
+<p>A <strong>deep copy</strong> recursively creates independent copies of mutable reachable objects. “Recursively” needs a defined boundary: real object graphs may contain cycles, shared subgraphs, operating-system resources, or objects with no meaningful copy. Deep copying is a design operation, not a button we can press on arbitrary Java values.</p>
+<p>An <strong>unmodifiable view</strong> blocks mutation through one reference while reflecting changes made through another reference to its backing collection. For example, <code>Collections.unmodifiableList(source)</code> does not detach from <code>source</code>.</p>
+<p>An <strong>unmodifiable snapshot</strong> such as the result we obtain from <code>List.copyOf(source)</code> does not reflect later structural changes to <code>source</code>. That is the property our board needs.</p>
+<p>Neither “unmodifiable” nor “copied” guarantees deep immutability. Ask two separate questions:</p>
+<ol type="1">
+<li>Can this reference modify the container?</li>
+<li>Can any reachable reference modify an element or backing object?</li>
+</ol>
+<p>The second question catches the bugs the first one leaves behind.</p>
+<h2 id="7-debug-the-exposure-systematically"><a href="#7-debug-the-exposure-systematically"><span class="section-number">4.7</span>Debug the Exposure Systematically</a></h2>
+<p>Suppose the feed-order test fails only after the display code runs. Resist the urge to sort the list back inside <code>upcoming</code>. That would mask one observed symptom while leaving every client able to mutate the board.</p>
+<p>Use a repeatable process.</p>
+<h3 id="reproduce"><a href="#reproduce">Reproduce</a></h3>
+<p>Reduce the report to a small automated test:</p>
+<div class="code-block"><pre class="java"><code>@Test
+void clientCannotReorderBoard() {
+    ArrivalBoard board = new ArrivalBoard(List.of(
+            new Departure(new StopId(&quot;A&quot;), &quot;R4&quot;, 8),
+            new Departure(new StopId(&quot;B&quot;), &quot;99&quot;, 2)));
+
+    assertThrows(UnsupportedOperationException.class,
+            () -&gt; board.upcoming().sort(
+                    Comparator.comparingInt(Departure::minutesUntilArrival)));
+    assertEquals(List.of(&quot;R4&quot;, &quot;99&quot;),
+            board.upcoming().stream().map(Departure::routeName).toList());
+}</code></pre></div>
+<p>The test records two obligations: mutation is rejected, and feed order survives the attempt. It is now fast enough to run after every hypothesis.</p>
+<h3 id="study-the-evidence"><a href="#study-the-evidence">Study the evidence</a></h3>
+<p>Observe the list before and after the client call. Inspect reference identity in a debugger if it helps, but do not stop at “the list changed.” Draw the instance diagram and ask which references reach the changed object.</p>
+<h3 id="form-a-hypothesis"><a href="#form-a-hypothesis">Form a hypothesis</a></h3>
+<p>One hypothesis is: <code>upcoming</code> returns the representation list. It predicts that a mutation through the returned reference changes the board and that both references designate the same object.</p>
+<h3 id="run-a-discriminating-experiment"><a href="#run-a-discriminating-experiment">Run a discriminating experiment</a></h3>
+<p>Replace the return expression temporarily with <code>new ArrayList&lt;&gt;(departures)</code>. If outgoing mutation no longer changes the board, the experiment supports the hypothesis about the getter. Then test incoming exposure by retaining and mutating the constructor argument. That second experiment reveals whether the repair is complete.</p>
+<h3 id="repair-the-cause"><a href="#repair-the-cause">Repair the cause</a></h3>
+<p>Choose a representation whose sharing policy matches the specification. Here, copying at construction and retaining an unmodifiable list removes both mutable alias paths. The repair is a design change, not a compensating sort.</p>
+<h3 id="preserve-the-failure-as-a-regression-test"><a href="#preserve-the-failure-as-a-regression-test">Preserve the failure as a regression test</a></h3>
+<p>Run the focused test, then the whole suite. Keep the minimal reproducer so a later refactor cannot quietly reopen the representation.</p>
+<figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-04/debugging-evidence-loop.svg" alt="An observed failure leads to a minimal reproducer, a reference-model hypothesis, a discriminating experiment, a cause-level repair, and a regression test; contradictory evidence returns the debugger to a revised hypothesis." /><figcaption>Figure 4.2: Debugging is an evidence loop. Change the program to repair a supported cause instead of hiding the latest symptom.</figcaption></figure>
+<h2 id="8-make-bugs-smaller-before-they-happen"><a href="#8-make-bugs-smaller-before-they-happen"><span class="section-number">4.8</span>Make Bugs Smaller Before They Happen</a></h2>
+<p>Debugging technique matters, but design determines the size of the search.</p>
+<ul>
+<li>Keep mutable objects local when one method can own the entire mutation.</li>
+<li>Minimize variable scope so fewer statements can reassign or use a reference.</li>
+<li>Avoid global mutable state; it gives distant code an invisible communication channel.</li>
+<li>Use immutable domain values when sharing is common.</li>
+<li>State permitted mutation in specifications.</li>
+<li>Fail near violated assumptions instead of carrying damaged state forward.</li>
+</ul>
+<p>These practices <strong>confine</strong> change. A mutable local <code>ArrayList</code> used to assemble an immutable result is often excellent design: mutation is efficient, its owner is obvious, and no alias escapes. “Prefer immutability” does not mean “ban every call to <code>add</code>.” It means make mutation's boundary small and deliberate.</p>
+<p>Our design principle is:</p>
+<blockquote class="design-note"><p><strong>Design principle: minimize the number of paths by which mutable state can be reached.</strong></p>
+</blockquote>
+<p>When sharing is required, choose an explicit policy: immutable value, owner-confined mutation, unmodifiable snapshot, or carefully specified shared mutation. Accidental sharing is not a policy.</p>
+<h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">4.9</span>Common Misconceptions</a></h2>
+<h3 id="the-field-is-private-and-final-so-the-class-is-immutable"><a href="#the-field-is-private-and-final-so-the-class-is-immutable">“The field is private and final, so the class is immutable”</a></h3>
+<p><code>private</code> controls which code may name the field. <code>final</code> prevents reassignment of that field. Neither prevents mutation of the referenced object, and neither stops the class from leaking another reference to it.</p>
+<p>Immutability is a property of the complete observable object state and every path by which that state can change.</p>
+<h3 id="i-copied-the-list-so-there-are-no-aliases"><a href="#i-copied-the-list-so-there-are-no-aliases">“I copied the list, so there are no aliases”</a></h3>
+<p>A shallow list copy removes the alias to the outer list. It intentionally preserves aliases to its elements. That is safe for immutable <code>Departure</code> values and unsafe for mutable element objects unless the contract controls their mutation.</p>
+<p>Draw one more level of arrows before declaring victory.</p>
+<h2 id="10-reviewing-generated-state-holding-code"><a href="#10-reviewing-generated-state-holding-code"><span class="section-number">4.10</span>Reviewing Generated State-Holding Code</a></h2>
+<p>Generated getters often return fields directly because the code is compact and the types line up. Review every constructor and observer of a state-holding class with a reference checklist:</p>
+<ul>
+<li>Does the constructor retain a mutable argument?</li>
+<li>Does a method return a mutable field or an element reachable from it?</li>
+<li>Are collection elements themselves immutable?</li>
+<li>Does <code>final</code> protect only a reference?</li>
+<li>Is an “unmodifiable” result a detached snapshot or a live view?</li>
+<li>Does the specification permit the sharing the implementation creates?</li>
+</ul>
+<p>Ask the generator to explain ownership if useful, but verify the explanation against the code and tests. An instance diagram is less eloquent and considerably harder to bluff.</p>
+<h2 id="try-the-references"><a href="#try-the-references">Try the References</a></h2>
+<h3 id="1-draw-before-running"><a href="#1-draw-before-running">Draw before running</a></h3>
+<p>Draw the variables and objects after these statements:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; a = new ArrayList&lt;&gt;(List.of(&quot;R4&quot;));
+List&lt;String&gt; b = a;
+List&lt;String&gt; c = new ArrayList&lt;&gt;(a);
+b.add(&quot;99&quot;);
+c.add(&quot;14&quot;);</code></pre></div>
+<p>Predict the contents observed through <code>a</code>, <code>b</code>, and <code>c</code>. Explain each result by following an arrow.</p>
+<h3 id="2-separate-final-from-immutable"><a href="#2-separate-final-from-immutable">Separate final from immutable</a></h3>
+<p>For each operation, say whether it reassigns a reference or mutates an object, and whether <code>final</code> prevents it:</p>
+<div class="code-block"><pre class="java"><code>final List&lt;String&gt; routes = new ArrayList&lt;&gt;();
+routes.add(&quot;R4&quot;);
+routes.clear();
+// routes = List.of(&quot;99&quot;);</code></pre></div>
+<h3 id="3-reopen-the-representation"><a href="#3-reopen-the-representation">Reopen the representation</a></h3>
+<p>Replace immutable <code>Departure</code> with a class whose route name can change. Does the fixed <code>ArrivalBoard</code> remain immutable? Show the alias path and propose two different repairs with different costs.</p>
+<h3 id="4-compare-a-view-and-a-snapshot"><a href="#4-compare-a-view-and-a-snapshot">Compare a view and a snapshot</a></h3>
+<p>Predict what each observer sees after <code>source.add("14")</code>:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; source = new ArrayList&lt;&gt;(List.of(&quot;R4&quot;, &quot;99&quot;));
+List&lt;String&gt; view = Collections.unmodifiableList(source);
+List&lt;String&gt; snapshot = List.copyOf(source);
+source.add(&quot;14&quot;);</code></pre></div>
+<p>Which object is suitable for preserving the state at construction time?</p>
+<h3 id="5-debug-the-cause"><a href="#5-debug-the-cause">Debug the cause</a></h3>
+<p>A test reports that a board becomes empty after a client runs. Write one hypothesis about incoming exposure and one about outgoing exposure. For each, design an experiment whose result could contradict the hypothesis.</p>
+<h2 id="where-we-have-arrived"><a href="#where-we-have-arrived">Where We Have Arrived</a></h2>
+<p>Reference assignment can create aliases: separate variables that designate one object. Reassignment moves one reference; mutation changes an object visible through every alias. <code>final</code> prevents the first operation, not the second.</p>
+<p>Representation exposure occurs when a class retains or returns a mutable alias to its internal state. We repaired <code>ArrivalBoard</code> with an unmodifiable snapshot and immutable elements. Shallow copies, deep copies, views, and snapshots provide different guarantees; name the one the design actually needs.</p>
+<p>When a state bug appears, reproduce it, study evidence, form a falsifiable hypothesis, run a discriminating experiment, repair the cause, and preserve the failure as a regression test. Better still, confine mutation so that the bug has fewer places to hide.</p>
+<p>We now have four pieces of a construction discipline: a feedback loop, meaningful types, explicit contracts and failure paths, and controlled mutable state. The next chapter will use those pieces to define abstract data types whose clients can depend on behaviour without depending on representation.</p>
+<h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
+<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's important distinctions among primitive values, references, aliasing, mutation, reassignment, final references, representation exposure, defensive copying, and hypothesis-driven debugging. The chapter uses a new outline, arrival-board example, tests, prose, and original figures. No old instance diagram, mutable-list example, student record, or inherited image was reused.</p>
+<p>Technical references:</p>
+<ul>
+<li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html">Java Language Specification, values and types</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection)"><code>List.copyOf</code> and unmodifiable lists in Java SE 25</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/core/creating-immutable-lists-sets-and-maps.html">Java SE 25 guide to unmodifiable collections</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/language/records.html">Java SE 25 record classes</a></li>
+<li>John Regehr, <a href="https://blog.regehr.org/archives/199"><em>How to Debug</em></a></li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../adts-and-representation-independence/">ADTs and Representation Independence →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

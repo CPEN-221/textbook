@@ -385,6 +385,33 @@ svg {
   margin-top: 0.35rem;
 }
 
+.chapter table {
+  width: 100%;
+  margin: 1.6rem 0;
+  border-collapse: collapse;
+  font: 0.78rem/1.45 var(--sans);
+}
+
+.chapter th,
+.chapter td {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+.chapter th {
+  color: #40596b;
+  background: var(--note-blue);
+  font-weight: 650;
+}
+
+.chapter hr {
+  margin: 3rem 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
 .chapter-note,
 .design-note {
   margin: 1.6rem -0.7rem;
@@ -415,6 +442,22 @@ svg {
 .chapter-note > :last-child,
 .design-note > :last-child {
   margin-bottom: 0;
+}
+
+blockquote.design-note {
+  margin: 1.8rem -0.7rem;
+  padding: 0.8rem 1rem;
+  color: #444;
+}
+
+blockquote.design-note::before,
+blockquote.design-note::after {
+  display: none;
+}
+
+blockquote.design-note p {
+  margin: 0 !important;
+  font: 500 0.92rem/1.55 var(--sans);
 }
 
 .margin-note {
@@ -502,6 +545,24 @@ pre code {
   font: 0.76rem/1.45 var(--sans);
 }
 
+.chapter-figure {
+  width: 50.7rem;
+  margin: 2rem 0;
+}
+
+.chapter-figure img {
+  display: block;
+  width: 100%;
+  max-height: 36rem;
+}
+
+.chapter-figure figcaption {
+  width: 32rem;
+  margin-top: 0.55rem;
+  color: var(--muted);
+  font: 0.76rem/1.45 var(--sans);
+}
+
 blockquote {
   position: relative;
   margin: 1.8rem 0;
@@ -551,6 +612,10 @@ blockquote p {
   grid-template-columns: 1fr 1fr;
   gap: 3rem;
   margin-top: 1.5rem;
+}
+
+.contents-group-complete {
+  grid-template-columns: minmax(0, 1.55fr) minmax(13rem, 0.75fr);
 }
 
 .contents-group h2 {
@@ -621,6 +686,22 @@ blockquote p {
 
 .prototype-note p {
   margin: 0;
+}
+
+.example-index {
+  margin-inline: auto;
+}
+
+.file-list {
+  padding: 0;
+  list-style: none;
+  font: 0.74rem/1.45 var(--mono);
+}
+
+.file-list li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--rule);
+  overflow-wrap: anywhere;
 }
 
 .book-footer {
@@ -773,8 +854,16 @@ blockquote p {
   }
 
   .stack-model,
-  .stack-model figcaption {
+  .stack-model figcaption,
+  .chapter-figure,
+  .chapter-figure figcaption {
     width: 100%;
+  }
+
+  .chapter table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 }
 
@@ -826,6 +915,10 @@ blockquote p {
   .design-note,
   .code-block {
     margin-inline: 0;
+  }
+
+  .chapter table {
+    font-size: 0.72rem;
   }
 
   blockquote p {
@@ -890,7 +983,9 @@ blockquote p {
   }
 
   .stack-model,
-  .stack-model figcaption {
+  .stack-model figcaption,
+  .chapter-figure,
+  .chapter-figure figcaption {
     width: 100%;
   }
 

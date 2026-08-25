@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="540" viewBox="0 0 1000 540" role="img" aria-labelledby="title description">
+  <title id="title">Arrival board representation exposure</title>
+  <desc id="description">The constructor parameter, the ArrivalBoard field, and the display client variable all refer to one mutable ArrayList. Sorting through the display alias therefore changes the board representation.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/>
+    </marker>
+    <style>
+      .label { font: 17px 'IBM Plex Sans', Arial, sans-serif; fill: #172033; }
+      .code { font: 16px 'IBM Plex Mono', Menlo, monospace; fill: #172033; }
+      .small { font: 14px 'IBM Plex Sans', Arial, sans-serif; fill: #172033; }
+      .reference { fill: none; stroke: #1d4ed8; stroke-width: 3; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <text x="55" y="42" class="label" font-weight="600">Reference holders</text>
+  <text x="590" y="42" class="label" font-weight="600">Mutable object</text>
+
+  <rect x="55" y="75" width="245" height="74" fill="#f5f7fa" stroke="#334155" stroke-width="2"/>
+  <text x="177.5" y="104" class="small" text-anchor="middle">constructor parameter</text>
+  <text x="177.5" y="130" class="code" text-anchor="middle">departures</text>
+
+  <rect x="55" y="218" width="245" height="74" fill="#f5f7fa" stroke="#334155" stroke-width="2"/>
+  <text x="177.5" y="247" class="small" text-anchor="middle">ArrivalBoard field</text>
+  <text x="177.5" y="273" class="code" text-anchor="middle">this.departures</text>
+
+  <rect x="55" y="361" width="245" height="74" fill="#f5f7fa" stroke="#334155" stroke-width="2"/>
+  <text x="177.5" y="390" class="small" text-anchor="middle">display client variable</text>
+  <text x="177.5" y="416" class="code" text-anchor="middle">display</text>
+
+  <rect x="590" y="174" rx="18" ry="18" width="345" height="162" fill="#fff4df" stroke="#9a5b13" stroke-width="3"/>
+  <text x="762.5" y="207" class="code" text-anchor="middle">Mutable ArrayList</text>
+  <text x="762.5" y="231" class="code" text-anchor="middle">&lt;Departure&gt;</text>
+  <line x1="614" y1="246" x2="911" y2="246" stroke="#9a5b13" stroke-width="2"/>
+  <text x="762.5" y="277" class="code" text-anchor="middle">[R4 in 8 min,</text>
+  <text x="762.5" y="305" class="code" text-anchor="middle"> 99 in 2 min]</text>
+
+  <path d="M 300 112 H 465 Q 505 112 540 190 L 589 220" class="reference"/>
+  <path d="M 300 255 H 589" class="reference"/>
+  <path d="M 300 398 H 465 Q 505 398 540 320 L 589 290" class="reference"/>
+
+  <text x="390" y="96" class="small">same object</text>
+  <text x="390" y="241" class="small">same object</text>
+  <text x="390" y="424" class="small">same object</text>
+
+  <rect x="360" y="452" rx="10" ry="10" width="240" height="54" fill="#fff1f2" stroke="#be123c" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="480" y="485" class="small" text-anchor="middle">sort through this alias</text>
+  <path d="M 360 474 H 326 Q 309 474 300 435" fill="none" stroke="#be123c" stroke-width="2" stroke-dasharray="7 5"/>
+
+  <text x="762.5" y="375" class="label" text-anchor="middle" font-weight="600">One object, three aliases</text>
+  <text x="762.5" y="403" class="small" text-anchor="middle">Mutation through any arrow</text>
+  <text x="762.5" y="425" class="small" text-anchor="middle">is visible through the other two.</text>
+</svg>
