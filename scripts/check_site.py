@@ -95,7 +95,10 @@ def check_svg(path: Path, failures: list[str]) -> None:
 
 
 def is_published(path: Path) -> bool:
-    return not IGNORED_PARTS.intersection(path.relative_to(SITE_ROOT).parts)
+    return (
+        not IGNORED_PARTS.intersection(path.relative_to(SITE_ROOT).parts)
+        and "conflicted copy" not in path.name
+    )
 
 
 html_files = sorted(path for path in SITE_ROOT.rglob("*.html") if is_published(path))

@@ -1,4 +1,4 @@
-# Optional Reading | How a Java Program Runs
+# Supplemental Reading | How a Java Program Runs
 
 > We can only see a short distance ahead, but we can see plenty there that needs to
 > be done.
@@ -26,9 +26,9 @@ We will develop the call-stack model one invocation at a time. By the end, you w
 be able to draw a stack, trace ordinary and exceptional returns, use a stack trace as
 evidence, and explain why a local reference can still lead to shared mutable state.
 
-> **Optional reading:** [Beyond the Java Call Stack](optional-beyond-the-java-call-stack.md)
-> follows the same ideas into bytecode, thread dumps, and native machine stacks.
-> Later chapters do not require that material.
+> **Supplemental reading:**
+> [Beyond the Java Call Stack](optional-beyond-the-java-call-stack.md) follows the
+> same ideas into bytecode, thread dumps, and native machine stacks.
 
 ## 1. From Source Code to Execution
 
@@ -65,7 +65,7 @@ javap -c FrameDemo
 
 The view is useful, but most application debugging should begin with contracts,
 tests, debugger state, and stack traces at the Java method level. We will stay at
-that level for now and return to bytecode in the optional reading.
+that level for now and return to bytecode in the supplemental reading.
 
 ## 2. The Call Stack
 
@@ -189,8 +189,8 @@ to fields, methods, and constants. How the JVM resolves those references does no
 affect the reasoning in this chapter.
 
 That is enough machinery for the rest of the chapter: each invocation has its own
-state, space for intermediate computation, and a well-defined caller. The optional
-reading examines the lower-level details.
+state, space for intermediate computation, and a well-defined caller. The
+supplemental reading examines the lower-level details.
 
 ## 4. Local References Can Designate Shared Objects
 
@@ -434,8 +434,8 @@ injection flaws, unsafe deserialisation, authorisation bugs, denial-of-service
 vulnerabilities, races, and misuse of native libraries. Memory safety removes an
 important class of defects; it does not remove the need for secure design.
 
-The optional reading examines native frames, stack canaries, address randomisation,
-and related mitigations. The comparison here needs only one principle.
+The supplemental reading examines native frames, stack canaries, address
+randomisation, and related mitigations. The comparison here needs only one principle.
 
 > **Design principle: prefer language and library designs that make invalid states or
 > dangerous operations impossible, and otherwise make failures immediate and
@@ -590,8 +590,9 @@ array access produces a defined exception rather than an arbitrary memory write.
 
 The model is limited to information needed for reasoning about calls; it does not
 reproduce a JVM's optimised memory layout. That is sufficient for the debugging and
-design tasks in this chapter. The [optional reading](optional-beyond-the-java-call-stack.md)
-examines bytecode, inlining, thread dumps, and native frames.
+design tasks in this chapter. The
+[supplemental reading](optional-beyond-the-java-call-stack.md) examines bytecode,
+inlining, thread dumps, and native frames.
 
 ## References
 

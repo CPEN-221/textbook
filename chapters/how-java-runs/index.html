@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 67967874ec22417d09e0583e01d56b35e9c244f26762427e948e4b9a180167be -->
+  <!-- source-sha256: 58ef3f52435b5e997a08d317841210b88768c4f1d0f0e3380edf62324e5931bd -->
   <!-- source-file: chapter-12-how-java-runs.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
@@ -20,7 +20,7 @@
       <span>Software Construction</span>
     </a>
     <div class="nav-contents">
-      <p class="part-label">Optional reading</p>
+      <p class="part-label">Supplemental readings</p>
       <h2><a href="#top" aria-current="page">How a Java Program Runs <small>+</small></a></h2>
       <ul>
         <li><a href="#1-from-source-code-to-execution"><small>+.1</small><span>From Source Code to Execution</span></a></li>
@@ -67,7 +67,7 @@
     <article class="chapter">
       <div class="chapter-number" aria-hidden="true">+</div>
       <header class="chapter-header">
-        <p class="optional-kicker">Optional reading · Not required later</p>
+        <p class="optional-kicker">Supplemental reading</p>
         <h1>How a Java Program Runs</h1>
       </header>
 
@@ -83,7 +83,7 @@
 <p>To investigate, we need to reconstruct the computation that led to that line. We need to know which methods are active, what each invocation stores, and where execution continues after a method returns or throws. The <strong>call stack</strong> represents this information.</p>
 <p>We will develop the call-stack model one invocation at a time. By the end, you will be able to draw a stack, trace ordinary and exceptional returns, use a stack trace as evidence, and explain why a local reference can still lead to shared mutable state.</p>
 <blockquote>
-<p><strong>Optional reading:</strong> <a href="../beyond-java-call-stack/">Beyond the Java Call Stack</a> follows the same ideas into bytecode, thread dumps, and native machine stacks. Later chapters do not require that material.</p>
+<p><strong>Supplemental reading:</strong> <a href="../beyond-java-call-stack/">Beyond the Java Call Stack</a> follows the same ideas into bytecode, thread dumps, and native machine stacks.</p>
 </blockquote>
 <h2 id="1-from-source-code-to-execution"><a href="#1-from-source-code-to-execution"><span class="section-number">+.1</span>From Source Code to Execution</a></h2>
 <p>Before a method can run, our source code has to become something the Java Virtual Machine (JVM) understands:</p>
@@ -101,7 +101,7 @@ Running JVM</code></pre></div>
 <p>The <code>javap</code> tool displays the bytecode in a class file:</p>
 <div class="code-block"><pre class="bash"><code>javac FrameDemo.java
 javap -c FrameDemo</code></pre></div>
-<p>The view is useful, but most application debugging should begin with contracts, tests, debugger state, and stack traces at the Java method level. We will stay at that level for now and return to bytecode in the optional reading.</p>
+<p>The view is useful, but most application debugging should begin with contracts, tests, debugger state, and stack traces at the Java method level. We will stay at that level for now and return to bytecode in the supplemental reading.</p>
 <h2 id="2-the-call-stack"><a href="#2-the-call-stack"><span class="section-number">+.2</span>The Call Stack</a></h2>
 <p>Suppose <code>main</code> calls <code>load</code>, which calls <code>parse</code>. While <code>parse</code> runs, the invocations of <code>load</code> and <code>main</code> remain suspended. The JVM needs to store enough information about each invocation to resume it later.</p>
 <p>For each active invocation, it must retain:</p>
@@ -169,7 +169,7 @@ bottom  +----------------------------------+</code></pre></div>
 <p>The call stack organises method invocations. The operand stack inside one frame organises intermediate values used by that invocation.</p>
 <h3 id="return-and-bookkeeping-information"><a href="#return-and-bookkeeping-information">Return and bookkeeping information</a></h3>
 <p>Finally, the JVM must know how to resume the caller and how the current method refers to fields, methods, and constants. How the JVM resolves those references does not affect the reasoning in this chapter.</p>
-<p>That is enough machinery for the rest of the chapter: each invocation has its own state, space for intermediate computation, and a well-defined caller. The optional reading examines the lower-level details.</p>
+<p>That is enough machinery for the rest of the chapter: each invocation has its own state, space for intermediate computation, and a well-defined caller. The supplemental reading examines the lower-level details.</p>
 <h2 id="4-local-references-can-designate-shared-objects"><a href="#4-local-references-can-designate-shared-objects"><span class="section-number">+.4</span>Local References Can Designate Shared Objects</a></h2>
 <p>Frames separate invocations, but they do not automatically separate objects. This example shows the difference:</p>
 <div class="code-block"><pre class="java"><code>static void rename(StringBuilder builder) {
@@ -297,7 +297,7 @@ factorial(4) returns 4 * 6  = 24</code></pre></div>
 data[8] = 1; // throws ArrayIndexOutOfBoundsException</code></pre></div>
 <p>The bounds check changes the failure mode. Instead of writing outside the array, Java raises a specified exception at the invalid access. A specified exception identifies the failed operation and is easier to test and diagnose than memory corruption.</p>
 <p>This does not make Java programs automatically secure. Java software can still contain injection flaws, unsafe deserialisation, authorisation bugs, denial-of-service vulnerabilities, races, and misuse of native libraries. Memory safety removes an important class of defects; it does not remove the need for secure design.</p>
-<p>The optional reading examines native frames, stack canaries, address randomisation, and related mitigations. The comparison here needs only one principle.</p>
+<p>The supplemental reading examines native frames, stack canaries, address randomisation, and related mitigations. The comparison here needs only one principle.</p>
 <blockquote class="design-note"><p><strong>Design principle: prefer language and library designs that make invalid states or dangerous operations impossible, and otherwise make failures immediate and diagnosable.</strong></p>
 </blockquote>
 <h2 id="9-use-the-stack-model-for-debugging"><a href="#9-use-the-stack-model-for-debugging"><span class="section-number">+.9</span>Use the Stack Model for Debugging</a></h2>
@@ -373,7 +373,7 @@ public static void main(String[] args) {
 <h2 id="summary"><a href="#summary">Summary</a></h2>
 <p>We can now account for the sequence from a method call to a failure. A call adds a frame; a return removes it. Recursion repeats that mechanism, exceptions unwind it, and a stack trace records the active call chain.</p>
 <p>Frames keep invocation state separate, but references in those frames may still reach the same mutable objects. That distinction connects this chapter to both abstraction and concurrency. Java's bounds checks add another boundary: an invalid array access produces a defined exception rather than an arbitrary memory write.</p>
-<p>The model is limited to information needed for reasoning about calls; it does not reproduce a JVM's optimised memory layout. That is sufficient for the debugging and design tasks in this chapter. The <a href="../beyond-java-call-stack/">optional reading</a> examines bytecode, inlining, thread dumps, and native frames.</p>
+<p>The model is limited to information needed for reasoning about calls; it does not reproduce a JVM's optimised memory layout. That is sufficient for the debugging and design tasks in this chapter. The <a href="../beyond-java-call-stack/">supplemental reading</a> examines bytecode, inlining, thread dumps, and native frames.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li>Alan Turing, <a href="https://cbmm.mit.edu/sites/default/files/documents/turing.pdf">“Computing Machinery and Intelligence”</a></li>
@@ -385,7 +385,7 @@ public static void main(String[] args) {
 </ul>
 
       <footer class="book-footer">
-        <a class="next" href="../beyond-java-call-stack/">Optional: Beyond the Java Call Stack →</a>
+        <a class="next" href="../beyond-java-call-stack/">Supplemental: Beyond the Java Call Stack →</a>
         CPEN 221 · Software Construction I · Fall 2026
       </footer>
     </article>

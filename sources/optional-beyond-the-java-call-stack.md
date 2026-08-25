@@ -1,4 +1,4 @@
-# Optional Reading | Beyond the Java Call Stack
+# Supplemental Reading | Beyond the Java Call Stack
 
 > A little learning is a dangerous thing;<br>
 > Drink deep, or taste not the Pierian spring.
@@ -9,11 +9,10 @@ In [How a Java Program Runs](chapter-12-how-java-runs.md), we treated a frame as
 box on a thread's call stack. That model held enough invocation state to trace calls,
 recursion, and exceptions, but it omitted several implementation details.
 
-This optional reading examines the operand stack, method invocation in bytecode,
-inlining, thread diagnostics, and native stack memory. Later core readings do not
-require these details. The goal is to distinguish source-level reasoning, Java
-Virtual Machine (JVM) requirements, and observations about a particular
-implementation.
+This supplemental reading examines the operand stack, method invocation in bytecode,
+inlining, thread diagnostics, and native stack memory. The goal is to distinguish
+source-level reasoning, Java Virtual Machine (JVM) requirements, and observations
+about a particular implementation.
 
 ## 1. Separate Guarantees from Observations
 

@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 463a9a70166b461e4b8f1ee0ea8df61235b75a6e75ead10ab3b72d7bf3c5a5eb -->
+  <!-- source-sha256: 025167b2cc89be2b163bb2624f62b92d394bcc9ea23a1daa981aae8f3408f70e -->
   <!-- source-file: optional-beyond-the-java-call-stack.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
@@ -20,7 +20,7 @@
       <span>Software Construction</span>
     </a>
     <div class="nav-contents">
-      <p class="part-label">Optional reading</p>
+      <p class="part-label">Supplemental readings</p>
       <h2><a href="#top" aria-current="page">Beyond the Java Call Stack <small>+</small></a></h2>
       <ul>
         <li><a href="#1-separate-guarantees-from-observations"><small>+.1</small><span>Separate Guarantees from Observations</span></a></li>
@@ -68,7 +68,7 @@
     <article class="chapter">
       <div class="chapter-number" aria-hidden="true">+</div>
       <header class="chapter-header">
-        <p class="optional-kicker">Optional reading · Not required later</p>
+        <p class="optional-kicker">Supplemental reading</p>
         <h1>Beyond the Java Call Stack</h1>
       </header>
 
@@ -77,7 +77,7 @@
 <p><cite>Alexander Pope, “An Essay on Criticism”</cite></p>
 </blockquote>
 <p>In <a href="../how-java-runs/">How a Java Program Runs</a>, we treated a frame as one box on a thread's call stack. That model held enough invocation state to trace calls, recursion, and exceptions, but it omitted several implementation details.</p>
-<p>This optional reading examines the operand stack, method invocation in bytecode, inlining, thread diagnostics, and native stack memory. Later core readings do not require these details. The goal is to distinguish source-level reasoning, Java Virtual Machine (JVM) requirements, and observations about a particular implementation.</p>
+<p>This supplemental reading examines the operand stack, method invocation in bytecode, inlining, thread diagnostics, and native stack memory. The goal is to distinguish source-level reasoning, Java Virtual Machine (JVM) requirements, and observations about a particular implementation.</p>
 <h2 id="1-separate-guarantees-from-observations"><a href="#1-separate-guarantees-from-observations"><span class="section-number">+.1</span>Separate Guarantees from Observations</a></h2>
 <p>Before interpreting a bytecode listing, we need to identify what kind of claim the listing supports.</p>
 <p>As we investigate, sort claims into three layers:</p>

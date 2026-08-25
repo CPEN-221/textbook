@@ -139,7 +139,7 @@ CHAPTERS = (
         "+",
         "How a Java Program Runs",
         "Trace Java calls, frames, recursion, exceptions, and shared reachable objects.",
-        "Optional reading",
+        "Supplemental readings",
         optional=True,
     ),
     Chapter(
@@ -148,7 +148,7 @@ CHAPTERS = (
         "+",
         "Beyond the Java Call Stack",
         "Investigate bytecode, optimised execution, thread dumps, and native stack safety.",
-        "Optional reading",
+        "Supplemental readings",
         optional=True,
     ),
 )
@@ -321,12 +321,12 @@ def chapter_page(
     mobile_next_label = following.title if following else "contents"
     footer_next = (
         f'<a class="next" href="../{following.slug}/">'
-        f"{'Optional: ' if following.optional else ''}{escape(following.title)} →</a>"
+        f"{'Supplemental: ' if following.optional else ''}{escape(following.title)} →</a>"
         if following
         else '<a class="next" href="../../">Return to contents ↑</a>'
     )
     optional_kicker = (
-        '        <p class="optional-kicker">Optional reading · Not required later</p>\n'
+        '        <p class="optional-kicker">Supplemental reading</p>\n'
         if chapter.optional
         else ""
     )
@@ -399,7 +399,7 @@ def contents_page() -> str:
     optional_items = []
     for chapter in CHAPTERS:
         optional_label = (
-            '                <span class="optional-label">Optional reading</span>\n'
+            '                <span class="optional-label">Supplemental reading</span>\n'
             if chapter.optional
             else ""
         )
@@ -437,7 +437,7 @@ def contents_page() -> str:
       <h2><a href="#top" aria-current="page">Contents</a></h2>
       <ul>
         <li><a href="chapters/engineering-reliable-software/"><small>1</small><span>Begin the core readings</span></a></li>
-        <li><a href="#further-exploration"><small>+</small><span>Further exploration</span></a></li>
+        <li><a href="#further-exploration"><small>+</small><span>Supplemental readings</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="#core-heading">Readings</a>
@@ -475,7 +475,7 @@ def contents_page() -> str:
         </section>
 
         <section id="further-exploration" aria-labelledby="extra-heading">
-          <h2 id="extra-heading">Further exploration</h2>
+          <h2 id="extra-heading">Supplemental readings</h2>
           <ol class="contents-list">
 {optional}
           </ol>
@@ -568,13 +568,11 @@ def build() -> None:
         rendered.append((chapter, body, sections, digest))
 
     chapters_root = SITE_ROOT / "chapters"
-    if chapters_root.exists():
-        shutil.rmtree(chapters_root)
-    chapters_root.mkdir()
+    chapters_root.mkdir(exist_ok=True)
 
     for index, (chapter, body, sections, digest) in enumerate(rendered):
         target = chapters_root / chapter.slug
-        target.mkdir()
+        target.mkdir(exist_ok=True)
         previous = CHAPTERS[index - 1] if index > 0 else None
         following = CHAPTERS[index + 1] if index + 1 < len(CHAPTERS) else None
         (target / "index.html").write_text(

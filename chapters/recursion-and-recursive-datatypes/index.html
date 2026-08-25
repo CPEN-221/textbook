@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: ca2cfbb1d3ea4e018ce71a827b056a60120a202692a744bc7b4ca02a4ff17886 -->
+  <!-- source-sha256: f22bb71e0cc5c8924cf5500e662d838e7922083ce83da0f83cfd070fa0422c13 -->
   <!-- source-file: chapter-09-recursion-and-recursive-datatypes.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
@@ -163,7 +163,7 @@ public record Travel(String route, String from, String to,
 <p><code>totalMinutes(Arrive)</code> returns zero. The second call adds 14 and returns 14. The first adds 28 and returns 42. The object links exist independently of these temporary call frames; another method could traverse the same immutable journey at the same time.</p>
 <p>Java does not guarantee tail-call elimination. Even a recursive call in final position may use another frame. A sufficiently deep valid structure can therefore cause <code>StackOverflowError</code>. The Java language does not specify a portable maximum recursion depth, and the available stack depends on runtime and implementation conditions.</p>
 <p>An implementation must therefore consider expected depth. A journey normally has a modest number of legs. A syntax tree produced from untrusted nested input or a linked structure with millions of nodes needs a different risk assessment.</p>
-<p>The optional reading <a href="../how-java-runs/">How a Java Program Runs</a> traces frames, exception unwinding, and runtime observations in more detail.</p>
+<p>The supplemental reading <a href="../how-java-runs/">How a Java Program Runs</a> traces frames, exception unwinding, and runtime observations in more detail.</p>
 <h2 id="6-iterative-traversal-for-unbounded-depth"><a href="#6-iterative-traversal-for-unbounded-depth"><span class="section-number">9.6</span>Iterative Traversal for Unbounded Depth</a></h2>
 <p>A chain-shaped journey can be processed with a loop:</p>
 <div class="code-block"><pre class="java"><code>public static int totalMinutesIterative(Journey journey) {
