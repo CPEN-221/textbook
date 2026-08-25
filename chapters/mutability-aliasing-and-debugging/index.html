@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 401edd28ef2755add55ae32063ef6e6218ad33993d5fd25c8bf0078f63c4ff9f -->
+  <!-- source-sha256: d10516fe2270ec381b520d49e70eab067e1c9d815a9c472bbaa7113f82595642 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -171,7 +171,7 @@ public final class ArrivalBoard {
         return departures;
     }
 }</code></pre></div>
-<p><code>List.copyOf</code> returns an unmodifiable list containing the source collection's elements in iteration order. Later structural changes to the source collection do not appear in the returned list. It also rejects <code>null</code> collections and elements, which matches our course convention.</p>
+<p><code>List.copyOf</code> returns an unmodifiable list containing the source collection's elements in iteration order. Later structural changes to the source collection do not appear in the returned list. It also rejects <code>null</code> collections and elements, which matches the transit system's public-method convention.</p>
 <p>We can safely return the field because clients cannot add, remove, sort, or replace elements in that list. A client that calls <code>sort</code> receives <code>UnsupportedOperationException</code>; the board remains unchanged.</p>
 <p>Why not copy again on every call to <code>upcoming</code>? We could. Returning one immutable snapshot avoids repeated allocation and is safe because the shared object cannot be mutated through its public interface. Immutability can make sharing <em>cheaper</em> than defensive copying at every boundary.</p>
 <h3 id="check-the-element-types"><a href="#check-the-element-types">Check the element types</a></h3>
@@ -248,7 +248,6 @@ void clientCannotReorderBoard() {
 <li>Fail near violated assumptions instead of carrying damaged state forward.</li>
 </ul>
 <p>These practices <strong>confine</strong> change. A mutable local <code>ArrayList</code> used to assemble an immutable result is often an effective design: mutation is efficient, its owner is clear, and no reference to the list leaves the method. "Prefer immutability" does not prohibit every call to <code>add</code>; it asks us to keep the boundary of mutation small and deliberate.</p>
-<p>Our design principle is:</p>
 <blockquote class="design-note"><p><strong>Design principle: minimize the number of paths by which mutable state can be reached.</strong></p>
 </blockquote>
 <p>When sharing is required, choose an explicit policy: immutable value, owner-confined mutation, unmodifiable snapshot, or carefully specified shared mutation. Do not let the sharing policy emerge accidentally from copied references.</p>

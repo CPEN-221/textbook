@@ -12,7 +12,7 @@ that expresses the right problem, rejects bad states, survives change, and gives
 enough evidence to find mistakes.
 
 We will start by building one small part of a transit information system and using
-it to establish the working loop for the course.
+it to establish a repeatable development workflow for individual and team changes.
 
 By the end, you should be able to:
 
@@ -58,15 +58,15 @@ The failure comes from a mismatch among three things:
 2. the behaviour the implementation provides;
 3. the evidence we collected before trusting it.
 
-The course will keep returning to these three views. A **specification** states the
-required behaviour. An **implementation** attempts to provide it. Tests, reviews,
-static checks, and observations supply evidence about the implementation. We need
-all three views to make a useful claim about the program.
+Reliable software development connects these three views. A **specification** states
+the required behaviour. An **implementation** attempts to provide it. Tests,
+reviews, static checks, and observations supply evidence about the implementation.
+We need all three views to make a useful claim about the program.
 
 ## 2. What We Mean by Reliable
 
-“Reliable software” is easy to say and too vague to guide a design. For this course,
-we will evaluate our work along three recurring dimensions.
+“Reliable software” is easy to say and too vague to guide a design. Three recurring
+dimensions make the term more precise.
 
 ### Correct
 
@@ -299,8 +299,6 @@ whether the program satisfies the language's static rules. A focused test checks
 specified behaviour for selected inputs. The full test suite looks for effects on
 other components. Review can question the requirement or design itself. Choose the
 feedback that addresses the current risk.
-
-Our first design principle follows:
 
 > **Design principle: obtain trustworthy feedback soon after each design or
 > implementation decision.**

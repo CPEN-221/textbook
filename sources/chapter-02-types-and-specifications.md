@@ -196,10 +196,10 @@ promise without depending on the implementation's private algorithm.*
 
 ## 4. Define the Nearest-Stop Contract
 
-For our teaching system, we will use squared coordinate distance. This metric is not
-walking distance and is not an accurate general-purpose geodesic calculation. It is
-good enough for a tiny frozen campus map, and the specification says exactly which
-simplification we chose.
+For the frozen transit example, we use squared coordinate distance. This metric is
+not walking distance and is not an accurate general-purpose geodesic calculation.
+It produces deterministic comparisons for the small campus map, and the
+specification states the simplification explicitly.
 
 ```java
 /**
@@ -262,17 +262,18 @@ Inconsistent use of `null` makes public methods harder to use. If one method use
 for "not found," another for "not loaded," and a third silently forbids it, clients
 have to infer its meaning separately at every call.
 
-Unless a CPEN 221 specification says otherwise:
+The transit system uses the following convention unless an individual method's
+specification says otherwise:
 
-> **References passed to or returned from our public methods are non-null.**
+> **References passed to or returned from its public methods are non-null.**
 
 We will still document and check `null` at important public boundaries, as
 `nearestStop` does. Later we will use types such as `Optional` when absence is a
 legitimate result that needs a name.
 
-Mutation needs the same clarity. Unless the specification explicitly says that a
-method modifies an argument, clients may assume it does not. `nearestStop` observes
-the list and its stops; it does not reorder or replace them.
+Mutation follows the same application convention. Unless the specification
+explicitly says that a method modifies an argument, clients may assume it does not.
+`nearestStop` observes the list and its stops; it does not reorder or replace them.
 
 This convention reduces prose, but APIs must still describe surprising behaviour. If
 a method called `normalize` changes its input list, state that effect prominently or
@@ -356,8 +357,6 @@ test may require.
 It also reveals missing decisions. What should happen for an empty list? Does
 distance account for roads? Should a closed stop be a candidate? If we cannot write
 the expected observation, we may not understand the requirement yet.
-
-Our design principle for this chapter is:
 
 > **Design principle: put application distinctions in types, and put behavioural
 > obligations in specifications.**

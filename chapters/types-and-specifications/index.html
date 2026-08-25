@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 5435cfc02c7ad2eb141cb0b8e784aa658e939db1ff116b480f509938bbbdddb3 -->
+  <!-- source-sha256: 8c6523503ec732fb9ec7e9c77812fd9eb0d7d3f6f33c65bccdc3428bc6687267 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -172,7 +172,7 @@ findStop(new RouteId(&quot;R4&quot;));</code></pre></div>
 <p>Exceptional behaviour and permitted mutation also belong in the contract. Java's method signature captures some of it, but not enough.</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-02/specification-boundary.svg" alt="The client supplies inputs that satisfy the precondition across a contract boundary, and the implementation returns a result satisfying the postcondition without exposing its private algorithm." /><figcaption>Figure 2.1: A specification separates responsibilities. The client depends on the promise without depending on the implementation's private algorithm.</figcaption></figure>
 <h2 id="4-define-the-nearest-stop-contract"><a href="#4-define-the-nearest-stop-contract"><span class="section-number">2.4</span>Define the Nearest-Stop Contract</a></h2>
-<p>For our teaching system, we will use squared coordinate distance. This metric is not walking distance and is not an accurate general-purpose geodesic calculation. It is good enough for a tiny frozen campus map, and the specification says exactly which simplification we chose.</p>
+<p>For the frozen transit example, we use squared coordinate distance. This metric is not walking distance and is not an accurate general-purpose geodesic calculation. It produces deterministic comparisons for the small campus map, and the specification states the simplification explicitly.</p>
 <div class="code-block"><pre class="java"><code>/**
  * Finds the stop nearest to an origin in coordinate space.
  *
@@ -212,12 +212,12 @@ public static Stop nearestStop(GeoPoint origin, List&lt;Stop&gt; stops)</code></
 <p>The implementation also checks inputs even though the application-specific types already validate their own contents. A well-formed <code>GeoPoint</code> cannot carry an impossible latitude, but the reference to it can still be <code>null</code>, and a <code>List&lt;Stop&gt;</code> can still be empty or contain <code>null</code>. Type safety and input validation cover different ground.</p>
 <h2 id="5-null-and-mutation-conventions"><a href="#5-null-and-mutation-conventions"><span class="section-number">2.5</span>Null and Mutation Conventions</a></h2>
 <p>Inconsistent use of <code>null</code> makes public methods harder to use. If one method uses it for "not found," another for "not loaded," and a third silently forbids it, clients have to infer its meaning separately at every call.</p>
-<p>Unless a CPEN 221 specification says otherwise:</p>
+<p>The transit system uses the following convention unless an individual method's specification says otherwise:</p>
 <blockquote>
-<p><strong>References passed to or returned from our public methods are non-null.</strong></p>
+<p><strong>References passed to or returned from its public methods are non-null.</strong></p>
 </blockquote>
 <p>We will still document and check <code>null</code> at important public boundaries, as <code>nearestStop</code> does. Later we will use types such as <code>Optional</code> when absence is a legitimate result that needs a name.</p>
-<p>Mutation needs the same clarity. Unless the specification explicitly says that a method modifies an argument, clients may assume it does not. <code>nearestStop</code> observes the list and its stops; it does not reorder or replace them.</p>
+<p>Mutation follows the same application convention. Unless the specification explicitly says that a method modifies an argument, clients may assume it does not. <code>nearestStop</code> observes the list and its stops; it does not reorder or replace them.</p>
 <p>This convention reduces prose, but APIs must still describe surprising behaviour. If a method called <code>normalize</code> changes its input list, state that effect prominently or choose a name that indicates mutation.</p>
 <h2 id="6-choose-tie-breaking-behaviour"><a href="#6-choose-tie-breaking-behaviour"><span class="section-number">2.6</span>Choose Tie-Breaking Behaviour</a></h2>
 <p>Suppose two stops have the same coordinate. We could write either contract:</p>
@@ -245,7 +245,6 @@ effects:  returns any candidate with minimal distance from origin</code></pre></
 <p>If both stops tie and the contract allows either, the test is wrong. Tests are clients. They may check every promise, but they may not promote a current implementation detail into a permanent requirement by accident.</p>
 <p>For our deterministic contract, the assertion is appropriate because tie-breaking order is public. This is why test design begins with the specification rather than with a tour through the implementation. The contract identifies the observations a test may require.</p>
 <p>It also reveals missing decisions. What should happen for an empty list? Does distance account for roads? Should a closed stop be a candidate? If we cannot write the expected observation, we may not understand the requirement yet.</p>
-<p>Our design principle for this chapter is:</p>
 <blockquote class="design-note"><p><strong>Design principle: put application distinctions in types, and put behavioural obligations in specifications.</strong></p>
 </blockquote>
 <p>Types prevent broad classes of meaningless operations. Specifications cover semantic relationships that the type system cannot conveniently express. Neither replaces the other.</p>

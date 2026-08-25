@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 8a900e7aef52eee74b1f8b91ccdddca77f0a6b2df00d61efbe1e47d1cb736486 -->
+  <!-- source-sha256: 2cc153b111b5ffdca5e771bb1da3988c8807f0a156a70cbb975c475bd3ddf158 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -247,7 +247,6 @@ void producerLeavesOriginalUnchanged(
 }</code></pre></div>
 <p>The test observes promises: old value unchanged, new edge present, correct direct destination. It does not inspect fields, assert a concrete class, or depend on set iteration order. The same tests also cover isolated stops, direction, invalid arguments, duplicate additions, input aliasing, and unmodifiable results. These tests make representative contract obligations executable. Review remains necessary for obligations and inputs that the test suite does not cover.</p>
 <p>White-box tests still have a place. An implementation may need focused tests for a complicated private algorithm. Every implementation must also pass the shared contract tests before the factory can substitute it for another implementation. The shared factory also keeps implementation-specific setup out of individual test cases.</p>
-<p>Our design principle is:</p>
 <blockquote class="design-note"><p><strong>Design principle: expose only the operations clients need, and keep the representation data structures private.</strong></p>
 </blockquote>
 <p>This principle also makes clients easier to read because their operations use transit terms. It simplifies correctness arguments by restricting clients to specified operations instead of arbitrary map mutation.</p>

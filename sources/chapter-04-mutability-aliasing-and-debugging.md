@@ -204,7 +204,7 @@ public final class ArrivalBoard {
 `List.copyOf` returns an unmodifiable list containing the source collection's
 elements in iteration order. Later structural changes to the source collection do
 not appear in the returned list. It also rejects `null` collections and elements,
-which matches our course convention.
+which matches the transit system's public-method convention.
 
 We can safely return the field because clients cannot add, remove, sort, or replace
 elements in that list. A client that calls `sort` receives
@@ -364,8 +364,6 @@ immutable result is often an effective design: mutation is efficient, its owner 
 clear, and no reference to the list leaves the method. "Prefer immutability" does not
 prohibit every call to `add`; it asks us to keep the boundary of mutation small and
 deliberate.
-
-Our design principle is:
 
 > **Design principle: minimize the number of paths by which mutable state can be
 > reached.**

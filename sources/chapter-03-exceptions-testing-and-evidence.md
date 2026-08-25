@@ -48,8 +48,8 @@ public static ArrivalPrediction parse(String line) throws FeedFormatException
 
 The contract distinguishes two origins of failure.
 
-Passing `null` violates our course's public-method convention. The caller already has
-the reference and can obey the rule, so `NullPointerException` reports a programming
+Passing `null` violates the parser's public contract. The caller already has the
+reference and can obey the rule, so `NullPointerException` reports a programming
 error near its source.
 
 Malformed text is different. Even a correct caller cannot know that a downloaded
@@ -386,8 +386,6 @@ directly and observe the result.
 strings and reserve a smaller set of integration tests for the file boundary. This
 separation is not a concession to the test framework. It is a modular design in
 which computation and effects have clear owners.
-
-Our design principle is:
 
 > **Design principle: specify each failure at the component boundary, then derive
 > tests from the component's contract.**

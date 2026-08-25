@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 30a19ad46a6a5771eb7eef47bad5c87064709fdfaf4835924f25c0618e19f79a -->
+  <!-- source-sha256: 84b82b8abeb5600dbdd48c7e0689452ae8933a06c5f723c61e4197bbb7969ab4 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -78,7 +78,7 @@
 <p>The arrival board says the next bus is <strong>−3 minutes away</strong>.</p>
 <p>The computing system executed the arithmetic operations correctly. The program subtracted the current time from a prediction, converted the result to minutes, and printed the number. And someone standing in the Vancouver rain saw something that did not make sense.</p>
 <p>The program ran, but its output was not useful. Software construction requires code that expresses the right problem, rejects bad states, survives change, and gives us enough evidence to find mistakes.</p>
-<p>We will start by building one small part of a transit information system and using it to establish the working loop for the course.</p>
+<p>We will start by building one small part of a transit information system and using it to establish a repeatable development workflow for individual and team changes.</p>
 <section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
 <li>distinguish source code, a build, a test, and a running program;</li>
 <li>explain what <em>correct</em>, <em>comprehensible</em>, and <em>changeable</em> mean in a concrete case;</li>
@@ -112,9 +112,9 @@ public final class ArrivalStatus {
 <li>the behaviour the implementation provides;</li>
 <li>the evidence we collected before trusting it.</li>
 </ol>
-<p>The course will keep returning to these three views. A <strong>specification</strong> states the required behaviour. An <strong>implementation</strong> attempts to provide it. Tests, reviews, static checks, and observations supply evidence about the implementation. We need all three views to make a useful claim about the program.</p>
+<p>Reliable software development connects these three views. A <strong>specification</strong> states the required behaviour. An <strong>implementation</strong> attempts to provide it. Tests, reviews, static checks, and observations supply evidence about the implementation. We need all three views to make a useful claim about the program.</p>
 <h2 id="2-what-we-mean-by-reliable"><a href="#2-what-we-mean-by-reliable"><span class="section-number">1.2</span>What We Mean by Reliable</a></h2>
-<p>“Reliable software” is easy to say and too vague to guide a design. For this course, we will evaluate our work along three recurring dimensions.</p>
+<p>“Reliable software” is easy to say and too vague to guide a design. Three recurring dimensions make the term more precise.</p>
 <h3 id="correct"><a href="#correct">Correct</a></h3>
 <p>Software is <strong>correct with respect to a specification</strong> when its behaviour satisfies that specification. Correctness is always relative to a stated obligation. Without one, a claim that code is correct is incomplete.</p>
 <p>If the specification says an arrival exactly on schedule is <code>ON_TIME</code>, then returning that status is correct for that input. If the specification says nothing about early arrivals, we have found a hole in the specification before we have found a bug in the implementation.</p>
@@ -217,7 +217,6 @@ git commit -m &quot;Classify early arrival predictions&quot;</code></pre></div>
 <p>Builds, tests, and commits are part of the design process. A short feedback loop changes which designs are practical.</p>
 <p>If a method can be tested in isolation, we can explore an alternative quickly. If a commit contains one idea, review can focus on that idea. If the build is reproducible, we can distinguish a code failure from a teammate's private machine setup. These tools affect design decisions because they make some mistakes faster to detect.</p>
 <p>Different feedback mechanisms answer different questions. Compilation checks whether the program satisfies the language's static rules. A focused test checks one specified behaviour for selected inputs. The full test suite looks for effects on other components. Review can question the requirement or design itself. Choose the feedback that addresses the current risk.</p>
-<p>Our first design principle follows:</p>
 <blockquote class="design-note"><p><strong>Design principle: obtain trustworthy feedback soon after each design or implementation decision.</strong></p>
 </blockquote>
 <p>This does not mean running every conceivable analysis after every keystroke. It means matching the cost of feedback to the risk of the change. Compile often. Run focused tests while developing. Run the full suite before sharing. Ask for human review when the difficult question is whether the contract itself is sensible.</p>

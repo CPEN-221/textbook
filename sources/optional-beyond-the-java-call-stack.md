@@ -5,7 +5,7 @@ box on a thread's call stack. That model held enough invocation state to trace c
 recursion, and exceptions, but it omitted several implementation details.
 
 This optional chapter examines the operand stack, method invocation in bytecode,
-inlining, thread diagnostics, and native stack memory. The main course path does not
+inlining, thread diagnostics, and native stack memory. Later core readings do not
 require these details. The goal is to distinguish source-level reasoning, Java
 Virtual Machine (JVM) requirements, and observations about a particular
 implementation.

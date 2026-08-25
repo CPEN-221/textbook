@@ -342,8 +342,6 @@ representations. Requiring every stop to have an outgoing edge would simplify on
 loop, but it would make an isolated terminal stop impossible to represent. The RI
 must permit every value allowed by the ADT, including isolated terminal stops.
 
-Our design principle is:
-
 > **Design principle: document the meaning and validity of the representation, then
 > verify that every creator and producer establishes those conditions.**
 

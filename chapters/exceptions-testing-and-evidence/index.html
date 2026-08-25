@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 26311aa16fe31489cc6401c8ec1170f3a5dc59838710279ac3f303c0497f7de7 -->
+  <!-- source-sha256: f31d7c77c532d22e4009246166c47d2654904154fc63b875d78db81e82866e93 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -102,7 +102,7 @@
  */
 public static ArrivalPrediction parse(String line) throws FeedFormatException</code></pre></div>
 <p>The contract distinguishes two origins of failure.</p>
-<p>Passing <code>null</code> violates our course's public-method convention. The caller already has the reference and can obey the rule, so <code>NullPointerException</code> reports a programming error near its source.</p>
+<p>Passing <code>null</code> violates the parser's public contract. The caller already has the reference and can obey the rule, so <code>NullPointerException</code> reports a programming error near its source.</p>
 <p>Malformed text is different. Even a correct caller cannot know that a downloaded line contains <code>soon</code> until something parses it. The failure is an ordinary risk of crossing the feed boundary, so we give it a transit-specific name:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
 
@@ -315,7 +315,6 @@ void executesParserWithoutCheckingResult() throws FeedFormatException {
 <h2 id="8-design-for-testability"><a href="#8-design-for-testability"><span class="section-number">3.8</span>Design for Testability</a></h2>
 <p><code>PredictionParser.parse</code> has a useful property: all input arrives through a parameter and all ordinary output leaves through a return value. It does not read a hard-coded file, consult the wall clock, modify global state, or print. A test can call it directly and observe the result.</p>
 <p><code>PredictionFile.load</code> owns file I/O separately. We can test the parser rapidly with strings and reserve a smaller set of integration tests for the file boundary. This separation is not a concession to the test framework. It is a modular design in which computation and effects have clear owners.</p>
-<p>Our design principle is:</p>
 <blockquote class="design-note"><p><strong>Design principle: specify each failure at the component boundary, then derive tests from the component's contract.</strong></p>
 </blockquote>
 <p>A named failure lets clients choose a response. A focused component makes that failure easy to provoke in a test. A test linked to a contract explains why its observation matters.</p>

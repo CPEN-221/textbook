@@ -326,8 +326,6 @@ contract tests before the factory can substitute it for another implementation.
 The shared factory also keeps implementation-specific setup out of individual test
 cases.
 
-Our design principle is:
-
 > **Design principle: expose only the operations clients need, and keep the
 > representation data structures private.**
 

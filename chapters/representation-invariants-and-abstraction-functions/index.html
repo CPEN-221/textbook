@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: d7433cb8f33f55e93a457d32642e6e3371aee3a25dadcc1371c1c4bf2f368f23 -->
+  <!-- source-sha256: e937f0e07393caa854cdc195243333b1df49e39a0fd786bcf9d8d963f6d7dff0 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -220,7 +220,6 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 </ol>
 <p>Do not include how the object arrived there. “Connections were added in feed order” is a history property unless the current rep records enough information to check it. Do not restate facts guaranteed by Java primitive types or by the specifications of rep components. An RI should be strong enough for the implementation and no stronger than necessary.</p>
 <p>An unnecessarily strong invariant creates work and may eliminate useful representations. Requiring every stop to have an outgoing edge would simplify one loop, but it would make an isolated terminal stop impossible to represent. The RI must permit every value allowed by the ADT, including isolated terminal stops.</p>
-<p>Our design principle is:</p>
 <blockquote class="design-note"><p><strong>Design principle: document the meaning and validity of the representation, then verify that every creator and producer establishes those conditions.</strong></p>
 </blockquote>
 <p>The AF defines what each valid state means. The RI defines which states may occur. The operation proof establishes that each transition produces the abstract value required by its specification. Keeping these obligations separate makes each one easier to inspect.</p>
