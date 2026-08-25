@@ -1,7 +1,7 @@
 # Chapter 4 | Mutability, Aliasing, and Debugging
 
-The arrival board is supposed to preserve feed order. A display client wants the same
-departures sorted by waiting time, so it does this:
+The arrival-board specification requires the board to preserve feed order. A display
+client wants the same departures sorted by waiting time, so it does this:
 
 ```java
 List<Departure> display = board.upcoming();
@@ -63,7 +63,7 @@ reference values may designate the same object.
 
 An **instance diagram** records one runtime state. We draw variables or fields as
 labelled cells, objects as containers, primitive values inside their cells, and
-references as arrows to objects.
+references as arrows to objects (Figure 4.1).
 
 ![The board field, constructor parameter, and client variable all refer to one
 mutable ArrayList; sorting through the client variable therefore changes the board's
@@ -73,7 +73,7 @@ representation.](../../assets/diagrams/rendered/chapter-04/arrival-board-represe
 designate the same mutable list.*
 
 The diagram is not a description of physical memory. A Java Virtual Machine (JVM)
-may arrange or optimize storage in many ways. The model preserves the relationships Java makes
+may arrange or optimise storage in many ways. The model preserves the relationships Java makes
 observable: which variables can reach which objects, and where a mutation can be
 seen.
 
@@ -95,7 +95,7 @@ to another object. Other aliases remain attached to the original object.
 **Mutation** changes the state of an existing object. The arrows stay in place, so
 every alias can observe the new state.
 
-Method calls make this distinction easy to miss:
+Method-call syntax can obscure this distinction:
 
 ```java
 String label = "R4";
@@ -109,7 +109,7 @@ message.append(" delayed");
 `StringBuilder` is mutable; `append` changes the existing builder. Syntax alone does
 not tell us whether a call mutates. The type's specification does.
 
-### What `final` guarantees
+### Guarantees of `final`
 
 `final` prevents a variable or field from being assigned again:
 
@@ -210,10 +210,10 @@ We can safely return the field because clients cannot add, remove, sort, or repl
 elements in that list. A client that calls `sort` receives
 `UnsupportedOperationException`; the board remains unchanged.
 
-Why not copy again on every call to `upcoming`? We could. Returning one immutable
-snapshot avoids repeated allocation and is safe because the shared object cannot be
-mutated through its public interface. Immutability can make sharing *cheaper* than
-defensive copying at every boundary.
+Copying again on every call to `upcoming` is another valid design. Returning one
+immutable snapshot avoids repeated allocation and is safe because the shared object
+cannot be mutated through its public interface. Immutability can make sharing
+*cheaper* than defensive copying at every boundary.
 
 ### Check the element types
 
@@ -244,9 +244,9 @@ public record Departure(StopId stopId, String routeName,
 `Departure` is immutable because its components are immutable values and its methods
 do not mutate them. The list and every element can therefore be shared safely.
 
-If `Departure` contained a mutable `List<String>` component, the record's final field
-would protect only the component reference. A client could still mutate the list.
-Records provide final component fields, but they do not make mutable component
+If `Departure` contained a mutable `List<String>` component, then the record's final
+field would protect only the component reference. A client could still mutate the
+list. Records provide final component fields, but they do not make mutable component
 objects immutable.
 
 ## 6. Snapshot, View, Shallow Copy, Deep Copy
@@ -271,11 +271,12 @@ An **unmodifiable snapshot** such as the result we obtain from `List.copyOf(sour
 does not reflect later structural changes to `source`. That is the property our board
 needs.
 
-Neither “unmodifiable” nor “copied” guarantees deep immutability. Ask two separate
-questions:
+Neither “unmodifiable” nor “copied” guarantees deep immutability. Check two
+properties separately:
 
-1. Can this reference modify the container?
-2. Can any reachable reference modify an element or backing object?
+1. Determine whether this reference can modify the container.
+2. Determine whether any reachable reference can modify an element or backing
+   object.
 
 The second question identifies mutations that remain possible through the elements
 or backing objects.
@@ -307,8 +308,9 @@ void clientCannotReorderBoard() {
 }
 ```
 
-The test records two obligations: mutation is rejected, and feed order survives the
-attempt. It is now fast enough to run after every hypothesis.
+The test records two obligations: `upcoming` rejects a mutation attempt, and the
+board retains feed order. The test uses only in-memory values, so it provides focused
+feedback after each hypothesis.
 
 ### Study the evidence
 
@@ -325,9 +327,10 @@ designate the same object.
 ### Run a discriminating experiment
 
 Replace the return expression temporarily with `new ArrayList<>(departures)`. If
-outgoing mutation no longer changes the board, the experiment supports the hypothesis
-about the getter. Then test incoming exposure by retaining and mutating the constructor
-argument. That second experiment reveals whether the repair is complete.
+outgoing mutation no longer changes the board, then the experiment supports the
+hypothesis about the getter. Then test incoming exposure by retaining and mutating
+the constructor argument. That second experiment reveals whether the repair is
+complete.
 
 ### Repair the cause
 
@@ -338,7 +341,8 @@ paths. The repair is a design change, not a compensating sort.
 ### Preserve the failure as a regression test
 
 Run the focused test, then the whole suite. Keep the minimal reproducer so a later
-refactor cannot expose the representation again.
+refactor cannot expose the representation again. Contradictory evidence requires a
+revised hypothesis rather than a speculative repair (Figure 4.2).
 
 ![An observed failure leads to a minimal reproducer, a reference-model hypothesis, a
 discriminating experiment, a cause-level repair, and a regression test; contradictory
@@ -352,7 +356,7 @@ supported by the evidence rather than addressing only the observed result.*
 Debugging technique matters, but design determines the size of the search.
 
 - Keep mutable objects local when one method can own the entire mutation.
-- Minimize variable scope so fewer statements can reassign or use a reference.
+- Minimise variable scope so fewer statements can reassign or use a reference.
 - Avoid global mutable state; it gives distant code an invisible communication
   channel.
 - Use immutable application values when sharing is common.
@@ -365,7 +369,7 @@ clear, and no reference to the list leaves the method. "Prefer immutability" doe
 prohibit every call to `add`; it asks us to keep the boundary of mutation small and
 deliberate.
 
-> **Design principle: minimize the number of paths by which mutable state can be
+> **Design principle: minimise the number of paths by which mutable state can be
 > reached.**
 
 When sharing is required, choose an explicit policy: immutable value, owner-confined
@@ -397,12 +401,12 @@ Generated getters often return fields directly because the code is compact and t
 types line up. Review every constructor and observer of a state-holding class with a
 reference checklist:
 
-- Does the constructor retain a mutable argument?
-- Does a method return a mutable field or an element reachable from it?
-- Are collection elements themselves immutable?
-- Does `final` protect only a reference?
-- Is an “unmodifiable” result a detached snapshot or a live view?
-- Does the specification permit the sharing the implementation creates?
+- Identify every mutable argument retained by the constructor.
+- Identify every mutable field or reachable element returned by a method.
+- Determine whether the collection elements are immutable.
+- Determine whether `final` protects only a reference.
+- Classify each unmodifiable result as a detached snapshot or a live view.
+- Check whether the specification permits the sharing created by the implementation.
 
 Ask the generator to explain ownership if useful, but verify the explanation against
 the code and tests. An instance diagram provides a concrete account of which objects
@@ -476,7 +480,7 @@ different guarantees; name the one the design actually needs.
 When a state-related failure appears, reproduce it, study evidence, form a falsifiable hypothesis,
 run a discriminating experiment, repair the cause, and preserve the failure as a
 regression test. Confining mutation reduces the number of operations and aliases that
-must be examined when such a failure occurs.
+developers must examine when such a failure occurs.
 
 We now have a feedback loop, meaningful types, explicit contracts and failure paths,
 and controlled mutable state. The next chapter uses these tools to define abstract
@@ -484,7 +488,7 @@ data types whose clients can depend on behaviour without depending on representa
 
 ## References
 
-- [Java Language Specification, values and types](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html)
+- [Java Language Specification, Java Platform, Standard Edition (Java SE) 25: values and types](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html)
 - [`List.copyOf` and unmodifiable lists in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#copyOf(java.util.Collection))
 - [Java SE 25 guide to unmodifiable collections](https://docs.oracle.com/en/java/javase/25/core/creating-immutable-lists-sets-and-maps.html)
 - [Java SE 25 record classes](https://docs.oracle.com/en/java/javase/25/language/records.html)

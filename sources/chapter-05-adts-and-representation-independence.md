@@ -110,10 +110,10 @@ describes the returned abstract value rather than requiring a fresh object. A te
 that insists on `result != network` would require behaviour absent from the contract.
 
 The classification also exposes omissions. If an API has a creator and three
-mutators but no observer, clients cannot learn anything about the value except by
-remembering its history. If it returns a mutable `Map` as its only observer, it has
-mixed observation with unrestricted mutation. The table helps us review the design;
-an ADT does not need one operation in every category.
+mutators but no observer, then clients cannot learn anything about the value except
+by remembering its history. If it returns a mutable `Map` as its only observer, then
+it has mixed observation with unrestricted mutation. The table helps us review the
+design; an ADT does not need one operation in every category.
 
 ## 4. Define the Public Contract
 
@@ -134,7 +134,7 @@ static TransitNetwork empty(Set<StopId> stops)
 occur in an edge would lose every stop in an empty network and violate the
 postcondition.
 
-The producer says what changes and, just as importantly, what does not:
+The producer specifies the added edge and the unchanged receiver:
 
 ```java
 /**
@@ -153,8 +153,8 @@ implementation to return the receiver in that case.
 
 Our observers return unmodifiable sets. They do not promise an iteration order. That
 omission is deliberate: a client can test set membership and equality, but it cannot
-depend on the current hash-table order. If stable order becomes a requirement, we can
-add it to the specification and accept the associated implementation cost.
+depend on the current hash-table order. If stable order becomes a requirement, then
+we can add it to the specification and accept the associated implementation cost.
 
 Specifications do not need to expose every implementation failure. Running out of
 memory, for example, is not useful network behaviour to restate on each method.
@@ -179,9 +179,9 @@ TransitNetwork network = TransitNetwork.empty(Set.of(ubc, wesbrook, alma));
 ```
 
 The declared type matters. If the factory returned `AdjacencyMapNetwork`, or clients
-constructed that class directly, the implementation name would appear in method
-signatures and tests. Changing representations would then become a migration rather
-than a private edit.
+constructed that class directly, then the implementation name would appear in
+method signatures and tests. Changing representations would then become a migration
+rather than a private edit.
 
 A factory chooses an implementation while returning the abstraction. We could later
 make that choice depend on input size or a configuration setting, provided every
@@ -226,8 +226,8 @@ public Set<StopId> directDestinationsFrom(StopId stop) {
 
 That decision depends on the complete reachable representation. `StopId` is an
 immutable record, the destination set is unmodifiable, and no mutable input alias
-was retained. If any of those facts changed, returning the field's value could
-expose the representation.
+reaches the field. If any of those facts changed, then returning the field's value
+could expose the representation.
 
 The public contract tells clients what they may assume. The private constructor and
 helpers may depend on representation details. Data abstraction requires us to keep
@@ -272,14 +272,14 @@ The observation does not reveal a map or a connection set. That is
 **representation independence**: client behaviour depends on the ADT specification,
 not on which valid representation implements it.
 
-Representation independence has requirements. The implementations must realize the
+Representation independence has requirements. The implementations must realise the
 same abstract values, satisfy the same operation specifications, and prevent clients
 from observing representation-only differences. A public downcast, leaked mutable
 collection, promised iteration order, or implementation-specific exception can make
 client behaviour depend on the representation.
 
 It also has limits. Performance can be observable and may matter to a specification
-with explicit complexity bounds. Serialization formats, reflection, and debugging
+with explicit complexity bounds. Serialisation formats, reflection, and debugging
 tools can reveal concrete classes. We do not pretend implementations are physically
 indistinguishable. We design ordinary program dependencies so clients need not rely
 on those differences.
@@ -295,7 +295,7 @@ exception behaviour, immutability, and returned-collection guarantees.
 ## 8. Run Contract Tests Against Both Implementations
 
 To test representation independence, the companion project supplies both factories
-to one parameterized test suite. One of its tests is:
+to one parameterised test suite. One of its tests is:
 
 ```java
 @ParameterizedTest(name = "{0}: producer leaves original unchanged")
@@ -357,16 +357,18 @@ The next chapter examines the implementation's correctness obligations.
 ## 10. Review a Generated ADT
 
 Generated code often exposes a familiar container through its public operations.
-Before accepting it, ask:
+Before accepting it, complete these checks:
 
-- What are the abstract values, stated without Java fields?
-- Which operations do clients actually need?
-- Does any public type, method name, return value, or exception expose the chosen
-  representation?
-- Are creators, producers, and observers specified at boundary cases?
-- Can a client mutate the representation through an argument or result?
-- Would the same contract make sense for a substantially different representation?
-- Do the tests observe the contract or inspect the current implementation?
+- State the abstract values without referring to Java fields.
+- List the operations clients need.
+- Identify every public type, method name, return value, or exception that exposes
+  the chosen representation.
+- Check creator, producer, and observer specifications at boundary cases.
+- Trace whether a client can mutate the representation through an argument or
+  result.
+- Apply the same contract to a substantially different candidate representation.
+- Separate tests that observe the contract from tests that inspect the current
+  implementation.
 
 Ask an assistant for alternatives if that helps compare designs, but verify the
 result. Renaming `getMap` to `getNetworkData` still exposes the same representation.
@@ -419,9 +421,9 @@ could change your choice.
 
 ## Summary
 
-An ADT is defined by abstract values and specified operations. Creators introduce
-values, producers derive values, observers reveal information, and mutators change
-existing values. Our immutable network needs no mutators.
+Abstract values and specified operations define an ADT. Creators introduce values,
+producers derive values, observers reveal information, and mutators change existing
+values. Our immutable network needs no mutators.
 
 The `TransitNetwork` interface gives clients a small transit vocabulary. A factory
 returns that abstraction while a package-private implementation snapshots and owns
@@ -437,7 +439,9 @@ abstract values.
 ## References
 
 - Barbara Liskov and Stephen Zilles, “Programming with Abstract Data Types,”
-  *SIGPLAN Notices* 9(4), 1974, DOI `10.1145/942572.807045`
+  *Association for Computing Machinery Special Interest Group on Programming
+  Languages (ACM SIGPLAN) Notices* 9(4), 1974, digital object identifier (DOI)
+  `10.1145/942572.807045`
 - [Java Language Specification, access control](https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6)
-- [Java SE 25 `Set` interface](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html)
+- [Java Platform, Standard Edition (Java SE) 25 `Set` interface](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html)
 - [JUnit 6.1.3 User Guide, parameterized tests](https://docs.junit.org/6.1.3/writing-tests/parameterized-classes-and-tests.html)

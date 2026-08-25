@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 84b82b8abeb5600dbdd48c7e0689452ae8933a06c5f723c61e4197bbb7969ab4 -->
+  <!-- source-sha256: 0a1e4a343b1871ef610470ab0b60992191146932a16f116789db3c4a728a6402 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -114,13 +114,13 @@ public final class ArrivalStatus {
 </ol>
 <p>Reliable software development connects these three views. A <strong>specification</strong> states the required behaviour. An <strong>implementation</strong> attempts to provide it. Tests, reviews, static checks, and observations supply evidence about the implementation. We need all three views to make a useful claim about the program.</p>
 <h2 id="2-what-we-mean-by-reliable"><a href="#2-what-we-mean-by-reliable"><span class="section-number">1.2</span>What We Mean by Reliable</a></h2>
-<p>“Reliable software” is easy to say and too vague to guide a design. Three recurring dimensions make the term more precise.</p>
+<p>“Reliable software” is too vague to guide a design without further explanation. Three recurring dimensions make the term more precise.</p>
 <h3 id="correct"><a href="#correct">Correct</a></h3>
 <p>Software is <strong>correct with respect to a specification</strong> when its behaviour satisfies that specification. Correctness is always relative to a stated obligation. Without one, a claim that code is correct is incomplete.</p>
-<p>If the specification says an arrival exactly on schedule is <code>ON_TIME</code>, then returning that status is correct for that input. If the specification says nothing about early arrivals, we have found a hole in the specification before we have found a bug in the implementation.</p>
+<p>If the specification says an arrival exactly on schedule is <code>ON_TIME</code>, then returning that status is correct for that input. If the specification says nothing about early arrivals, then the specification omits a required case. The implementation cannot be judged for that case until the requirement is stated.</p>
 <p>Suppose the transit agency later defines arrivals within one minute of schedule as <code>ON_TIME</code>. The repaired method from the previous section would then be wrong for predictions at minutes 599 and 601, even if every test based on the old contract passed. We would need to update the specification, implementation, and tests. The same output can satisfy one contract and violate another.</p>
 <h3 id="comprehensible"><a href="#comprehensible">Comprehensible</a></h3>
-<p>Software is <strong>comprehensible</strong> when another person can form an accurate model of it without reconstructing every detail. Names, types, small methods, specifications, and tests all help. Comprehensibility matters because code spends much more time being read, reviewed, debugged, and changed than being typed for the first time.</p>
+<p>Software is <strong>comprehensible</strong> when another person can form an accurate model of it without reconstructing every detail. Names, types, small methods, specifications, and tests all help. Developers read, review, debug, and change existing code throughout its lifetime. Comprehensibility reduces the work required for those tasks.</p>
 <p>Compare <code>difference</code> with <code>x</code>, or <code>predictedMinute</code> with <code>b</code>. The longer names do not make the calculation more sophisticated. They make its meaning available.</p>
 <h3 id="changeable"><a href="#changeable">Changeable</a></h3>
 <p>Software is <strong>changeable</strong> when we can alter one decision without causing unintended changes elsewhere. Transit data and requirements may change because of a new route, a renamed stop, an accessibility rule, a feed-format revision, or a different way to classify lateness. Modules and specifications let us change one part while preserving the promises on which clients rely.</p>
@@ -136,10 +136,10 @@ public final class ArrivalStatus {
 <li>routing policies with different guarantees;</li>
 <li>network requests and caches that introduce concurrency.</li>
 </ul>
-<p>The running example is not intended to reproduce a production trip planner. We will state when it leaves out a production concern. It provides a consistent setting in which to examine each concept.</p>
+<p>The running example omits concerns that a production trip planner would need to address. We will state each relevant omission when it arises. The example provides a consistent setting in which to examine each concept.</p>
 <h2 id="4-build-test-and-inspect"><a href="#4-build-test-and-inspect"><span class="section-number">1.4</span>Build, Test, and Inspect</a></h2>
-<p>A modern Java project needs a repeatable process for turning source files into checked results.</p>
-<figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg" alt="A source edit flows through compilation and tests to an observed result; failures return the developer to the source while successful results can become a small Git commit." /><figcaption>Figure 1.1: A feedback loop for software development. Compilation and test failures inform the next source-code revision.</figcaption></figure>
+<p>A modern Java project needs a repeatable process for turning source files into checked results (Figure 1.1).</p>
+<figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg" alt="A developer edits source, compiles it, and runs tests. A failure leads to another edit; a successful result leads to diff inspection and a small Git commit." /><figcaption>Figure 1.1: A feedback loop for software development. Compilation and test failures inform the next source-code revision.</figcaption></figure>
 <p>The companion project for Chapters 1–4 lives in <a href="../../examples/chapters-01-04/"><code>examples/chapters-01-04</code></a>. Its important pieces are:</p>
 <div class="code-block"><pre class="text"><code>examples/chapters-01-04/
 ├── build.gradle.kts
@@ -158,7 +158,7 @@ public final class ArrivalStatus {
 <li>A <strong>test failure</strong> means the program ran but a JUnit assertion observed a result different from the test's required result.</li>
 <li>A <strong>test error</strong> usually means the test encountered an exception or failed to set up its environment.</li>
 </ul>
-<p>These categories suggest different questions. A missing semicolon does not need a debugger. A wrong status at a boundary does not need a clean reinstall of the IDE. Match the tool to the evidence.</p>
+<p>These categories suggest different questions. A missing semicolon does not need a debugger. A wrong status for one input does not need a clean reinstall of the IDE. Match the tool to the evidence.</p>
 <h2 id="5-record-the-failure-with-a-regression-test"><a href="#5-record-the-failure-with-a-regression-test"><span class="section-number">1.5</span>Record the Failure with a Regression Test</a></h2>
 <p>We will record the missing <code>EARLY</code> behaviour in a test before changing the implementation. This is the complete JUnit test class from the companion project:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
@@ -215,7 +215,7 @@ git commit -m &quot;Classify early arrival predictions&quot;</code></pre></div>
 </blockquote>
 <h2 id="7-use-short-feedback-loops"><a href="#7-use-short-feedback-loops"><span class="section-number">1.7</span>Use Short Feedback Loops</a></h2>
 <p>Builds, tests, and commits are part of the design process. A short feedback loop changes which designs are practical.</p>
-<p>If a method can be tested in isolation, we can explore an alternative quickly. If a commit contains one idea, review can focus on that idea. If the build is reproducible, we can distinguish a code failure from a teammate's private machine setup. These tools affect design decisions because they make some mistakes faster to detect.</p>
+<p>If a method can be tested in isolation, then we can explore an alternative quickly. If a commit contains one idea, then review can focus on that idea. If the build is reproducible, then we can distinguish a code failure from a teammate's private machine setup. These tools affect design decisions because they make some mistakes faster to detect.</p>
 <p>Different feedback mechanisms answer different questions. Compilation checks whether the program satisfies the language's static rules. A focused test checks one specified behaviour for selected inputs. The full test suite looks for effects on other components. Review can question the requirement or design itself. Choose the feedback that addresses the current risk.</p>
 <blockquote class="design-note"><p><strong>Design principle: obtain trustworthy feedback soon after each design or implementation decision.</strong></p>
 </blockquote>
@@ -264,7 +264,7 @@ ArrivalStatus.describe(600, 601)</code></pre></div>
 <p>Our example still describes times with ordinary integers and statuses with ordinary strings. The compiler cannot tell a scheduled time from a predicted time, or a route identifier from a stop identifier. In the next chapter, we will give those concepts types and contracts of their own.</p>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/">Java SE 25 and JDK 25 documentation</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/">Java Platform, Standard Edition (Java SE) 25 and Java Development Kit (JDK) 25 documentation</a></li>
 <li><a href="https://docs.gradle.org/current/userguide/compatibility.html">Gradle Java compatibility matrix</a></li>
 <li><a href="https://docs.junit.org/current/user-guide/">JUnit 6 user guide</a></li>
 <li><a href="https://git-scm.com/docs">Git reference</a></li>

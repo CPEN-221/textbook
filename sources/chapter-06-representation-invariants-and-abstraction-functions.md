@@ -49,7 +49,7 @@ they also include maps with `null` parts or destinations that have no key. Java'
 generic types say that keys and values have certain declared types. They do not
 express all the relationships our graph requires.
 
-The implementation uses selected values in `R` to realize values in `A`. Some
+The implementation uses selected values in `R` to realise values in `A`. Some
 candidate maps are inconsistent and must not represent an abstract network value.
 
 ## 2. State the Abstraction Function
@@ -84,9 +84,9 @@ does not belong to our graph, so two maps that iterate differently can mean the 
 network. An abstraction function therefore need not be one-to-one.
 
 The abstraction function must be precise enough to settle every public observation.
-If we wrote only “the map stores the network,” we would not know whether keys with
-empty sets count as stops, whether direction matters, or whether duplicate-looking
-data has meaning.
+If we wrote only “the map stores the network,” then we would not know whether keys
+with empty sets count as stops, whether direction matters, or whether
+duplicate-looking data has meaning.
 
 ## 3. Define the Representation Invariant
 
@@ -238,9 +238,9 @@ representation and the receiver was valid on entry.
 `directDestinationsFrom` returns an unmodifiable destination set. `StopId` values are
 immutable. None of these paths gives a client a mutator for a reachable rep object.
 
-If the field held mutable sets, checking after construction would not be enough. A
-leaked alias could invalidate the rep while no ADT method was running. Representation
-exposure breaks encapsulation and the invariant argument.
+If the field held mutable sets, then checking after construction would not be enough.
+A leaked alias could invalidate the rep while no ADT method was running.
+Representation exposure breaks encapsulation and the invariant argument.
 
 ## 6. Limits of `checkRep`
 
@@ -253,12 +253,12 @@ destinations, or self-connections. Its abstraction is the empty graph. But the
 creator's postcondition says that the result contains exactly the requested stops.
 For a nonempty argument, the method is wrong.
 
-This distinction separates two questions:
+This distinction separates two checks:
 
-- **Representation correctness:** does the rep satisfy the RI, and what value does
-  the AF assign it?
-- **Operation correctness:** assuming the precondition, does the operation produce
-  the abstract value required by its postcondition?
+- **Representation correctness.** Determine whether the rep satisfies the RI and
+  which value the AF assigns it.
+- **Operation correctness.** Assuming the precondition, determine whether the
+  operation produces the abstract value required by its postcondition.
 
 `checkRep` helps with the first. Contract tests and reasoning about each operation
 address the second. One does not subsume the other.
@@ -297,8 +297,8 @@ RI(r) is true exactly when:
 The RI does not repeat the no-self-connection rule because `Connection` is a record
 whose own specification and constructor require two distinct, non-null stops. The
 network implementation may rely on the public guarantees of its rep types. If
-`Connection` later permitted self-connections, the network RI would need an explicit
-clause or a stronger component type.
+`Connection` later permitted self-connections, then the network RI would need an
+explicit clause or a stronger component type.
 
 Likewise, a `Set` already has set semantics. We need not write “connections contains
 no duplicates” in the RI; the field's abstract type makes duplicates unobservable.
@@ -307,8 +307,8 @@ depended on one stored copy per edge.
 
 The public `TransitNetwork` specification remains unchanged while RI and AF change
 with the representation. These definitions belong inside the implementation, close
-to its fields. If they became client requirements, clients would depend on private
-representation choices.
+to its fields. If they became client requirements, then clients would depend on
+private representation choices.
 
 Both implementations pass the same 15 contract-test invocations. This is evidence
 that they produce the same public behaviour for those cases. It is not a
@@ -355,8 +355,8 @@ easier to inspect.
 ### “The representation invariant is a private precondition”
 
 A public method precondition assigns responsibility to the client. The RI is an
-implementation obligation. A correct client cannot be blamed when a producer puts
-an outside destination into a private map.
+implementation obligation. A producer violates that obligation when it puts an
+outside destination into a private map; a correct client does not.
 
 Public methods may *assume* the RI on entry because earlier implementation code was
 responsible for establishing it. That assumption is part of an internal proof, not a
@@ -382,19 +382,20 @@ compute the observations promised by the ADT as if the abstract value existed.
 Generated implementations often contain plausible fields and thin getters without a
 clear representation argument. Require that argument before trusting the design:
 
-- What is the abstract value space?
-- What is the AF for these exact fields?
-- For which candidate field values is that AF meaningful?
-- Which extra conditions do the algorithms assume?
-- Which abstract invariants need concrete enforcement?
-- Does every creator establish the RI?
-- Does every producer or mutator preserve it on success and on exceptional exit?
-- Can an alias bypass those operations?
-- Which postconditions need tests because the RI cannot express them?
+- Define the abstract value space.
+- Write the AF for the exact fields.
+- Identify the candidate field values for which the AF is meaningful.
+- State every additional condition assumed by the algorithms.
+- Identify each abstract invariant that needs concrete enforcement.
+- Verify that every creator establishes the RI.
+- Verify that every producer or mutator preserves the RI on normal and exceptional
+  exit.
+- Trace whether an alias can bypass those operations.
+- Identify postconditions that need tests because the RI cannot express them.
 
 Then compare the prose with the code. If the RI says "all destinations are known"
-while the checker tests only for `null`, the checker does not implement the stated
-RI.
+while the checker tests only for `null`, then the checker does not implement the
+stated RI.
 
 ## Try the Representation
 
@@ -454,7 +455,8 @@ different AF and RI while keeping the same public ADT.
 
 Invariant checking reports malformed internal states when `checkRep` runs. It does
 not prove postconditions or replace contract tests. Together, AF, RI, operation
-reasoning, and tests form a correctness argument that can be inspected and updated.
+reasoning, and tests form a correctness argument that developers can inspect and
+update.
 
 The next chapter will ask when two separately represented ADT values count as equal,
 how that decision interacts with hashing, and what subtypes may promise without
@@ -464,6 +466,6 @@ surprising their clients.
 
 - Barbara Liskov and John Guttag, *Program Development in Java: Abstraction,
   Specification, and Object-Oriented Design*, Addison-Wesley, 2001
-- [Java Language Specification, assertions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.10)
+- [Java Language Specification, Java Platform, Standard Edition (Java SE) 25: assertions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.10)
 - [Java SE 25 `Map.copyOf`](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html#copyOf(java.util.Map))
 - [Java SE 25 unmodifiable collection factories](https://docs.oracle.com/en/java/javase/25/core/creating-immutable-lists-sets-and-maps.html)

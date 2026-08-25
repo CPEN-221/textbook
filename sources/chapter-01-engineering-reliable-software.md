@@ -65,8 +65,8 @@ We need all three views to make a useful claim about the program.
 
 ## 2. What We Mean by Reliable
 
-“Reliable software” is easy to say and too vague to guide a design. Three recurring
-dimensions make the term more precise.
+“Reliable software” is too vague to guide a design without further explanation.
+Three recurring dimensions make the term more precise.
 
 ### Correct
 
@@ -76,8 +76,8 @@ one, a claim that code is correct is incomplete.
 
 If the specification says an arrival exactly on schedule is `ON_TIME`, then returning
 that status is correct for that input. If the specification says nothing about early
-arrivals, we have found a hole in the specification before we have found a bug in the
-implementation.
+arrivals, then the specification omits a required case. The implementation cannot be
+judged for that case until the requirement is stated.
 
 Suppose the transit agency later defines arrivals within one minute of schedule as
 `ON_TIME`. The repaired method from the previous section would then be wrong for
@@ -89,8 +89,8 @@ same output can satisfy one contract and violate another.
 
 Software is **comprehensible** when another person can form an accurate model of it
 without reconstructing every detail. Names, types, small methods, specifications, and
-tests all help. Comprehensibility matters because code spends much more time being
-read, reviewed, debugged, and changed than being typed for the first time.
+tests all help. Developers read, review, debug, and change existing code throughout
+its lifetime. Comprehensibility reduces the work required for those tasks.
 
 Compare `difference` with `x`, or `predictedMinute` with `b`. The longer names do not
 make the calculation more sophisticated. They make its meaning available.
@@ -125,17 +125,17 @@ As we develop the example, we will introduce:
 - routing policies with different guarantees;
 - network requests and caches that introduce concurrency.
 
-The running example is not intended to reproduce a production trip planner. We will
-state when it leaves out a production concern. It provides a consistent setting in
-which to examine each concept.
+The running example omits concerns that a production trip planner would need to
+address. We will state each relevant omission when it arises. The example provides a
+consistent setting in which to examine each concept.
 
 ## 4. Build, Test, and Inspect
 
 A modern Java project needs a repeatable process for turning source files into
-checked results.
+checked results (Figure 1.1).
 
-![A source edit flows through compilation and tests to an observed result; failures
-return the developer to the source while successful results can become a small Git
+![A developer edits source, compiles it, and runs tests. A failure leads to another
+edit; a successful result leads to diff inspection and a small Git
 commit.](../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg)
 
 *Figure 1.1: A feedback loop for software development. Compilation and test
@@ -183,7 +183,7 @@ failure before deciding what to inspect next.
   up its environment.
 
 These categories suggest different questions. A missing semicolon does not need a
-debugger. A wrong status at a boundary does not need a clean reinstall of the IDE.
+debugger. A wrong status for one input does not need a clean reinstall of the IDE.
 Match the tool to the evidence.
 
 ## 5. Record the Failure with a Regression Test
@@ -289,10 +289,11 @@ small commits, and inspect `git status` before each commit.
 Builds, tests, and commits are part of the design process. A short feedback loop
 changes which designs are practical.
 
-If a method can be tested in isolation, we can explore an alternative quickly. If a
-commit contains one idea, review can focus on that idea. If the build is reproducible,
-we can distinguish a code failure from a teammate's private machine setup. These
-tools affect design decisions because they make some mistakes faster to detect.
+If a method can be tested in isolation, then we can explore an alternative quickly.
+If a commit contains one idea, then review can focus on that idea. If the build is
+reproducible, then we can distinguish a code failure from a teammate's private
+machine setup. These tools affect design decisions because they make some mistakes
+faster to detect.
 
 Different feedback mechanisms answer different questions. Compilation checks
 whether the program satisfies the language's static rules. A focused test checks one
@@ -404,7 +405,7 @@ types and contracts of their own.
 
 ## References
 
-- [Java SE 25 and JDK 25 documentation](https://docs.oracle.com/en/java/javase/25/docs/)
+- [Java Platform, Standard Edition (Java SE) 25 and Java Development Kit (JDK) 25 documentation](https://docs.oracle.com/en/java/javase/25/docs/)
 - [Gradle Java compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html)
 - [JUnit 6 user guide](https://docs.junit.org/current/user-guide/)
 - [Git reference](https://git-scm.com/docs)

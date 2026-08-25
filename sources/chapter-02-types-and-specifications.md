@@ -34,7 +34,7 @@ By the end, you should be able to:
 
 ## 1. Types Define Values and Operations
 
-A **type** defines a set of values together with the operations available on those
+A type defines a set of values together with the operations available on those
 values. Java's `int` type contains the integers from −2<sup>31</sup> through
 2<sup>31</sup>−1 and supports operations such as addition and comparison. A Java
 reference type contains `null` and references to objects of compatible classes, and
@@ -108,7 +108,7 @@ and `longitude()`, a canonical constructor, and value-based `equals`, `hashCode`
 `toString` implementations. The compact constructor adds our range checks before an
 instance can exist.
 
-Now an invalid latitude fails at the boundary where it enters the system:
+The constructor now rejects an invalid latitude as soon as it receives one:
 
 ```java
 new GeoPoint(-123.249, 49.261); // throws IllegalArgumentException
@@ -116,9 +116,10 @@ new GeoPoint(-123.249, 49.261); // throws IllegalArgumentException
 
 The compiler still cannot detect the reversal because both components are `double`.
 The constructor catches it dynamically because this particular longitude lies
-outside the latitude range. If both numbers fit both ranges, the check cannot detect
-the reversal. Separate `Latitude` and `Longitude` types could prevent that mistake at
-compile time. A type prevents only the errors that its design distinguishes.
+outside the latitude range. If both numbers fit both ranges, then the check cannot
+detect the reversal. Separate `Latitude` and `Longitude` types could prevent that
+mistake at compile time. A type prevents only the errors that its design
+distinguishes.
 
 We will also stop treating identifiers as interchangeable strings:
 
@@ -137,7 +138,7 @@ public record StopId(String value) {
 }
 ```
 
-If we later introduce `RouteId`, this call can fail at compile time:
+If we later introduce `RouteId`, then this call can fail at compile time:
 
 ```java
 // Does not compile if findStop expects StopId.
@@ -164,19 +165,20 @@ We can now give a nearest-stop query a useful signature:
 public static Stop nearestStop(GeoPoint origin, List<Stop> stops)
 ```
 
-It says far more than `(double, double, List) -> Object`, but important questions
-remain.
+It says far more than `(double, double, List) -> Object`, but it leaves six
+client-visible decisions unspecified:
 
-- May `origin` or `stops` be `null`?
-- May the list be empty or contain `null`?
-- Does the method use walking distance, straight-line distance, or transit time?
-- If two stops tie, which one wins?
-- May the method reorder the list?
-- What happens when an input is invalid?
+- whether `origin` or `stops` may be `null`;
+- whether the list may be empty or contain `null`;
+- whether distance means walking distance, straight-line distance, or transit time;
+- which stop wins when two stops tie;
+- whether the method may reorder the list; and
+- how the method reports an invalid input.
 
-A **specification** answers the questions a client needs to use the method correctly
-and the implementer needs to know when the work is done. It is a contract across an
-abstraction boundary.
+A specification answers the questions a client needs to use the method correctly
+and the implementer needs to know when the work is done. It forms an **abstraction
+boundary**: the client depends on the promised behaviour without depending on the
+implementation's private algorithm.
 
 Conceptually, the contract divides responsibility:
 
@@ -185,7 +187,8 @@ Conceptually, the contract divides responsibility:
   precondition holds.
 
 Exceptional behaviour and permitted mutation also belong in the contract. Java's
-method signature captures some of it, but not enough.
+method signature captures some of it, but not enough. The specification assigns the
+remaining responsibilities to the client and implementation (Figure 2.1).
 
 ![The client supplies inputs that satisfy the precondition across a contract
 boundary, and the implementation returns a result satisfying the postcondition
@@ -259,8 +262,8 @@ different ground.
 ## 5. Null and Mutation Conventions
 
 Inconsistent use of `null` makes public methods harder to use. If one method uses it
-for "not found," another for "not loaded," and a third silently forbids it, clients
-have to infer its meaning separately at every call.
+for "not found," another for "not loaded," and a third silently forbids it, then
+clients have to infer its meaning separately at every call.
 
 The transit system uses the following convention unless an individual method's
 specification says otherwise:
@@ -276,8 +279,8 @@ explicitly says that a method modifies an argument, clients may assume it does n
 `nearestStop` observes the list and its stops; it does not reorder or replace them.
 
 This convention reduces prose, but APIs must still describe surprising behaviour. If
-a method called `normalize` changes its input list, state that effect prominently or
-choose a name that indicates mutation.
+a method called `normalize` changes its input list, then state that effect prominently
+or choose a name that indicates mutation.
 
 ## 6. Choose Tie-Breaking Behaviour
 
@@ -298,8 +301,8 @@ The first is **underdetermined**: more than one result may satisfy it. The secon
 
 An underdetermined specification can be deliberate. The first contract gives an
 implementer freedom to choose a faster data structure or parallel search. If a
-client does not care which equally near stop wins, the specification need not impose
-a tie-breaking rule.
+client does not care which equally near stop wins, then the specification need not
+impose a tie-breaking rule.
 
 Determinism can also be useful. Stable results make interfaces predictable and tests
 easier to interpret. Here, preserving the list's order is inexpensive, so we
@@ -345,7 +348,7 @@ specification:
 assertEquals(exchange, nearestStop(origin, List.of(exchange, loop)));
 ```
 
-If both stops tie and the contract allows either, the test is wrong. Tests are
+If both stops tie and the contract allows either, then the test is wrong. Tests are
 clients. They may check every promise, but they may not promote a current
 implementation detail into a permanent requirement by accident.
 
@@ -354,9 +357,10 @@ order is public. This is why test design begins with the specification rather th
 with a tour through the implementation. The contract identifies the observations a
 test may require.
 
-It also reveals missing decisions. What should happen for an empty list? Does
-distance account for roads? Should a closed stop be a candidate? If we cannot write
-the expected observation, we may not understand the requirement yet.
+It also reveals three missing decisions: the result for an empty list, whether
+distance accounts for roads, and whether a closed stop remains a candidate. If we
+cannot write the expected observation, then we may not understand the requirement
+yet.
 
 > **Design principle: put application distinctions in types, and put behavioural
 > obligations in specifications.**
@@ -422,8 +426,8 @@ sentence declaratively.
 
 Types define values and permitted operations. Static checks reject ill-typed program
 text; dynamic checks validate facts available only while the program runs.
-Application-specific types such as `StopId` and `GeoPoint` make important distinctions
-explicit and reject invalid values when those values are constructed.
+Application-specific types such as `StopId` and `GeoPoint` make important
+distinctions explicit. Their constructors reject invalid values.
 
 Specifications define client and implementer responsibilities, describe normal and
 exceptional outcomes, and state whether mutation is allowed. Declarative
@@ -436,8 +440,8 @@ prevent a normal result.
 
 ## References
 
-- [Java Language Specification, Java SE 25](https://docs.oracle.com/javase/specs/jls/se25/html/)
+- [Java Language Specification, Java Platform, Standard Edition (Java SE) 25](https://docs.oracle.com/javase/specs/jls/se25/html/)
 - [Java SE 25 record classes](https://docs.oracle.com/en/java/javase/25/language/records.html)
 - [`java.util.Objects` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Objects.html)
-- [Javadoc Guide for JDK 25](https://docs.oracle.com/en/java/javase/25/javadoc/javadoc-guide.pdf)
+- [Javadoc Guide for Java Development Kit (JDK) 25](https://docs.oracle.com/en/java/javase/25/javadoc/javadoc-guide.pdf)
 - [GTFS Schedule reference](https://gtfs.org/documentation/schedule/reference/)

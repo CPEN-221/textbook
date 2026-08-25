@@ -7,8 +7,8 @@ UBC_EXCHANGE|soon
 ```
 
 Our parser expects a stop identifier, a vertical bar, and a non-negative number of
-minutes. `UBC_EXCHANGE` is a valid stop identifier, but `soon` cannot be parsed as an
-integer.
+minutes. `UBC_EXCHANGE` is a valid stop identifier, but the parser cannot convert
+`soon` to an integer.
 
 The parser must report this failure without creating a misleading prediction.
 Returning zero would claim that a bus is at the stop. Returning `null` would require
@@ -31,7 +31,8 @@ By the end of this chapter, you should be able to:
 
 ## 1. Specify Failures at the Parser Boundary
 
-Our parser has this contract:
+The call to `parse` separates external feed text from application values. The parser
+has this contract:
 
 ```java
 /**
@@ -151,7 +152,8 @@ parser's current implementation.
 When `Integer.parseInt("soon")` throws, the rest of the `try` block does not execute.
 Java looks for a compatible `catch` in the current method. It finds one, constructs a
 `FeedFormatException`, and throws again. The caller then gets the same choice: catch
-or propagate.
+or propagate. The translation reports the failure at the parser's abstraction level
+while retaining its original cause (Figure 3.1).
 
 ![A board loader calls the prediction parser, parseInt throws NumberFormatException,
 the parser wraps it as FeedFormatException, and the loader reports the bad line while
@@ -227,8 +229,8 @@ public final class PredictionFile {
 
 `BufferedReader` implements `AutoCloseable`, so Java calls `close` when control leaves
 the `try`, whether the body returns normally or throws. If both the body and `close`
-throw, the body's exception remains primary and the close failure is recorded as a
-suppressed exception.
+throw, then Java keeps the body's exception as primary and records the close failure
+as a suppressed exception.
 
 This guarantee applies to execution within the Java Virtual Machine's (JVM's) normal
 control model. Process termination, a crashed runtime, or failed hardware can prevent
@@ -310,9 +312,9 @@ method name records the rationale, not the private branch it happens to execute.
 
 The test for the cause checks a public diagnostic promise only if our contract makes
 cause preservation part of the API. If the contract merely promises
-`FeedFormatException`, insisting on `NumberFormatException` would couple the test to
-the current parsing technique. Tests must respect the same abstraction boundary as
-other clients.
+`FeedFormatException`, then insisting on `NumberFormatException` would couple the
+test to the current parsing technique. Tests must respect the same abstraction
+boundary as other clients.
 
 ## 6. Black-Box and Glass-Box Evidence
 
@@ -332,8 +334,9 @@ declare the branch itself part of the contract.
 ### Coverage reports execution, not correctness
 
 Coverage tools report which statements or branches a test run executed. A missed
-branch is a concrete prompt: why did no test reach it? One hundred percent coverage,
-however, says nothing about whether the assertions were meaningful.
+branch identifies a path whose absence from the tests requires explanation. One
+hundred percent coverage, however, says nothing about whether the assertions were
+meaningful.
 
 This test can execute the parser and check almost nothing:
 
@@ -349,7 +352,7 @@ Coverage measures reach, not correctness or test quality.
 
 One quick audit is to commit your work, introduce a small defect deliberately, and
 confirm that a relevant test fails. Change `< 0` to `<= 0`, for example. If the suite
-still passes, it did not protect that boundary. Restore the change when the
+still passes, then it did not protect that boundary. Restore the change when the
 experiment is over.
 
 ## 7. Assertions Are Not Argument Validation
@@ -391,8 +394,8 @@ which computation and effects have clear owners.
 > tests from the component's contract.**
 
 A named failure lets clients choose a response. A focused component makes that
-failure easy to provoke in a test. A test linked to a contract explains why its
-observation matters.
+failure directly reproducible in a test. A test linked to a contract explains why
+its observation matters.
 
 ## 9. Common Misconceptions
 
@@ -431,7 +434,7 @@ concentrate on the boundaries and failure cases:
 - exception messages that leak or erase useful context.
 
 Write the contract first, partition its inputs, and run the generated code against
-the boundaries. If the generator also writes the tests, inspect whether both
+the boundaries. If the generator also writes the tests, then inspect whether both
 artefacts made the same unsupported assumption. Agreement between generated code and
 generated tests is not independent evidence.
 
@@ -496,7 +499,7 @@ and a returned list can give a client access to an object's representation. Chap
 ## References
 
 - [Java Language Specification, exceptions](https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html)
-- [`Exception` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html)
+- [`Exception` in Java Platform, Standard Edition (Java SE) 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html)
 - [`AutoCloseable` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/AutoCloseable.html)
 - [JUnit 6 user guide: writing tests](https://docs.junit.org/current/user-guide/#writing-tests)
 - [JUnit 6 user guide: Gradle build support](https://docs.junit.org/current/user-guide/#running-tests-build-gradle)

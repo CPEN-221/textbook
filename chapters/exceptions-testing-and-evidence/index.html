@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: f31d7c77c532d22e4009246166c47d2654904154fc63b875d78db81e82866e93 -->
+  <!-- source-sha256: f12861244869e7ef5f3c971b7e48a7e135c7e4cd1f34bd3300495fced7fc37b5 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -78,7 +78,7 @@
 
 <p>The feed line is short:</p>
 <div class="code-block"><pre class="text"><code>UBC_EXCHANGE|soon</code></pre></div>
-<p>Our parser expects a stop identifier, a vertical bar, and a non-negative number of minutes. <code>UBC_EXCHANGE</code> is a valid stop identifier, but <code>soon</code> cannot be parsed as an integer.</p>
+<p>Our parser expects a stop identifier, a vertical bar, and a non-negative number of minutes. <code>UBC_EXCHANGE</code> is a valid stop identifier, but the parser cannot convert <code>soon</code> to an integer.</p>
 <p>The parser must report this failure without creating a misleading prediction. Returning zero would claim that a bus is at the stop. Returning <code>null</code> would require every client to interpret the absence. Printing inside the parser would couple a reusable component to one user interface. A partially created prediction would leave the program in an invalid state.</p>
 <p>Failures are part of a program's behaviour. We need to specify them, signal them at a useful abstraction level, and test them with the same care as ordinary results.</p>
 <section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
@@ -90,7 +90,7 @@
 <li>explain why coverage and passing tests are evidence, not proof.</li>
 </ul></section>
 <h2 id="1-specify-failures-at-the-parser-boundary"><a href="#1-specify-failures-at-the-parser-boundary"><span class="section-number">3.1</span>Specify Failures at the Parser Boundary</a></h2>
-<p>Our parser has this contract:</p>
+<p>The call to <code>parse</code> separates external feed text from application values. The parser has this contract:</p>
 <div class="code-block"><pre class="java"><code>/**
  * Parses {@code stop-id|minutes-until-arrival}.
  *
@@ -160,7 +160,7 @@ public record ArrivalPrediction(StopId stopId, int minutesUntilArrival) {
 <p>Those constructors throw <code>IllegalArgumentException</code>. At the text boundary, the parser translates that lower-level detail into <code>FeedFormatException</code>. It also passes the original exception as the <strong>cause</strong>. Clients can depend on the feed-level abstraction while a debugger or log retains the specific reason.</p>
 <p>This is exception <strong>chaining</strong>. Dropping the cause would remove useful evidence; leaking every constructor exception would force feed clients to understand the parser's current implementation.</p>
 <h2 id="3-exceptions-change-control-flow"><a href="#3-exceptions-change-control-flow"><span class="section-number">3.3</span>Exceptions Change Control Flow</a></h2>
-<p>When <code>Integer.parseInt("soon")</code> throws, the rest of the <code>try</code> block does not execute. Java looks for a compatible <code>catch</code> in the current method. It finds one, constructs a <code>FeedFormatException</code>, and throws again. The caller then gets the same choice: catch or propagate.</p>
+<p>When <code>Integer.parseInt("soon")</code> throws, the rest of the <code>try</code> block does not execute. Java looks for a compatible <code>catch</code> in the current method. It finds one, constructs a <code>FeedFormatException</code>, and throws again. The caller then gets the same choice: catch or propagate. The translation reports the failure at the parser's abstraction level while retaining its original cause (Figure 3.1).</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-03/exception-translation-sequence.svg" alt="A board loader calls the prediction parser, parseInt throws NumberFormatException, the parser wraps it as FeedFormatException, and the loader reports the bad line while preserving the cause." /><figcaption>Figure 3.1: Exceptional control returns through callers until a compatible handler acts. Translation changes the abstraction level without erasing the original cause.</figcaption></figure>
 <p>A <code>catch</code> block should run where the program has enough context to take a meaningful action. A board loader might report the line number and reject the file. A user interface might show a message. The parser cannot decide either policy without becoming coupled to a particular client.</p>
 <p>The following catch discards the failure information:</p>
@@ -205,7 +205,7 @@ public final class PredictionFile {
         }
     }
 }</code></pre></div>
-<p><code>BufferedReader</code> implements <code>AutoCloseable</code>, so Java calls <code>close</code> when control leaves the <code>try</code>, whether the body returns normally or throws. If both the body and <code>close</code> throw, the body's exception remains primary and the close failure is recorded as a suppressed exception.</p>
+<p><code>BufferedReader</code> implements <code>AutoCloseable</code>, so Java calls <code>close</code> when control leaves the <code>try</code>, whether the body returns normally or throws. If both the body and <code>close</code> throw, then Java keeps the body's exception as primary and records the close failure as a suppressed exception.</p>
 <p>This guarantee applies to execution within the Java Virtual Machine's (JVM's) normal control model. Process termination, a crashed runtime, or failed hardware can prevent cleanup. The program should not claim that cleanup occurs in those cases.</p>
 <h2 id="5-derive-tests-from-the-contract"><a href="#5-derive-tests-from-the-contract"><span class="section-number">3.5</span>Derive Tests from the Contract</a></h2>
 <p>The parser's input space contains every possible Java string, so we cannot enumerate it. We need a systematic way to select a small set of informative cases.</p>
@@ -287,20 +287,20 @@ class PredictionParserTest {
     }
 }</code></pre></div>
 <p>Each test follows arrange–act–assert, even when the arrangement is only a string. The method name records the rationale, not the private branch it happens to execute.</p>
-<p>The test for the cause checks a public diagnostic promise only if our contract makes cause preservation part of the API. If the contract merely promises <code>FeedFormatException</code>, insisting on <code>NumberFormatException</code> would couple the test to the current parsing technique. Tests must respect the same abstraction boundary as other clients.</p>
+<p>The test for the cause checks a public diagnostic promise only if our contract makes cause preservation part of the API. If the contract merely promises <code>FeedFormatException</code>, then insisting on <code>NumberFormatException</code> would couple the test to the current parsing technique. Tests must respect the same abstraction boundary as other clients.</p>
 <h2 id="6-black-box-and-glass-box-evidence"><a href="#6-black-box-and-glass-box-evidence"><span class="section-number">3.6</span>Black-Box and Glass-Box Evidence</a></h2>
 <p>A <strong>black-box test</strong> chooses inputs and observations from the specification alone. The partitions above are black-box partitions: any correct parser must handle those categories, regardless of its algorithm.</p>
 <p>A <strong>glass-box test</strong> uses implementation knowledge to find additional executions. On seeing <code>split("\\|", -1)</code>, we might add cases for a trailing separator and a separator at the beginning. On seeing <code>Integer.parseInt</code>, we might test text one greater than <code>Integer.MAX_VALUE</code>.</p>
 <p>Glass-box insight is useful for finding neglected paths. The assertions still must describe public behaviour. We may use knowledge of a branch to reach it; we may not declare the branch itself part of the contract.</p>
 <h3 id="coverage-reports-execution-not-correctness"><a href="#coverage-reports-execution-not-correctness">Coverage reports execution, not correctness</a></h3>
-<p>Coverage tools report which statements or branches a test run executed. A missed branch is a concrete prompt: why did no test reach it? One hundred percent coverage, however, says nothing about whether the assertions were meaningful.</p>
+<p>Coverage tools report which statements or branches a test run executed. A missed branch identifies a path whose absence from the tests requires explanation. One hundred percent coverage, however, says nothing about whether the assertions were meaningful.</p>
 <p>This test can execute the parser and check almost nothing:</p>
 <div class="code-block"><pre class="java"><code>@Test
 void executesParserWithoutCheckingResult() throws FeedFormatException {
     PredictionParser.parse(&quot;UBC_EXCHANGE|4&quot;);
 }</code></pre></div>
 <p>It may improve a coverage number while failing to verify the returned stop or time. Coverage measures reach, not correctness or test quality.</p>
-<p>One quick audit is to commit your work, introduce a small defect deliberately, and confirm that a relevant test fails. Change <code>&lt; 0</code> to <code>&lt;= 0</code>, for example. If the suite still passes, it did not protect that boundary. Restore the change when the experiment is over.</p>
+<p>One quick audit is to commit your work, introduce a small defect deliberately, and confirm that a relevant test fails. Change <code>&lt; 0</code> to <code>&lt;= 0</code>, for example. If the suite still passes, then it did not protect that boundary. Restore the change when the experiment is over.</p>
 <h2 id="7-assertions-are-not-argument-validation"><a href="#7-assertions-are-not-argument-validation"><span class="section-number">3.7</span>Assertions Are Not Argument Validation</a></h2>
 <p>Java's <code>assert</code> statement checks an internal belief:</p>
 <div class="code-block"><pre class="java"><code>assert fields.length == 2 : &quot;field count checked above&quot;;</code></pre></div>
@@ -317,7 +317,7 @@ void executesParserWithoutCheckingResult() throws FeedFormatException {
 <p><code>PredictionFile.load</code> owns file I/O separately. We can test the parser rapidly with strings and reserve a smaller set of integration tests for the file boundary. This separation is not a concession to the test framework. It is a modular design in which computation and effects have clear owners.</p>
 <blockquote class="design-note"><p><strong>Design principle: specify each failure at the component boundary, then derive tests from the component's contract.</strong></p>
 </blockquote>
-<p>A named failure lets clients choose a response. A focused component makes that failure easy to provoke in a test. A test linked to a contract explains why its observation matters.</p>
+<p>A named failure lets clients choose a response. A focused component makes that failure directly reproducible in a test. A test linked to a contract explains why its observation matters.</p>
 <h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">3.9</span>Common Misconceptions</a></h2>
 <h3 id="catch-every-exception-so-the-program-does-not-crash"><a href="#catch-every-exception-so-the-program-does-not-crash">“Catch every exception so the program does not crash”</a></h3>
 <p>Catching an exception without restoring a valid state can make the system less reliable. It hides the failure and may leave the program in an invalid state. Catch narrowly where you can recover, translate, or report; otherwise let the failure propagate.</p>
@@ -335,7 +335,7 @@ void executesParserWithoutCheckingResult() throws FeedFormatException {
 <li>stop identifiers containing characters outside the American Standard Code for Information Interchange (ASCII) character set, if the specification allows them;</li>
 <li>exception messages that leak or erase useful context.</li>
 </ul>
-<p>Write the contract first, partition its inputs, and run the generated code against the boundaries. If the generator also writes the tests, inspect whether both artefacts made the same unsupported assumption. Agreement between generated code and generated tests is not independent evidence.</p>
+<p>Write the contract first, partition its inputs, and run the generated code against the boundaries. If the generator also writes the tests, then inspect whether both artefacts made the same unsupported assumption. Agreement between generated code and generated tests is not independent evidence.</p>
 <h2 id="try-the-failure-paths"><a href="#try-the-failure-paths">Try the Failure Paths</a></h2>
 <h3 id="1-predict-the-exception"><a href="#1-predict-the-exception">Predict the exception</a></h3>
 <p>For each call, name the first exception type visible to the caller and its likely cause, if any:</p>
@@ -359,7 +359,7 @@ PredictionParser.parse(&quot;UBC_EXCHANGE|-1&quot;)</code></pre></div>
 <h2 id="references"><a href="#references">References</a></h2>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html">Java Language Specification, exceptions</a></li>
-<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html"><code>Exception</code> in Java SE 25</a></li>
+<li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Exception.html"><code>Exception</code> in Java Platform, Standard Edition (Java SE) 25</a></li>
 <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/AutoCloseable.html"><code>AutoCloseable</code> in Java SE 25</a></li>
 <li><a href="https://docs.junit.org/current/user-guide/#writing-tests">JUnit 6 user guide: writing tests</a></li>
 <li><a href="https://docs.junit.org/current/user-guide/#running-tests-build-gradle">JUnit 6 user guide: Gradle build support</a></li>
