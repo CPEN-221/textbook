@@ -109,25 +109,25 @@ safer. They can also compete: an abstraction may add complexity, or an exhaustiv
 check may cost too much to run in production. We have to identify such trade-offs
 and explain each decision in the context of the system.
 
-## 3. The Course System
+## 3. A Running Example
 
-Across these notes we will grow a small system for Metro Vancouver transit
-reliability and journey planning. We will work with frozen, invented examples so
-that builds stay deterministic. Optional extensions can consume public GTFS data or
-live updates later.
+We will use, as a running example, a system for journey planning using public
+transit in Metro Vancouver. We will start with simple requirements so that we can
+achieve deterministic outcomes initially. One can later extend this approach to use
+General Transit Feed Specification (GTFS) data and live updates.
 
-The domain will give us recurring objects with real design pressure:
+As we develop the example, we will introduce:
 
 - stop and route identifiers that must not be mixed;
 - service times that can continue past midnight;
 - arrival predictions that can be malformed or stale;
-- feed snapshots that should not change under a client's feet;
+- feed snapshots whose contents remain fixed while clients use them;
 - routing policies with different guarantees;
-- network requests and caches that eventually introduce concurrency.
+- network requests and caches that introduce concurrency.
 
-We are not trying to reproduce a production trip planner in thirteen readings. The
-system is a teaching model, and we will state when it leaves out a production
-concern. We use it to examine abstract ideas in one consistent, concrete setting.
+The running example is not intended to reproduce a production trip planner. We will
+state when it leaves out a production concern. It provides a consistent setting in
+which to examine each concept.
 
 ## 4. The Build–Test–Inspect Loop
 

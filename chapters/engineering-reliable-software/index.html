@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 945a60389accc985d888e4f7cd126d9b7c451fdfc1c9074f16677b9f595f95c3 -->
+  <!-- source-sha256: f0e60f75f1c677d7d6d9a5f3825a4433501524869a5753640e135ec849c57a7d -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -24,7 +24,7 @@
       <ul>
         <li><a href="#1-a-program-is-more-than-its-happy-path"><small>1.1</small><span>A Program Is More Than Its Happy Path</span></a></li>
         <li><a href="#2-what-we-mean-by-reliable"><small>1.2</small><span>What We Mean by Reliable</span></a></li>
-        <li><a href="#3-the-course-system"><small>1.3</small><span>The Course System</span></a></li>
+        <li><a href="#3-a-running-example"><small>1.3</small><span>A Running Example</span></a></li>
         <li><a href="#4-the-buildtestinspect-loop"><small>1.4</small><span>The Build–Test–Inspect Loop</span></a></li>
         <li><a href="#5-our-first-regression-test"><small>1.5</small><span>Our First Regression Test</span></a></li>
         <li><a href="#6-git-records-decisions"><small>1.6</small><span>Git Records Decisions</span></a></li>
@@ -125,18 +125,18 @@ public final class ArrivalStatus {
 <h3 id="changeable"><a href="#changeable">Changeable</a></h3>
 <p>Software is <strong>changeable</strong> when we can alter one decision without surprising damage elsewhere. Transit data supplies a steady stream of changes: a new route, a renamed stop, an accessibility rule, a feed-format revision, or a different way to classify lateness. Modules and specifications let us change a part while preserving the promises on which clients rely.</p>
 <p>These qualities reinforce one another. A precise contract makes code easier to test. Focused code is easier to understand. An automated test suite makes a later change safer. They can also compete: an abstraction may add complexity, or an exhaustive check may cost too much to run in production. We have to identify such trade-offs and explain each decision in the context of the system.</p>
-<h2 id="3-the-course-system"><a href="#3-the-course-system"><span class="section-number">1.3</span>The Course System</a></h2>
-<p>Across these notes we will grow a small system for Metro Vancouver transit reliability and journey planning. We will work with frozen, invented examples so that builds stay deterministic. Optional extensions can consume public GTFS data or live updates later.</p>
-<p>The domain will give us recurring objects with real design pressure:</p>
+<h2 id="3-a-running-example"><a href="#3-a-running-example"><span class="section-number">1.3</span>A Running Example</a></h2>
+<p>We will use, as a running example, a system for journey planning using public transit in Metro Vancouver. We will start with simple requirements so that we can achieve deterministic outcomes initially. One can later extend this approach to use General Transit Feed Specification (GTFS) data and live updates.</p>
+<p>As we develop the example, we will introduce:</p>
 <ul>
 <li>stop and route identifiers that must not be mixed;</li>
 <li>service times that can continue past midnight;</li>
 <li>arrival predictions that can be malformed or stale;</li>
-<li>feed snapshots that should not change under a client's feet;</li>
+<li>feed snapshots whose contents remain fixed while clients use them;</li>
 <li>routing policies with different guarantees;</li>
-<li>network requests and caches that eventually introduce concurrency.</li>
+<li>network requests and caches that introduce concurrency.</li>
 </ul>
-<p>We are not trying to reproduce a production trip planner in thirteen readings. The system is a teaching model, and we will state when it leaves out a production concern. We use it to examine abstract ideas in one consistent, concrete setting.</p>
+<p>The running example is not intended to reproduce a production trip planner. We will state when it leaves out a production concern. It provides a consistent setting in which to examine each concept.</p>
 <h2 id="4-the-buildtestinspect-loop"><a href="#4-the-buildtestinspect-loop"><span class="section-number">1.4</span>The Build–Test–Inspect Loop</a></h2>
 <p>A modern Java project needs a repeatable process for turning source files into checked results.</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg" alt="A source edit flows through compilation and tests to an observed result; failures return the developer to the source while successful results can become a small Git commit." /><figcaption>Figure 1.1: The course feedback loop. A failure provides information that sends us back to the source.</figcaption></figure>
