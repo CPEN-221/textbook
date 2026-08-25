@@ -1,14 +1,9 @@
 # CPEN 221 readings website
 
-This repository publishes the Fall 2026 revision of the CPEN 221 Software
-Construction I readings at <https://cpen-221.github.io/>.
+This repository is the source for the reading materials for CPEN 221 (Software
+Construction I). The materials are published to https://cpen-221.github.io/.
 
-The site is static and uses stable, unnumbered chapter URLs. It includes every
-current revised chapter, the supplemental readings, original SVG figures, the
-human-edited Markdown sources, and a Java 25 companion project for each core
-chapter.
-
-## Preview locally
+## To preview the website locally
 
 From this repository root, run:
 
@@ -16,8 +11,7 @@ From this repository root, run:
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000/>. Do not open the HTML files directly: serving
-them over HTTP catches path errors that a `file:` preview can hide.
+Then open <http://localhost:8000/>. 
 
 Before publishing, run the dependency-free site check and compile the downloadable
 examples:
@@ -31,9 +25,7 @@ javac -d /tmp/cpen221-example-classes \
 
 ## Build the chapter pages
 
-The committed HTML is generated from the Markdown under `sources/`. In the complete
-course-materials workspace, the build uses `../notes/revised/` and refreshes the
-published source copies, rendered diagrams, and companion projects at the same time.
+The committed HTML is generated from the Markdown text under `sources/`. 
 
 The build requires Pandoc:
 
@@ -42,9 +34,7 @@ python3 scripts/build_site.py
 python3 scripts/build_labs.py
 ```
 
-Run the readings build first. The lab build then publishes the student-facing 2025
-archive and adds its link to the readings home page. It deliberately excludes TA
-guides and teaching-team assets.
+Run the readings build first. 
 
 Generated pages carry a SHA-256 digest of their Markdown source. The site checker
 fails if a source changes without a corresponding rebuild.
@@ -85,7 +75,3 @@ push to `main`.
 - `scripts/build_labs.py` builds the public lab archive after the readings build.
 - `scripts/check_site.py` checks links, fragments, page landmarks, image text,
   source freshness, and SVG metadata.
-
-The visual direction adapts the book-like information architecture of
-[*Crafting Interpreters*](https://craftinginterpreters.com/) without reusing its
-logo, illustrations, font files, or stylesheet.

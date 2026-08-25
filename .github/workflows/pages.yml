@@ -28,6 +28,33 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
+      # Layout can change between pandoc releases, so the version that rendered the
+      # committed pages is pinned in scripts/site_contract.py and installed here.
+      - name: Install the pinned pandoc
+        run: |
+          version="$(python3 -c 'import sys; sys.path.insert(0, "scripts"); import site_contract; print(site_contract.PANDOC_VERSION)')"
+          curl --fail --location --silent --show-error \
+            "https://github.com/jgm/pandoc/releases/download/${version}/pandoc-${version}-1-amd64.deb" \
+            --output "$RUNNER_TEMP/pandoc.deb"
+          sudo dpkg --install "$RUNNER_TEMP/pandoc.deb"
+          pandoc --version | head -1
+
+      # The published repository holds both the Markdown under sources/ and the HTML
+      # generated from it. Rebuilding here and refusing any difference proves that the
+      # committed pages are what the committed sources produce, so a forgotten local
+      # build cannot reach the site.
+      - name: Rebuild the site and refuse any difference
+        run: |
+          python3 scripts/build_site.py
+          changes="$(git status --porcelain)"
+          if [ -n "$changes" ]; then
+            echo "::error::The committed pages differ from a rebuild of the committed sources. Run python3 www/scripts/build_site.py and commit the result."
+            echo "$changes"
+            git diff --stat
+            exit 1
+          fi
+          echo "The committed pages match a rebuild of the committed sources."
+
       - name: Check internal links and page structure
         run: python3 scripts/check_site.py
 

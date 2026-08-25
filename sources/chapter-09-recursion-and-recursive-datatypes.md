@@ -206,7 +206,7 @@ An implementation must therefore consider expected depth. A journey normally has
 modest number of legs. A syntax tree produced from untrusted nested input or a linked
 structure with millions of nodes needs a different risk assessment.
 
-The supplemental reading [How a Java Program Runs](chapter-12-how-java-runs.md) traces
+The supplemental reading [How a Java Program Runs](supplemental-how-java-runs.md) traces
 frames, exception unwinding, and runtime observations in more detail.
 
 ## 6. Iterative Traversal for Unbounded Depth

@@ -27,7 +27,7 @@ be able to draw a stack, trace ordinary and exceptional returns, use a stack tra
 evidence, and explain why a local reference can still lead to shared mutable state.
 
 > **Supplemental reading:**
-> [Beyond the Java Call Stack](optional-beyond-the-java-call-stack.md) follows the
+> [Beyond the Java Call Stack](supplemental-beyond-the-java-call-stack.md) follows the
 > same ideas into bytecode, thread dumps, and native machine stacks.
 
 ## 1. From Source Code to Execution
@@ -591,7 +591,7 @@ array access produces a defined exception rather than an arbitrary memory write.
 The model is limited to information needed for reasoning about calls; it does not
 reproduce a JVM's optimised memory layout. That is sufficient for the debugging and
 design tasks in this chapter. The
-[supplemental reading](optional-beyond-the-java-call-stack.md) examines bytecode,
+[supplemental reading](supplemental-beyond-the-java-call-stack.md) examines bytecode,
 inlining, thread dumps, and native frames.
 
 ## References

@@ -5,7 +5,7 @@
 >
 > <cite>Alexander Pope, “An Essay on Criticism”</cite>
 
-In [How a Java Program Runs](chapter-12-how-java-runs.md), we treated a frame as one
+In [How a Java Program Runs](supplemental-how-java-runs.md), we treated a frame as one
 box on a thread's call stack. That model held enough invocation state to trace calls,
 recursion, and exceptions, but it omitted several implementation details.
 

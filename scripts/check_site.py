@@ -11,9 +11,17 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
-
-SITE_ROOT = Path(__file__).resolve().parent.parent
-IGNORED_PARTS = {".git", ".gradle", "build"}
+from site_contract import (
+    CHAPTERS,
+    LANG,
+    PUBLISHED_SOURCES,
+    REFERENCES_ID,
+    SITE_ROOT,
+    chapter_page,
+    is_chapter_page,
+    is_published,
+    read_provenance,
+)
 
 
 class PageParser(HTMLParser):
@@ -22,15 +30,15 @@ class PageParser(HTMLParser):
         self.ids: list[str] = []
         self.references: list[str] = []
         self.image_alt: list[Optional[str]] = []
-        self.has_english_canadian_language = False
+        self.has_declared_language = False
         self.has_main = False
         self.in_title = False
         self.title_parts: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
         attributes = dict(attrs)
-        if tag == "html" and attributes.get("lang", "").lower() == "en-ca":
-            self.has_english_canadian_language = True
+        if tag == "html" and attributes.get("lang", "").lower() == LANG.lower():
+            self.has_declared_language = True
         if tag == "main":
             self.has_main = True
         if tag == "title":
@@ -94,21 +102,14 @@ def check_svg(path: Path, failures: list[str]) -> None:
         failures.append(f"{path.relative_to(SITE_ROOT)}: missing a non-empty description")
 
 
-def is_published(path: Path) -> bool:
-    return (
-        not IGNORED_PARTS.intersection(path.relative_to(SITE_ROOT).parts)
-        and "conflicted copy" not in path.name
-    )
-
-
 html_files = sorted(path for path in SITE_ROOT.rglob("*.html") if is_published(path))
 pages = {path: parse_page(path) for path in html_files}
 failures: list[str] = []
 
 for path, page in pages.items():
     display_name = path.relative_to(SITE_ROOT)
-    if not page.has_english_canadian_language:
-        failures.append(f'{display_name}: missing lang="en-CA"')
+    if not page.has_declared_language:
+        failures.append(f'{display_name}: missing lang="{LANG}"')
     if not page.has_main:
         failures.append(f"{display_name}: missing a main landmark")
     if not "".join(page.title_parts).strip():
@@ -119,25 +120,21 @@ for path, page in pages.items():
     if "fonts.googleapis.com" in page_source or "fonts.gstatic.com" in page_source:
         failures.append(f"{display_name}: loads a font from an external Google host")
 
-    source_digest = re.search(r"source-sha256:\s*([0-9a-f]{64})", page_source)
-    source_file = re.search(r"source-file:\s*([A-Za-z0-9_.-]+\.md)", page_source)
-    if path.parent.parent == SITE_ROOT / "chapters":
-        if "references" not in page.ids:
+    source_file, source_digest = read_provenance(page_source)
+    if is_chapter_page(path):
+        if REFERENCES_ID not in page.ids:
             failures.append(f"{display_name}: missing references section")
         if source_digest is None:
             failures.append(f"{display_name}: missing source digest")
         if source_file is None:
             failures.append(f"{display_name}: missing source filename")
         elif source_digest is not None:
-            source_target = SITE_ROOT / "sources" / source_file.group(1)
+            source_target = PUBLISHED_SOURCES / source_file
             if not source_target.is_file():
                 failures.append(
                     f"{display_name}: missing source file {source_target.name}"
                 )
-            elif (
-                sha256(source_target.read_bytes()).hexdigest()
-                != source_digest.group(1)
-            ):
+            elif sha256(source_target.read_bytes()).hexdigest() != source_digest:
                 failures.append(
                     f"{display_name}: generated page is stale relative to "
                     f"{source_target.relative_to(SITE_ROOT)}"
@@ -169,6 +166,36 @@ for path, page in pages.items():
                     f"{target.relative_to(SITE_ROOT)}"
                 )
 
+# Every reading declared in the shared contract must have been published, and no
+# page may survive a slug change. Comparing both directions catches a chapter that
+# was added to CHAPTERS but never built, and a directory left behind by a rename.
+expected_pages = {chapter_page(chapter) for chapter in CHAPTERS}
+published_pages = {path for path in html_files if is_chapter_page(path)}
+
+for chapter in CHAPTERS:
+    target = chapter_page(chapter)
+    if target not in published_pages:
+        failures.append(
+            f"chapters/{chapter.slug}/: declared in CHAPTERS but not published"
+        )
+    source = PUBLISHED_SOURCES / chapter.source
+    if not source.is_file():
+        failures.append(f"sources/{chapter.source}: missing published Markdown source")
+
+for path in sorted(published_pages - expected_pages):
+    failures.append(
+        f"{path.parent.relative_to(SITE_ROOT)}/: published but not declared in CHAPTERS"
+    )
+
+# The build writes a Markdown copy per declared reading but never removes one, so a
+# renamed source would otherwise leave its predecessor behind indefinitely.
+expected_sources = {chapter.source for chapter in CHAPTERS}
+for path in sorted(PUBLISHED_SOURCES.glob("*.md")):
+    if path.name not in expected_sources:
+        failures.append(
+            f"sources/{path.name}: published but not declared in CHAPTERS"
+        )
+
 svg_files = sorted(path for path in SITE_ROOT.rglob("*.svg") if is_published(path))
 for svg_file in svg_files:
     check_svg(svg_file, failures)
@@ -193,6 +220,10 @@ if failures:
 
 print(
     f"Checked {len(html_files)} HTML pages, {len(css_files)} CSS files, and "
-    f"{len(svg_files)} SVG files: local links, fragments, "
-    "font assets, image text, and page landmarks are valid."
+    f"{len(svg_files)} SVG files: local links, fragments, font assets, image text, "
+    "and page landmarks are valid."
+)
+print(
+    f"All {len(CHAPTERS)} declared readings are published, and every chapter page "
+    "matches its Markdown source."
 )

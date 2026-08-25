@@ -3,183 +3,61 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from hashlib import sha256
 from html import escape
 from pathlib import Path
+import os
 import re
 import shutil
 import subprocess
 
-
-SITE_ROOT = Path(__file__).resolve().parent.parent
-COURSE_ROOT = SITE_ROOT.parent
-PUBLISHED_SOURCES = SITE_ROOT / "sources"
-
-
-@dataclass(frozen=True)
-class Chapter:
-    source: str
-    slug: str
-    number: str
-    title: str
-    description: str
-    part: str
-    optional: bool = False
-
-
-CHAPTERS = (
-    Chapter(
-        "chapter-01-engineering-reliable-software.md",
-        "engineering-reliable-software",
-        "1",
-        "Engineering Reliable Software",
-        "Build a short Java feedback loop around an observed transit-system failure.",
-        "Foundations",
-    ),
-    Chapter(
-        "chapter-02-types-and-specifications.md",
-        "types-and-specifications",
-        "2",
-        "Types and Specifications",
-        "Use domain types and behavioural contracts to state what transit software means.",
-        "Foundations",
-    ),
-    Chapter(
-        "chapter-03-exceptions-testing-and-evidence.md",
-        "exceptions-testing-and-evidence",
-        "3",
-        "Exceptions, Testing, and Evidence",
-        "Design failure paths and derive useful tests from a transit-feed contract.",
-        "Foundations",
-    ),
-    Chapter(
-        "chapter-04-mutability-aliasing-and-debugging.md",
-        "mutability-aliasing-and-debugging",
-        "4",
-        "Mutability, Aliasing, and Debugging",
-        "Follow references, close representation leaks, and debug mutable state with evidence.",
-        "State and abstraction",
-    ),
-    Chapter(
-        "chapter-05-adts-and-representation-independence.md",
-        "adts-and-representation-independence",
-        "5",
-        "ADTs and Representation Independence",
-        "Design an immutable transit-network ADT whose clients do not depend on its data structures.",
-        "State and abstraction",
-    ),
-    Chapter(
-        "chapter-06-representation-invariants-and-abstraction-functions.md",
-        "representation-invariants-and-abstraction-functions",
-        "6",
-        "Representation Invariants and Abstraction Functions",
-        "Connect concrete transit-network fields to valid abstract graph values.",
-        "State and abstraction",
-    ),
-    Chapter(
-        "chapter-07-equality-hashing-and-behavioural-subtyping.md",
-        "equality-hashing-and-behavioural-subtyping",
-        "7",
-        "Equality, Hashing, and Behavioural Subtyping",
-        "Define value equality, use hash-based collections correctly, and preserve supertype contracts.",
-        "Interfaces and relationships",
-    ),
-    Chapter(
-        "chapter-08-composition-delegation-and-api-design.md",
-        "composition-delegation-and-api-design",
-        "8",
-        "Composition, Delegation, and API Design",
-        "Assemble routing behaviour behind focused interfaces and explicit component boundaries.",
-        "Interfaces and relationships",
-    ),
-    Chapter(
-        "chapter-09-recursion-and-recursive-datatypes.md",
-        "recursion-and-recursive-datatypes",
-        "9",
-        "Recursion and Recursive Datatypes",
-        "Represent recursive journeys and justify recursive traversal, termination, and correctness.",
-        "Data and transformations",
-    ),
-    Chapter(
-        "chapter-10-functions-streams-and-data-transformations.md",
-        "functions-streams-and-data-transformations",
-        "10",
-        "Functions, Streams, and Data Transformations",
-        "Build ordered, non-interfering transformations over transit observations.",
-        "Data and transformations",
-    ),
-    Chapter(
-        "chapter-11-systems-model-and-network-protocols.md",
-        "systems-model-and-network-protocols",
-        "11",
-        "Systems Model and Network Protocols",
-        "Specify and implement a prediction exchange across a process boundary.",
-        "Networked and concurrent systems",
-    ),
-    Chapter(
-        "chapter-12-parallelism-concurrency-and-virtual-threads.md",
-        "parallelism-concurrency-and-virtual-threads",
-        "12",
-        "Parallelism, Concurrency, and Virtual Threads",
-        "Coordinate blocking tasks with virtual threads, explicit lifetimes, and resource limits.",
-        "Networked and concurrent systems",
-    ),
-    Chapter(
-        "chapter-13-thread-safety-integration-and-reliability.md",
-        "thread-safety-integration-and-reliability",
-        "13",
-        "Thread Safety, Integration, and Reliability",
-        "Publish coherent snapshots and connect local contracts to system reliability.",
-        "Networked and concurrent systems",
-    ),
-    Chapter(
-        "chapter-12-how-java-runs.md",
-        "how-java-runs",
-        "+",
-        "How a Java Program Runs",
-        "Trace Java calls, frames, recursion, exceptions, and shared reachable objects.",
-        "Supplemental readings",
-        optional=True,
-    ),
-    Chapter(
-        "optional-beyond-the-java-call-stack.md",
-        "beyond-java-call-stack",
-        "+",
-        "Beyond the Java Call Stack",
-        "Investigate bytecode, optimised execution, thread dumps, and native stack safety.",
-        "Supplemental readings",
-        optional=True,
-    ),
+from site_contract import (
+    CHAPTERS,
+    CHAPTERS_ROOT,
+    COURSE_ROOT,
+    Chapter,
+    LANG,
+    PANDOC_ARGUMENTS,
+    PANDOC_VERSION,
+    PUBLISHED_SOURCES,
+    SITE_ROOT,
+    installed_pandoc_version,
+    provenance_comments,
+    source_root,
 )
 
 
-def source_root() -> Path:
-    course_sources = COURSE_ROOT / "notes" / "revised"
-    if all((course_sources / chapter.source).is_file() for chapter in CHAPTERS):
-        return course_sources
-    if all((PUBLISHED_SOURCES / chapter.source).is_file() for chapter in CHAPTERS):
-        return PUBLISHED_SOURCES
-    raise SystemExit("Cannot find the complete revised chapter source set")
+def require_pinned_pandoc() -> None:
+    """Fail unless the pinned pandoc is in use, because layout can change with it."""
+    observed = installed_pandoc_version()
+    if observed == PANDOC_VERSION:
+        return
+    if os.environ.get("CPEN221_ALLOW_PANDOC_MISMATCH") == "1":
+        print(
+            f"Warning: building with pandoc {observed}, not the pinned "
+            f"{PANDOC_VERSION}."
+        )
+        return
+    raise SystemExit(
+        f"This site is pinned to pandoc {PANDOC_VERSION} but pandoc {observed} is "
+        f"installed. Install the pinned version, or set "
+        f"CPEN221_ALLOW_PANDOC_MISMATCH=1 to build anyway."
+    )
 
 
 def run_pandoc(markdown: str) -> str:
     try:
         result = subprocess.run(
-            [
-                "pandoc",
-                "--from=gfm",
-                "--to=html5",
-                "--wrap=none",
-                "--syntax-highlighting=none",
-            ],
+            ["pandoc", *PANDOC_ARGUMENTS],
             input=markdown,
             text=True,
             capture_output=True,
             check=True,
         )
     except FileNotFoundError as error:
-        raise SystemExit("Pandoc is required to build the chapter pages") from error
+        raise SystemExit(
+            f"Pandoc {PANDOC_VERSION} is required to build the chapter pages"
+        ) from error
     except subprocess.CalledProcessError as error:
         raise SystemExit(error.stderr) from error
     return result.stdout.strip()
@@ -332,7 +210,7 @@ def chapter_page(
     )
 
     return f"""<!doctype html>
-<html lang="en-CA">
+<html lang="{LANG}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -343,8 +221,7 @@ def chapter_page(
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: {digest} -->
-  <!-- source-file: {escape(chapter.source)} -->
+  {provenance_comments(escape(chapter.source), digest)}
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -397,6 +274,26 @@ def chapter_page(
 
 
 def contents_page() -> str:
+    # The labs archive is hand-maintained under labs/ rather than generated from
+    # Markdown. The contents page links to it only when it is present, so a rebuild
+    # neither invents the link nor discards it.
+    has_labs = (SITE_ROOT / "labs" / "index.html").is_file()
+    labs_nav_item = (
+        '\n        <li><a href="labs/"><small>Lab</small>'
+        "<span>Laboratory activities</span></a></li>"
+        if has_labs
+        else ""
+    )
+    labs_section = (
+        """
+      <section class="home-labs" aria-labelledby="labs-heading">
+        <h2 id="labs-heading">Laboratory activities</h2>
+        <p><a href="labs/">Browse the 2025 lab archive \u2192</a></p>
+      </section>
+"""
+        if has_labs
+        else ""
+    )
     core_items = []
     optional_items = []
     for chapter in CHAPTERS:
@@ -416,7 +313,7 @@ def contents_page() -> str:
     core = "\n".join(core_items)
     optional = "\n".join(optional_items)
     return f"""<!doctype html>
-<html lang="en-CA">
+<html lang="{LANG}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -439,7 +336,7 @@ def contents_page() -> str:
       <h2><a href="#top" aria-current="page">Contents</a></h2>
       <ul>
         <li><a href="chapters/engineering-reliable-software/"><small>1</small><span>Begin the core readings</span></a></li>
-        <li><a href="#further-exploration"><small>+</small><span>Supplemental readings</span></a></li>
+        <li><a href="#further-exploration"><small>+</small><span>Supplemental readings</span></a></li>{labs_nav_item}
       </ul>
       <div class="prev-next">
         <a href="#core-heading">Readings</a>
@@ -483,7 +380,7 @@ def contents_page() -> str:
           </ol>
         </section>
       </div>
-
+{labs_section}
       <footer class="book-footer">
         <a class="next" href="chapters/engineering-reliable-software/">Begin Chapter 1 →</a>
         CPEN 221 · University of British Columbia · Fall 2026
@@ -534,7 +431,7 @@ def example_index(project_name: str, title: str) -> str:
             relative = path.relative_to(project).as_posix()
             links.append(f'<li><a href="{escape(relative)}">{escape(relative)}</a></li>')
     return f"""<!doctype html>
-<html lang="en-CA">
+<html lang="{LANG}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -562,6 +459,7 @@ def example_index(project_name: str, title: str) -> str:
 
 
 def build() -> None:
+    require_pinned_pandoc()
     sources = source_root()
     PUBLISHED_SOURCES.mkdir(parents=True, exist_ok=True)
     copy_publication_assets()
@@ -578,11 +476,10 @@ def build() -> None:
         body, sections = transform_body(run_pandoc(markdown_without_title), chapter)
         rendered.append((chapter, body, sections, digest))
 
-    chapters_root = SITE_ROOT / "chapters"
-    chapters_root.mkdir(exist_ok=True)
+    CHAPTERS_ROOT.mkdir(exist_ok=True)
 
     for index, (chapter, body, sections, digest) in enumerate(rendered):
-        target = chapters_root / chapter.slug
+        target = CHAPTERS_ROOT / chapter.slug
         target.mkdir(exist_ok=True)
         previous = CHAPTERS[index - 1] if index > 0 else None
         following = CHAPTERS[index + 1] if index + 1 < len(CHAPTERS) else None
