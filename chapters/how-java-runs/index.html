@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A practical model of Java calls, frames, exceptions, and stack traces.">
+  <title>How a Java Program Runs · CPEN 221 Notes</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">The running program</p>
+      <h2><a href="#top" aria-current="page">How a Java Program Runs <small>12</small></a></h2>
+      <ul>
+        <li><a href="#small-mystery"><small>12.1</small><span>A small mystery</span></a></li>
+        <li><a href="#call-stack"><small>12.2</small><span>The call stack</span></a></li>
+        <li><a href="#frames"><small>12.3</small><span>Frames come and go</span></a></li>
+        <li><a href="#design-principle"><small>12.4</small><span>What the model buys us</span></a></li>
+        <li class="divider" aria-hidden="true"></li>
+        <li class="optional-link"><a href="../beyond-java-call-stack/"><small>extra</small><span>Beyond the Java Call Stack</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../../">← Contents</a>
+        <a href="../../">Up</a>
+        <a href="../beyond-java-call-stack/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../../" aria-label="Previous: contents">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../beyond-java-call-stack/" aria-label="Next: Beyond the Java Call Stack">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">12</div>
+      <header class="chapter-header">
+        <h1>How a Java Program Runs</h1>
+        <p class="deck">A call-stack model for explaining method calls, recursion, exceptions, and shared mutable state.</p>
+        <ul class="chapter-meta" aria-label="Chapter information">
+          <li>Core reading</li>
+          <li>About 20 minutes</li>
+          <li>Java 25</li>
+        </ul>
+      </header>
+
+      <section class="chapter-note" aria-labelledby="outcomes-heading">
+        <h2 id="outcomes-heading">By the end of this chapter</h2>
+        <ul>
+          <li>Draw the active frames for a short Java call chain.</li>
+          <li>Trace normal returns and exception propagation.</li>
+          <li>Use a stack trace as evidence, not a wall of blame.</li>
+          <li>Explain why a local reference can still reach shared mutable state.</li>
+        </ul>
+      </section>
+
+      <section id="small-mystery">
+        <h2><a href="#small-mystery"><span class="section-number">12.1</span>A Small Mystery</a></h2>
+        <p>This method is too small to look mysterious:</p>
+        <div class="code-block"><pre><code>static int middle(int[] values) {
+    return values[values.length / 2];
+}</code></pre></div>
+        <p>Then it fails.</p>
+        <p>Perhaps <code>values</code> is <code>null</code>. Perhaps it is empty. The exception points at <code>middle</code>, but the bad array may have travelled through five other methods before arriving there. The failed line is only the end of the story.</p>
+        <p>To work backward, we need a picture of the computation that led to that line. We need to know which methods remain active, what each invocation remembers, and where execution goes when a method returns or throws. That picture is the <strong>call stack</strong>.</p>
+      </section>
+
+      <section id="call-stack">
+        <h2><a href="#call-stack"><span class="section-number">12.2</span>The Call Stack</a></h2>
+        <p>Suppose <code>main</code> calls <code>load</code>, which calls <code>parse</code>. While <code>parse</code> runs, <code>load</code> waits to resume, and <code>main</code> waits beneath it. The JVM remembers enough about every active invocation to continue it later.</p>
+        <aside class="margin-note">
+          <p><strong>One stack per thread.</strong> This picture follows one flow of control. A concurrent Java program has one JVM stack for each thread.</p>
+        </aside>
+        <p>Each invocation contributes a <strong>frame</strong>. The newest frame sits on top because it is currently running. Calling a method adds a frame. Returning removes it and uncovers the caller.</p>
+
+        <figure class="stack-model" aria-labelledby="stack-caption">
+          <img src="../../assets/figures/call-stack-evolution.svg" alt="Three stages of a call stack: twice appears above twicePlusOne and main, then disappears and returns 40 to twicePlusOne.">
+          <figcaption id="stack-caption">Calling <code>twice</code> adds a frame. Its return removes that frame and transfers <code>40</code> to <code>twicePlusOne</code>. Labels and line style identify the active frame without relying on colour.</figcaption>
+        </figure>
+      </section>
+
+      <section id="frames">
+        <h2><a href="#frames"><span class="section-number">12.3</span>Watch the Frames Come and Go</a></h2>
+        <p>This complete program gives us a call chain we can compile, run, and draw:</p>
+        <div class="code-block">
+          <span class="source-file"><a href="../../examples/how-java-runs/FrameDemo.java" download>Download FrameDemo.java</a></span>
+          <pre><code>public final class FrameDemo {
+    public static void main(String[] args) {
+        int answer = twicePlusOne(20);
+        System.out.println(answer);
+    }
+
+    static int twicePlusOne(int value) {
+        int doubled = twice(value);
+        return doubled + 1;
+    }
+
+    static int twice(int value) {
+        return value * 2;
+    }
+}</code></pre>
+        </div>
+        <p><code>twice</code> returns <code>40</code>, so its frame leaves the top. <code>twicePlusOne</code> resumes, stores <code>40</code> in <code>doubled</code>, and returns <code>41</code>. Finally, <code>main</code> resumes and prints the answer.</p>
+        <aside class="margin-note">
+          <p><strong>Model, not photograph.</strong> A just-in-time compiler may keep a value in a register, eliminate <code>doubled</code>, or inline <code>twice</code>. The furniture may move; the behaviour may not.</p>
+        </aside>
+      </section>
+
+      <section id="design-principle" class="design-note">
+        <h2><a href="#design-principle">Design Note: Private Frames, Shared Objects</a></h2>
+        <p>Frames separate invocations, but they do not automatically separate objects. Two frames can hold references to the same mutable object. Ask who can reach that object and who can observe a mutation.</p>
+        <p>This distinction connects the call stack to representation exposure and, later, to thread safety.</p>
+      </section>
+
+      <footer class="book-footer">
+        <a class="next" href="../beyond-java-call-stack/">Optional: Beyond the Java Call Stack →</a>
+        CPEN 221 · Software Construction I · Fall 2026 pilot
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

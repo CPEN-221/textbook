@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 410" role="img" aria-labelledby="title description">
+  <title id="title">A nested call adds a frame and a return removes it</title>
+  <desc id="description">Three panels show the stack before twice is called, while twice runs, and after twice returns 40 to twicePlusOne. Main remains at the bottom throughout.</desc>
+  <style>
+    .panel { fill: #fffdf8; stroke: #d6dde3; stroke-width: 2; }
+    .frame { fill: #ffffff; stroke: #123b5d; stroke-width: 3; }
+    .active { stroke: #b84e00; stroke-dasharray: 9 6; stroke-width: 4; }
+    .heading { fill: #08263e; font: 700 19px system-ui, sans-serif; }
+    .label { fill: #18212b; font: 16px ui-monospace, monospace; }
+    .small { fill: #52606d; font: 14px system-ui, sans-serif; }
+    .arrow { fill: none; stroke: #176b51; stroke-width: 4; marker-end: url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#176b51"/>
+    </marker>
+  </defs>
+
+  <rect class="panel" x="10" y="10" width="290" height="390" rx="10"/>
+  <text class="heading" x="30" y="45">1 · Before the call</text>
+  <rect class="frame active" x="35" y="170" width="240" height="70" rx="5"/>
+  <text class="label" x="50" y="200">twicePlusOne(20)</text>
+  <text class="small" x="50" y="224">current frame</text>
+  <rect class="frame" x="35" y="255" width="240" height="70" rx="5"/>
+  <text class="label" x="50" y="286">main(args)</text>
+  <text class="small" x="50" y="310">waiting</text>
+
+  <rect class="panel" x="335" y="10" width="290" height="390" rx="10"/>
+  <text class="heading" x="355" y="45">2 · During the call</text>
+  <rect class="frame active" x="360" y="85" width="240" height="70" rx="5"/>
+  <text class="label" x="375" y="116">twice(20)</text>
+  <text class="small" x="375" y="140">current frame</text>
+  <rect class="frame" x="360" y="170" width="240" height="70" rx="5"/>
+  <text class="label" x="375" y="201">twicePlusOne(20)</text>
+  <text class="small" x="375" y="225">waiting for result</text>
+  <rect class="frame" x="360" y="255" width="240" height="70" rx="5"/>
+  <text class="label" x="375" y="286">main(args)</text>
+  <text class="small" x="375" y="310">waiting</text>
+
+  <rect class="panel" x="660" y="10" width="290" height="390" rx="10"/>
+  <text class="heading" x="680" y="45">3 · After return</text>
+  <path class="arrow" d="M 700 135 C 760 82, 855 82, 905 135"/>
+  <text class="small" x="760" y="82">return 40</text>
+  <rect class="frame active" x="685" y="170" width="240" height="70" rx="5"/>
+  <text class="label" x="700" y="200">twicePlusOne(20)</text>
+  <text class="small" x="700" y="224">doubled = 40</text>
+  <rect class="frame" x="685" y="255" width="240" height="70" rx="5"/>
+  <text class="label" x="700" y="286">main(args)</text>
+  <text class="small" x="700" y="310">waiting</text>
+</svg>

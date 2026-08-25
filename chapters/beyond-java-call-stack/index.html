@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An optional investigation of bytecode, optimized execution, thread dumps, and native stacks.">
+  <title>Beyond the Java Call Stack · CPEN 221 Notes</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">Optional deep dive</p>
+      <h2><a href="#top" aria-current="page">Beyond the Java Call Stack <small>+</small></a></h2>
+      <ul>
+        <li><a href="#before-you-begin"><small>+</small><span>Before you begin</span></a></li>
+        <li><a href="#three-claims"><small>+.1</small><span>Three kinds of claim</span></a></li>
+        <li><a href="#operand-stack"><small>+.2</small><span>Trace an operand stack</span></a></li>
+        <li><a href="#try-it"><small>lab</small><span>Try it</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../how-java-runs/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../../">Contents →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../how-java-runs/" aria-label="Previous: How a Java Program Runs">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../../" aria-label="Next: contents">↑</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">+</div>
+      <header class="chapter-header">
+        <p class="optional-kicker">Optional deep dive</p>
+        <h1>Beyond the Java Call Stack</h1>
+        <p class="deck">Open the frame and connect Java source to bytecode, optimized execution, thread diagnostics, and native memory safety.</p>
+        <ul class="chapter-meta" aria-label="Chapter information">
+          <li>Not required later</li>
+          <li>About 30 minutes</li>
+          <li>Includes experiments</li>
+        </ul>
+      </header>
+
+      <section id="before-you-begin" class="chapter-note">
+        <h2>Before You Begin</h2>
+        <p>Later chapters do not assume that you have read this one. Come here when bytecode, optimization, or native execution helps answer a question you care about.</p>
+      </section>
+
+      <section id="three-claims">
+        <h2><a href="#three-claims"><span class="section-number">+.1</span>Three Kinds of Claim</a></h2>
+        <p>Our first experiment will produce an impressive-looking bytecode listing. Before it does, we need a rule that keeps impressive output from becoming folklore.</p>
+        <ol>
+          <li><strong>Language guarantee:</strong> the Java Language Specification requires it.</li>
+          <li><strong>Virtual-machine guarantee:</strong> every conforming JVM must provide it.</li>
+          <li><strong>Implementation observation:</strong> we saw it in one compiler, JVM, operating system, or processor.</li>
+        </ol>
+        <aside class="margin-note">
+          <p>Keep asking, “Which layer promised this?” It is a small question with an excellent record of preventing nonsense.</p>
+        </aside>
+      </section>
+
+      <section id="operand-stack">
+        <h2><a href="#operand-stack"><span class="section-number">+.2</span>Trace an Operand Stack</a></h2>
+        <p>The expression <code>x + y</code> looks atomic in source. The JVM still needs to fetch two values, combine them, and keep the result somewhere. Start with the smallest useful method:</p>
+        <div class="code-block">
+          <span class="source-file"><a href="../../examples/beyond-java-call-stack/BytecodeDemo.java" download>Download BytecodeDemo.java</a></span>
+          <pre><code>public final class BytecodeDemo {
+    static int adjust(int x, int y) {
+        int sum = x + y;
+        return sum * 2;
+    }
+}</code></pre>
+        </div>
+        <p>A typical <code>javac</code> compilation uses local slots for <code>x</code>, <code>y</code>, and <code>sum</code>. Bytecode instructions move values between those slots and the frame's operand stack.</p>
+        <aside class="margin-note">
+          <p><strong>Do not overclaim.</strong> The bytecode trace describes required JVM semantics. It does not provide a stop-motion film of physical memory after the JVM optimizes the method.</p>
+        </aside>
+      </section>
+
+      <section id="try-it" class="design-note">
+        <h2><a href="#try-it">10-Minute Investigation: Look Under the Source</a></h2>
+        <p>Predict the local slots and operand-stack contents. Then compile the example with debugging metadata and inspect its bytecode:</p>
+        <div class="code-block"><pre><code>javac -g BytecodeDemo.java
+javap -c -l -p BytecodeDemo</code></pre></div>
+        <p>Explain which observations come from Java, which come from the JVM specification, and which belong only to this compiler run.</p>
+      </section>
+
+      <footer class="book-footer">
+        <a class="next" href="../../">Return to the Contents →</a>
+        CPEN 221 · Software Construction I · Fall 2026 pilot
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
