@@ -164,6 +164,8 @@ def typeface_tools(prefix: str) -> str:
         <option value="newsreader">Newsreader + Public Sans</option>
         <option value="source">Source Serif 4 + Source Sans 3</option>
         <option value="fraunces">Fraunces heads + Literata text</option>
+        <option value="plex">IBM Plex Serif + Sans + Mono</option>
+        <option value="google-sans">Google Sans Flex + Code</option>
       </select>
     </label>
   </div>"""

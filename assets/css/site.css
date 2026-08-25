@@ -53,6 +53,20 @@ html[data-typeface="fraunces"] {
   --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
 }
 
+html[data-typeface="plex"] {
+  --serif: "IBM Plex Serif", Georgia, serif;
+  --display: "IBM Plex Serif", Georgia, serif;
+  --sans: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+html[data-typeface="google-sans"] {
+  --serif: "Google Sans Flex", "Segoe UI", Helvetica, Arial, sans-serif;
+  --display: "Google Sans Flex", "Segoe UI", Helvetica, Arial, sans-serif;
+  --sans: "Google Sans Flex", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "Google Sans Code", "SFMono-Regular", Consolas, monospace;
+}
+
 html[data-typeface="fraunces"] .chapter-header h1,
 html[data-typeface="fraunces"] .contents-header h1 {
   font-weight: 600;

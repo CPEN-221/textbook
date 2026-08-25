@@ -2,7 +2,14 @@
   "use strict";
 
   var storageKey = "cpen221-typeface";
-  var choices = ["literata", "newsreader", "source", "fraunces"];
+  var choices = [
+    "literata",
+    "newsreader",
+    "source",
+    "fraunces",
+    "plex",
+    "google-sans"
+  ];
   var selected = "literata";
 
   try {

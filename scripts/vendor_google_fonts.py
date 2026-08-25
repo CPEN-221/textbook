@@ -17,13 +17,16 @@ SITE_ROOT = Path(__file__).resolve().parent.parent
 FONT_ROOT = SITE_ROOT / "assets" / "fonts"
 FILE_ROOT = FONT_ROOT / "files"
 LICENSE_ROOT = FONT_ROOT / "licenses"
-CACHED_CSS = Path("/tmp/cpen221-google-fonts-woff2.css")
-RETRIEVED = "2026-08-04"
+CACHED_CSS = Path("/tmp/cpen221-google-fonts-woff2-v2.css")
+RETRIEVED = "2026-08-25"
 GOOGLE_CSS_URL = (
     "https://fonts.googleapis.com/css2?"
     "family=Fraunces:opsz,wght@9..144,600&"
+    "family=Google+Sans+Code:wght@300..800&"
+    "family=Google+Sans+Flex:opsz,wght@6..144,100..1000&"
     "family=IBM+Plex+Mono:wght@400;600&"
     "family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&"
+    "family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&"
     "family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&"
     "family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&"
     "family=Public+Sans:ital,wght@0,400;0,600;1,400&"
@@ -39,8 +42,11 @@ USER_AGENT = (
 )
 LICENSES = {
     "fraunces": "Fraunces",
+    "googlesanscode": "Google Sans Code",
+    "googlesansflex": "Google Sans Flex",
     "ibmplexmono": "IBM Plex Mono",
     "ibmplexsans": "IBM Plex Sans",
+    "ibmplexserif": "IBM Plex Serif",
     "literata": "Literata",
     "newsreader": "Newsreader",
     "publicsans": "Public Sans",

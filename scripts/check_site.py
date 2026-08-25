@@ -172,6 +172,28 @@ for path, page in pages.items():
 expected_pages = {chapter_page(chapter) for chapter in CHAPTERS}
 published_pages = {path for path in html_files if is_chapter_page(path)}
 
+typeface_choices = (
+    "literata",
+    "newsreader",
+    "source",
+    "fraunces",
+    "plex",
+    "google-sans",
+)
+switcher_source = (SITE_ROOT / "assets" / "js" / "typeface-switcher.js").read_text(
+    encoding="utf-8"
+)
+for choice in typeface_choices:
+    if f'"{choice}"' not in switcher_source:
+        failures.append(f"typeface switcher does not allow {choice}")
+for path in sorted(expected_pages | {SITE_ROOT / "index.html"}):
+    page_source = path.read_text(encoding="utf-8")
+    for choice in typeface_choices:
+        if f'<option value="{choice}">' not in page_source:
+            failures.append(
+                f"{path.relative_to(SITE_ROOT)}: missing {choice} typeface option"
+            )
+
 for chapter in CHAPTERS:
     target = chapter_page(chapter)
     if target not in published_pages:
@@ -213,6 +235,24 @@ for css_file in css_files:
             failures.append(
                 f"{css_file.relative_to(SITE_ROOT)}: missing target for {reference}"
             )
+
+site_styles = (SITE_ROOT / "assets" / "css" / "site.css").read_text(encoding="utf-8")
+for choice in typeface_choices:
+    if f'html[data-typeface="{choice}"]' not in site_styles:
+        failures.append(f"assets/css/site.css: missing {choice} typeface mapping")
+
+for licence_name in (
+    "googlesanscode-OFL.txt",
+    "googlesansflex-OFL.txt",
+    "ibmplexserif-OFL.txt",
+):
+    licence_path = SITE_ROOT / "assets" / "fonts" / "licenses" / licence_name
+    if not licence_path.is_file():
+        failures.append(f"assets/fonts/licenses/{licence_name}: missing licence")
+    elif "SIL OPEN FONT LICENSE Version 1.1" not in licence_path.read_text(
+        encoding="utf-8"
+    ):
+        failures.append(f"assets/fonts/licenses/{licence_name}: invalid licence")
 
 if failures:
     print("\n".join(failures), file=sys.stderr)
