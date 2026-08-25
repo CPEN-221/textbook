@@ -68,9 +68,9 @@ include this method:
 Map<StopId, Set<StopId>> adjacencyMap()
 ```
 
-The method requires every client to understand a map of sets. It also requires the
-ADT to keep that representation or emulate it. A client checking
-for a direct connection should not need to understand the map structure.
+The method requires every client to understand a map of sets, and it requires the ADT
+to keep that representation or emulate it. A client that only needs to know whether
+two stops are directly connected should not have to read a map of sets to find out.
 
 Instead, we name the questions and transformations clients need:
 
@@ -88,10 +88,10 @@ public interface TransitNetwork {
 }
 ```
 
-The complete interface in the
-[companion project](../../examples/chapters-05-06/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java)
-includes the specifications. The public operations refer to stops, direct
-destinations, and connections. No method returns the representation.
+The complete interface in the [companion
+project](../../examples/chapters-05-06/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java)
+includes the specifications. The public operations refer to stops, direct destinations,
+and connections. No method returns the representation.
 
 This interface is one Java expression of the ADT, but an ADT is not the same thing as
 a Java interface. A final class with private fields and a well-specified public API
@@ -162,10 +162,10 @@ omission is deliberate: a client can test set membership and equality, but it ca
 depend on the current hash-table order. If stable order becomes a requirement, then
 we can add it to the specification and accept the associated implementation cost.
 
-Specifications do not need to expose every implementation failure. Running out of
-memory, for example, is not useful network behaviour to restate on each method.
-They do need to settle predictable boundary cases such as `null`, unknown stops,
-self-connections, mutation, and ordering.
+A specification does not need to restate every implementation failure; running out of
+memory, for example, is not useful network behaviour to repeat on each method. A
+specification does need to settle the predictable boundary cases: `null` arguments,
+unknown stops, self-connections, permitted mutation, and iteration order.
 
 ## 5. Return the Interface from a Factory
 
@@ -251,11 +251,12 @@ final class ConnectionSetNetwork implements TransitNetwork {
 }
 ```
 
-Its direct-destination observer scans and filters `connections`; the adjacency-map
-implementation performs a lookup. The connection set makes bulk construction and
-whole-edge operations natural. The map makes neighbourhood queries natural. The
-better choice depends on the operations and performance requirements of the
-application.
+Its direct-destination observer scans and filters `connections`, whereas the
+adjacency-map implementation performs a single lookup. Building a network from a feed
+of connections is the reverse: the connection set stores the records as they arrive,
+while the adjacency map must group them by origin stop first. The better choice
+depends on which of those two operations the application performs more often, and on
+whether the measured cost of the scan matters at the network sizes involved.
 
 Now run ordinary client code:
 
@@ -335,9 +336,9 @@ cases.
 > **Design principle: expose only the operations clients need, and keep the
 > representation data structures private.**
 
-This principle also makes clients easier to read because their operations use transit
-terms. It simplifies correctness arguments by restricting clients to specified
-operations instead of arbitrary map mutation.
+Client code then reads in transit terms rather than in map operations, and a
+correctness argument about the network has to consider only the specified operations
+instead of every mutation a client could perform on an exposed map.
 
 ## 9. Common Misconceptions
 

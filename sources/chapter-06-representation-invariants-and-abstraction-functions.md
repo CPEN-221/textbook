@@ -67,7 +67,7 @@ V = r.outgoing.keySet(), and
 E = { (from, to) | to is in r.outgoing.get(from) }.
 ```
 
-This is the **abstraction function**, written `AF: R_valid -> A`. It maps a concrete
+This is the abstraction function, written `AF: R_valid -> A`. It maps a concrete
 representation to the abstract value that clients observe. The function is a
 reasoning device and a documentation obligation; it need not be an executable Java
 method.
@@ -95,9 +95,8 @@ duplicate-looking data has meaning.
 
 ## 3. Define the Representation Invariant
 
-The **representation invariant**, or **RI**, is a predicate over candidate
-representations. It is true exactly for the representations our implementation
-allows between public operations.
+The representation invariant is a predicate over candidate representations. It is true
+exactly for the representations our implementation allows between public operations.
 
 For `AdjacencyMapNetwork`:
 
@@ -149,15 +148,15 @@ private void checkRep() {
 We use Java assertions because an RI violation is an internal implementation bug,
 not a client input error. Assertions are disabled by default unless the Java Virtual
 Machine (JVM) receives `-ea` (or `-enableassertions`). The companion build enables
-them while running tests.
-Public argument checks still use ordinary conditionals and documented exceptions;
-Chapter 3 explained why assertions are unsuitable for enforcing preconditions.
+them while running tests. Public argument checks still use ordinary conditionals and
+documented exceptions; Chapter 3 explained why assertions are unsuitable for
+enforcing preconditions.
 
-There is a small defensive detail in the loop. We inspect each destination for
-`null` instead of calling `destinations.contains(null)`. Some unmodifiable collection
-implementations are permitted to reject an ineligible query with
-`NullPointerException`. An invariant checker should report the broken invariant, not
-trip over its own inspection.
+The loop contains one defensive detail. We inspect each destination for `null`
+instead of calling `destinations.contains(null)`, because an unmodifiable collection
+is permitted to reject an ineligible query with `NullPointerException`. An invariant
+checker that threw from its own inspection would replace the diagnostic we want with
+one about the checker.
 
 `Map.copyOf` and `Set.copyOf` already reject `null` while this implementation builds
 its snapshots. We retain the non-null clauses in the RI because they document the
@@ -254,9 +253,9 @@ that state is the *right* result of an operation.
 
 Imagine an `empty(stops)` implementation that returns a valid empty map regardless
 of its argument. The map satisfies our RI: it contains no nulls, outside
-destinations, or self-connections. Its abstraction is the empty graph. But the
-creator's postcondition says that the result contains exactly the requested stops.
-For a nonempty argument, the method is wrong.
+destinations, or self-connections. Its abstraction is the empty graph. The creator's
+postcondition, however, says that the result contains exactly the requested stops, so
+the method is wrong for every nonempty argument.
 
 This distinction separates two checks:
 

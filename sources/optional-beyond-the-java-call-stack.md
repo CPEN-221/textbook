@@ -9,7 +9,7 @@ In [How a Java Program Runs](chapter-12-how-java-runs.md), we treated a frame as
 box on a thread's call stack. That model held enough invocation state to trace calls,
 recursion, and exceptions, but it omitted several implementation details.
 
-This optional chapter examines the operand stack, method invocation in bytecode,
+This optional reading examines the operand stack, method invocation in bytecode,
 inlining, thread diagnostics, and native stack memory. Later core readings do not
 require these details. The goal is to distinguish source-level reasoning, Java
 Virtual Machine (JVM) requirements, and observations about a particular
@@ -24,9 +24,13 @@ As we investigate, sort claims into three layers:
 
 1. **Language guarantee:** the Java Language Specification requires it.
 2. **Virtual-machine guarantee:** every conforming JVM must provide it.
-3. **Implementation observation:** something seen in one compiler, JVM, operating system, or processor.
+3. **Implementation observation:** something seen in one compiler, JVM, operating
+   system, or processor.
 
-Java guarantees the specified result of `a + b`. The JVM instruction set includes `iadd`. A particular JVM may compile the method into native code that never interprets that `iadd` at all. All three statements can be true because they describe different layers.
+Java guarantees the specified result of `a + b`. The JVM instruction set includes
+`iadd`. A particular JVM may compile the method into native code that never interprets
+that `iadd` at all. All three statements can be true because they describe different
+layers.
 
 For each claim, identify which layer guarantees it. This prevents us from treating an
 observation from one JVM run as a Java guarantee.
@@ -43,7 +47,7 @@ output may change with the compiler version and options. Predict, run, and inspe
 do not generalise from one listing without checking which details the specifications
 require.
 
-## 2. Tracing an Operand Stack
+## 2. Trace an Operand Stack
 
 The source expression `x + y` corresponds to several bytecode operations. The JVM
 must load two values, add them, and retain the result. We can inspect those operations
@@ -71,7 +75,9 @@ Compile the class and inspect it. A typical `javac` produces:
 7: ireturn
 ```
 
-The instruction names are compact once we split them up. `iload_0` loads an integer from local slot 0. `istore_2` stores an integer in slot 2. For this static method, the slots begin as:
+Each instruction name combines a type prefix with an operation. `iload_0` loads an
+integer from local slot 0, and `istore_2` stores an integer in slot 2. For this static
+method, the slots begin as:
 
 ```text
 slot 0: x
@@ -79,7 +85,8 @@ slot 1: y
 slot 2: sum
 ```
 
-Now call `adjust(4, 7)` and follow the values. The rightmost item is the top of the operand stack:
+Now call `adjust(4, 7)` and follow the values. The rightmost item is the top of the
+operand stack:
 
 | Instruction | Local variables after the instruction | Operand stack after the instruction |
 |---|---|---|
@@ -93,7 +100,9 @@ Now call `adjust(4, 7)` and follow the values. The rightmost item is the top of 
 | `imul` | `[4, 7, 11]` | `[22]` |
 | `ireturn` | invocation completes | return value `22` |
 
-At `iadd`, the operands disappear and their sum takes their place. `istore_2` then moves that sum into the local slot for `sum`. Finally, `ireturn` sends `22` back to the caller.
+`iadd` removes the two operands and pushes their sum in their place. `istore_2` then
+moves that sum into the local slot for `sum`, and `ireturn` returns `22` to the
+caller.
 
 The trace illustrates the distinction from the core chapter: local slots hold values
 across expressions, while the operand stack holds values used by the expression the
@@ -113,9 +122,8 @@ A JVM may:
 - inline `adjust` into its caller;
 - calculate a constant result at compile time when the compiler knows the arguments.
 
-The JVM may interpret, compile, inline, eliminate `sum`, or keep values in registers.
-`adjust(4, 7)` must still produce `22`; Java does not otherwise specify which rows of
-the table correspond to physical operations.
+Whichever of these the JVM does, `adjust(4, 7)` must still produce `22`. Java does not
+otherwise specify which rows of the table correspond to physical operations.
 
 ## 3. Method Calls and New Frames
 
@@ -154,13 +162,18 @@ The instruction crosses a frame boundary. Conceptually, the JVM:
 6. removes its frame when it returns; and
 7. places the value it returned on the caller's operand stack.
 
-For `score(4)`, the new frame receives `4` and `3`. `adjust` returns `14`; the caller resumes with `14` on its operand stack, adds `1`, and returns `15`. We have connected the operand stack inside a frame to the call stack around it.
+For `score(4)`, the new frame receives `4` and `3`. `adjust` returns `14`; the caller
+resumes with `14` on its operand stack, adds `1`, and returns `15`. We have connected
+the operand stack inside a frame to the call stack around it.
 
-An instance method needs one more argument: the receiver. In an ordinary instance method, local slot 0 contains `this`; the declared parameters occupy the slots that follow.
+An instance method needs one more argument: the receiver. In an ordinary instance
+method, local slot 0 contains `this`; the declared parameters occupy the slots that
+follow.
 
 ### Invocation instructions
 
-Not every call selects its target in the same way. The JVM therefore has several invocation instructions:
+Not every call selects its target in the same way. The JVM therefore has several
+invocation instructions:
 
 - `invokestatic` for static methods;
 - `invokevirtual` for ordinary dynamically dispatched instance methods;
@@ -168,9 +181,9 @@ Not every call selects its target in the same way. The JVM therefore has several
 - `invokespecial` for operations with special selection rules, including constructors;
 - `invokedynamic` for a call site whose behaviour the runtime links dynamically.
 
-The names help us read listings. The design connection matters more: a call written
-against an interface can select an implementation from the receiver's run-time type.
-These invocation instructions implement different method-selection rules.
+The names help us read listings, but the design consequence matters more: a call
+written against an interface can select its implementation from the receiver's
+run-time type.
 
 ## 4. Linking Symbolic Names
 
@@ -178,7 +191,10 @@ A class file must call methods that the JVM may not have loaded yet. A process-m
 address stored in the file would be invalid on another machine or when classes load
 in a different order.
 
-Instead, the class file carries a **constant pool**: symbolic information about classes, methods, fields, literals, and method types. When bytecode refers to a method, the JVM resolves that symbolic reference and links it to the appropriate run-time entity. It may perform some resolution early and defer other parts until execution needs them.
+Instead, the class file carries a **constant pool**: symbolic information about classes,
+methods, fields, literals, and method types. When bytecode refers to a method, the JVM
+resolves that symbolic reference and links it to the appropriate run-time entity. It may
+perform some resolution early and defer other parts until execution needs them.
 
 Symbolic references support several JVM capabilities:
 
@@ -195,8 +211,8 @@ It matters here because we are examining how the JVM resolves symbolic bytecode.
 ## 5. Frames Are Specification-Level Structures
 
 Our bytecode trace makes a frame look concrete: three local slots beside a short
-operand stack. The JVM specification is more careful. It requires the frame to
-provide:
+operand stack. The JVM specification requires less than that picture shows. It
+requires the frame to provide:
 
 - an array of local variables;
 - an operand stack;
@@ -229,7 +245,8 @@ optimised implementation.
 Our invocation trace handled normal completion: the callee reaches `ireturn` and
 returns a value. An exception completes the invocation without a normal return.
 
-At the bytecode level, an exception table associates protected instruction ranges with handlers. When a method throws, the JVM:
+At the bytecode level, an exception table associates protected instruction ranges with
+handlers. When a method throws, the JVM:
 
 1. searches the current method's applicable handlers;
 2. clears the operand stack, places the exception reference on it, and transfers
@@ -243,9 +260,11 @@ These are the JVM-level steps behind stack unwinding.
 
 ### `finally` and try-with-resources
 
-Source-level cleanup looks compact because the compiler does the bookkeeping. The JVM does not need one universal “run this `finally` block” instruction; `javac` emits control flow and handlers that reproduce the source semantics.
+Source-level cleanup looks compact because the compiler does the bookkeeping. The JVM
+does not need one universal “run this `finally` block” instruction; `javac` emits
+control flow and handlers that reproduce the source semantics.
 
-Try-with-resources has one especially useful edge case. If the main operation fails
+Try-with-resources has one edge case worth knowing. If the main operation fails
 and `close` fails too, then Java keeps the main exception and attaches the cleanup
 failure as a **suppressed exception**. `Throwable.getSuppressed()` retrieves it.
 
@@ -268,7 +287,9 @@ request-handler-2:
     blocked while reading from a socket
 ```
 
-The first trace tells us where a thread waits, but not why the wait persists. The second reveals the dependency: a thread is holding `inventoryLock` while it waits for the network.
+The first trace tells us where a thread waits, but not why the wait persists. The second
+reveals the dependency: a thread is holding `inventoryLock` while it waits for the
+network.
 
 We can investigate without guessing:
 
@@ -292,7 +313,9 @@ Thread A owns lock 1 and waits for lock 2.
 Thread B owns lock 2 and waits for lock 1.
 ```
 
-The stacks show where each thread requested a lock; lock ownership completes the cycle. Blocking is normal. A cycle with no possible resolution is the bug.
+The stacks show where each thread requested a lock, and lock ownership completes the
+cycle. Blocking by itself is ordinary behaviour; a cycle that no thread can break is
+the defect.
 
 ## 8. From JVM Frames to Native Frames
 
@@ -317,9 +340,12 @@ higher addresses
 lower addresses
 ```
 
-This picture is intentionally generic. Change the processor, operating system, compiler, optimisation level, or calling convention and the layout may change. Values may remain in registers, and a compiler may omit a dedicated frame pointer.
+This picture is intentionally generic. Change the processor, operating system, compiler,
+optimisation level, or calling convention and the layout may change. Values may remain
+in registers, and a compiler may omit a dedicated frame pointer.
 
-The portable requirement is smaller than the picture: the callee needs local state and a way to resume the caller.
+The portable requirement is smaller than the picture: the callee needs local state and a
+way to resume the caller.
 
 ### Return addresses and control flow
 
@@ -329,7 +355,8 @@ the processor may transfer control to an unintended address.
 
 ## 9. Native Stack Buffer Overflows
 
-This C-like function creates a 16-byte local buffer and then calls an input operation that knows nothing about the boundary:
+This C-like function creates a 16-byte local buffer and then calls an input operation
+that knows nothing about the boundary:
 
 ```c
 void receive(void) {
@@ -338,9 +365,13 @@ void receive(void) {
 }
 ```
 
-Write a seventeenth byte and the operation leaves the array. What it reaches next depends on the actual frame: another local value, saved state, padding, or control information.
+Write a seventeenth byte and the operation leaves the array. What it reaches next
+depends on the actual frame: another local value, saved state, padding, or control
+information.
 
-The stack is not full. The write is out of bounds. That distinction separates a native **stack-buffer overflow** from Java stack exhaustion.
+The stack has not run out of space; the write has left the bounds of the
+array. That distinction separates a native **stack-buffer overflow** from Java stack
+exhaustion.
 
 Possible consequences include:
 
@@ -350,7 +381,9 @@ Possible consequences include:
 - control-flow redirection;
 - execution of attacker-chosen behaviour.
 
-The exact outcome depends on the platform and surrounding code. One overflow may crash immediately; another may corrupt a value that fails much later. We should not turn one historical layout into a universal recipe.
+The exact outcome depends on the platform and surrounding code. One overflow may crash
+immediately; another may corrupt a value that fails much later. One historical layout should not be
+generalised into a universal account.
 
 ### Java array bounds checking
 
@@ -370,7 +403,8 @@ boundary and require their own memory-safety controls.
 
 ## 10. Defence in Depth for Native Code
 
-Preventing the write is best. Real native systems also assume that prevention may fail and add layers behind it.
+Preventing the write is the only control that removes the defect. Real native systems
+also assume that prevention may fail, and they add further layers behind it.
 
 ### Bounds-aware programming
 
@@ -385,13 +419,17 @@ sensitive frame information. The compiler inserts code that checks the **stack
 canary** before returning. If the value changed, then the process terminates rather
 than trusting damaged control state.
 
-A canary detects some overwrites; it does not make the write valid and may miss some memory errors.
+A canary detects some overwrites; it does not make the write valid and may miss some
+memory errors.
 
 ### Non-executable memory
 
-Memory protection can mark writable data pages as non-executable. That blocks a traditional technique in which an attacker writes bytes into data memory and the processor executes them directly.
+Memory protection can mark writable data pages as non-executable. That blocks a
+traditional technique in which an attacker writes bytes into data memory and the
+processor executes them directly.
 
-It does not prevent all control-flow attacks. Attackers may still misuse existing executable code if an unsafe write corrupts control data.
+It does not prevent all control-flow attacks. Attackers may still misuse existing
+executable code if an unsafe write corrupts control data.
 
 ### Address-space layout randomisation
 
@@ -407,7 +445,8 @@ prevent the out-of-bounds write.
 
 These controls form a defence-in-depth strategy:
 
-> Prevent the invalid operation where possible; detect it when prevention fails; limit its consequences if detection also fails.
+> Prevent the invalid operation where possible; detect it when prevention fails; limit
+> its consequences if detection also fails.
 
 ## 11. Summary of the Model
 
@@ -417,12 +456,15 @@ The detailed model adds the following information to the core frame model:
 - Method parameters and locals occupy conceptual slots in a frame.
 - Invocation transfers arguments into a new logical frame and returns a value to the caller.
 - Constant-pool references allow class files to describe operations symbolically.
-- A JVM may interpret, compile, inline, or otherwise optimise code while preserving Java behaviour.
+- A JVM may interpret, compile, inline, or otherwise optimise code while preserving Java
+  behaviour.
 - Exception tables support handler selection and stack unwinding.
 - Multiple thread stacks reveal wait dependencies that one trace cannot show.
-- JVM frames are portable specification-level structures; native frames follow platform-specific conventions.
+- JVM frames are portable specification-level structures; native frames follow
+  platform-specific conventions.
 - A Java `StackOverflowError` is not a native stack buffer overflow.
-- Bounds checking and layered mitigations prevent or constrain native memory-corruption attacks.
+- Bounds checking and layered mitigations prevent or constrain native memory-corruption
+  attacks.
 
 ## Experiments
 
@@ -437,9 +479,11 @@ legitimately differ across machines.
 
 ### Experiment 1: Predict bytecode before viewing it
 
-**Question:** How do source-level temporary variables affect the bytecode's local slots and operand stack?
+**Question:** How do source-level temporary variables affect the bytecode's local slots
+and operand stack?
 
-We have already traced `BytecodeDemo` on paper. Start by asking whether an explicit temporary variable leaves a visible mark:
+We have already traced `BytecodeDemo` on paper. Start by asking whether an explicit
+temporary variable produces a local slot of its own:
 
 ```java
 public final class BytecodeDemo {
@@ -492,7 +536,8 @@ javap -c -l -p BytecodeDemo
 
 1. Which differences change the computation?
 2. Which differences only affect debugging metadata?
-3. Does the presence of a local-variable-table entry prove that a value occupies a physical stack location during optimised execution?
+3. Does the presence of a local-variable-table entry prove that a value occupies a
+   physical stack location during optimised execution?
 
 ### Experiment 2: Measure recursive stack depth
 
@@ -536,7 +581,9 @@ reported depths changed with the thread-stack setting. The exact numbers may var
 between runs, JDKs, architectures, compilation states, and method shapes. Adding a
 local `long` or another method call may also change the result.
 
-This is one of the rare cases where catching `StackOverflowError` is useful: a controlled experiment that immediately terminates. Application code should not use it as a normal stopping condition.
+This is one of the rare cases where catching `StackOverflowError` is useful: a
+controlled experiment that immediately terminates. Application code should not use it as
+a normal stopping condition.
 
 **Explain:**
 
@@ -548,7 +595,8 @@ This is one of the rare cases where catching `StackOverflowError` is useful: a c
 
 **Question:** What happens if the main computation and resource cleanup both fail?
 
-We need two failures at once to expose suppression. Create a resource whose `close` method fails, then fail inside the try body as well:
+We need two failures at once to expose suppression. Create a resource whose `close`
+method fails, then fail inside the try body as well:
 
 ```java
 public final class SuppressedDemo {
@@ -597,13 +645,16 @@ Finally, inspect the compiled method:
 javap -c -p SuppressedDemo
 ```
 
-The compiler will generate considerably more elaborate control flow than the source suggests.
+The compiler will generate considerably more elaborate control flow than the source
+suggests.
 
 **Explain:**
 
 1. Why does Java preserve the failure from the body as the primary exception?
-2. What debugging evidence would we lose if the program silently discarded the cleanup failure?
-3. Why is try-with-resources a language construct rather than one simple bytecode instruction?
+2. What debugging evidence would we lose if the program silently discarded the cleanup
+   failure?
+3. Why is try-with-resources a language construct rather than one simple bytecode
+   instruction?
 
 ### Experiment 4: Capture a blocked thread
 
@@ -659,9 +710,11 @@ public final class BlockedThreadDemo {
 trace pointed to the `synchronized` statement. After `lock-holder` woke and exited
 its synchronized block, the waiter acquired the lock and the program terminated.
 
-The polling loop is acceptable for stabilising this experiment, but it would be a poor synchronisation mechanism in production code.
+The polling loop is acceptable for stabilising this experiment, but it would be a poor
+synchronisation mechanism in production code.
 
-For an external view, extend the sleep to 30 seconds. While the program is running, open another terminal:
+For an external view, extend the sleep to 30 seconds. While the program is running, open
+another terminal:
 
 ```bash
 jcmd -l
@@ -726,7 +779,9 @@ cc -O0 -g -fsanitize=address -fno-omit-frame-pointer \
 overflow and terminated the process with diagnostic information. A platform without
 AddressSanitizer cannot reproduce that diagnostic with this command.
 
-Without a sanitizer, C does not promise a particular result. The program has undefined behaviour: it might appear to continue, crash, or behave differently after an unrelated change. Do not infer safety from one run that appears successful.
+Without a sanitizer, C does not promise a particular result. The program has undefined
+behaviour: it might appear to continue, crash, or behave differently after an unrelated
+change. Do not infer safety from one run that appears successful.
 
 This experiment demonstrates an invalid write; it does not construct an exploit.
 
@@ -775,20 +830,24 @@ java -XX:+UnlockDiagnosticVMOptions \
      HotMethodDemo
 ```
 
-These `-XX` options are implementation-specific. Another JVM may reject them or provide different diagnostic facilities. The output is verbose; search for `HotMethodDemo` rather than attempting to understand every compilation event.
+These `-XX` options are implementation-specific. Another JVM may reject them or provide
+different diagnostic facilities. The output is verbose; search for `HotMethodDemo`
+rather than attempting to understand every compilation event.
 
 **Observed during validation:** HotSpot listed `HotMethodDemo` methods in the
 compilation log and reported an inlining decision for `adjust`. HotSpot does not
 guarantee the same decision on another run or implementation.
 
-Change `adjust` by making it larger, adding branches, or calling another method. Run the experiment again.
+Change `adjust` by making it larger, adding branches, or calling another method. Run the
+experiment again.
 
 **Explain:**
 
 1. Which results are Java guarantees and which are HotSpot observations?
 2. If HotSpot inlines `adjust`, then why can an exception trace still describe
    logical Java methods?
-3. Why should ordinary application correctness never depend on whether the JVM inlines a method?
+3. Why should ordinary application correctness never depend on whether the JVM inlines a
+   method?
 
 ## Summary of the Experiments
 

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Assemble routing behaviour behind focused interfaces and explicit component boundaries.">
+  <title>Composition, Delegation, and API Design · CPEN 221 Readings</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: a16b556b84eb9cb4a25ba2d5bff3377125b46935a2748843f4253def1cf3663a -->
+  <!-- source-file: chapter-08-composition-delegation-and-api-design.md -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">Interfaces and relationships</p>
+      <h2><a href="#top" aria-current="page">Composition, Delegation, and API Design <small>8</small></a></h2>
+      <ul>
+        <li><a href="#1-the-client-facing-route-api"><small>8.1</small><span>The Client-Facing Route API</span></a></li>
+        <li><a href="#2-composition-and-delegation"><small>8.2</small><span>Composition and Delegation</span></a></li>
+        <li><a href="#3-observable-audit-events"><small>8.3</small><span>Observable Audit Events</span></a></li>
+        <li><a href="#4-wrapper-composition-and-order"><small>8.4</small><span>Wrapper Composition and Order</span></a></li>
+        <li><a href="#5-composition-and-inheritance"><small>8.5</small><span>Composition and Inheritance</span></a></li>
+        <li><a href="#6-validation-and-failure-boundaries"><small>8.6</small><span>Validation and Failure Boundaries</span></a></li>
+        <li><a href="#7-component-substitution-in-tests"><small>8.7</small><span>Component Substitution in Tests</span></a></li>
+        <li><a href="#8-common-misconception-an-interface-removes-coupling"><small>8.8</small><span>Common Misconception: An Interface Removes Coupling</span></a></li>
+        <li><a href="#9-practice-by-reviewing-a-composition"><small>8.9</small><span>Practice by Reviewing a Composition</span></a></li>
+        <li><a href="#10-summary"><small>8.10</small><span>Summary</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../equality-hashing-and-behavioural-subtyping/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../recursion-and-recursive-datatypes/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../equality-hashing-and-behavioural-subtyping/" aria-label="Previous: Equality, Hashing, and Behavioural Subtyping">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../recursion-and-recursive-datatypes/" aria-label="Next: Recursion and Recursive Datatypes">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">8</div>
+      <header class="chapter-header">
+        <h1>Composition, Delegation, and API Design</h1>
+      </header>
+
+<blockquote class="epigraph">
+<p>All are but parts of one stupendous whole.</p>
+<p><cite>Alexander Pope, <em>An Essay on Man</em></cite></p>
+</blockquote>
+<p>The journey planner already has a router. A new requirement asks it to count completed requests for operational monitoring. Another asks it to cache repeated requests. A third asks it to record how long route computation takes.</p>
+<p>None of these requirements changes what routing means. Each adds behaviour around a routing operation. Extending the concrete router class for every combination soon produces <code>CachedAuditedRouter</code>, <code>TimedCachedRouter</code>, and several other classes whose names reveal that the design is combining independent concerns through inheritance.</p>
+<p>The client needs a route. It should not need to know which concrete algorithm, monitor, or cache supplied it. We can state a small interface around that client need and assemble implementations by composition.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>distinguish inheritance from composition and delegation;</li>
+<li>design an interface around a stable client responsibility;</li>
+<li>use a wrapper to add behaviour while preserving a contract;</li>
+<li>identify implementation coupling caused by inheritance;</li>
+<li>decide where validation and failure translation belong in a composed system;</li>
+<li>recognise an interface that is too broad or too dependent on representation; and</li>
+<li>test a component independently by replacing its collaborators.</li>
+</ul></section>
+<h2 id="1-the-client-facing-route-api"><a href="#1-the-client-facing-route-api"><span class="section-number">8.1</span>The Client-Facing Route API</a></h2>
+<p>A trip-planning client submits a request and receives a route. The interface can say exactly that:</p>
+<div class="code-block"><pre class="java"><code>public interface Router {
+    Route route(RouteRequest request);
+}</code></pre></div>
+<p>This interface is small because its purpose is narrow. It does not expose the graph, the priority queue used by a shortest-path algorithm, cache controls, or counters. Those details may matter to particular implementations, but a client that requests a route has no reason to depend on them.</p>
+<p>The request and result types carry the values shared across the boundary:</p>
+<div class="code-block"><pre class="java"><code>public record RouteRequest(
+        String origin,
+        String destination,
+        boolean stepFreeRequired) { }
+
+public record Route(List&lt;String&gt; stops, boolean stepFree) {
+    public Route {
+        stops = List.copyOf(stops);
+    }
+}</code></pre></div>
+<p><code>Route</code> takes a snapshot of the stop list. A client therefore receives a value whose contents cannot change through an alias to the constructor argument. This ownership decision is part of the application programming interface (API), just as the method signature is.</p>
+<p>An interface does not have to be minimal in character count. It should contain the operations that form one coherent client role. If route computation also supports explicit cancellation, the interface may need a cancellation abstraction. If only an administrator clears caches, cache management belongs in a separate interface used by that administrator.</p>
+<blockquote class="design-note"><p><strong>Design principle:</strong> Put a stable responsibility behind an interface, and compose implementations whose contracts match that responsibility.</p>
+</blockquote>
+<h2 id="2-composition-and-delegation"><a href="#2-composition-and-delegation"><span class="section-number">8.2</span>Composition and Delegation</a></h2>
+<p>An object uses <strong>composition</strong> when it contains references to other objects and uses them to perform its work. The composed object has a collaborator rather than being a specialised version of that collaborator.</p>
+<p>An audited router contains another router:</p>
+<div class="code-block"><pre class="java"><code>public static final class AuditedRouter implements Router {
+    private final Router delegate;
+    private int completedRequests;
+
+    public AuditedRouter(Router delegate) {
+        this.delegate = Objects.requireNonNull(delegate);
+    }
+
+    @Override
+    public Route route(RouteRequest request) {
+        Route result = delegate.route(request);
+        completedRequests++;
+        return result;
+    }
+
+    public int completedRequests() {
+        return completedRequests;
+    }
+}</code></pre></div>
+<p>The field has the interface type <code>Router</code>. The wrapper can therefore use a direct router, a timetable router, a test implementation, or another wrapper. It depends on the routing contract rather than a particular algorithm.</p>
+<p>The call to <code>delegate.route(request)</code> is <strong>delegation</strong>: the wrapper forwards work to its collaborator. Composition describes the object structure; delegation describes the forwarding action. They often occur together but are not synonyms. A composed object may use a collaborator without exposing the same operation, and a method can delegate to an object obtained from elsewhere rather than one stored in a field.</p>
+<p>The validated companion program placed <code>DirectRouter</code> inside <code>AuditedRouter</code>, made one request, and printed:</p>
+<div class="code-block"><pre class="text"><code>[UBC, WATERFRONT], audited=1</code></pre></div>
+<p>The wrapper returned the route produced by its delegate and updated its own state after the delegate completed normally.</p>
+<h2 id="3-observable-audit-events"><a href="#3-observable-audit-events"><span class="section-number">8.3</span>Observable Audit Events</a></h2>
+<p>The audit example contains a specification decision that the code alone cannot settle. It increments the counter only after <code>delegate.route</code> returns. A request that throws is not counted as completed.</p>
+<p>Other useful measures include attempted requests, successful requests, failed requests, and requests cancelled by a client. One integer cannot represent all four. The monitoring requirement must define the event being counted, then the wrapper can place updates at the corresponding control-flow points.</p>
+<p>For attempted requests, increment before delegation. For separate success and failure counts, use a <code>try</code> statement:</p>
+<div class="code-block"><pre class="java"><code>attempted.increment();
+try {
+    Route result = delegate.route(request);
+    succeeded.increment();
+    return result;
+} catch (RuntimeException failure) {
+    failed.increment();
+    throw failure;
+}</code></pre></div>
+<p>The wrapper rethrows the same failure because the <code>Router</code> contract has not granted it permission to replace routing failures with an unrelated result. If the public API defines a domain exception, an adapter at the relevant boundary may translate a lower-level exception into that type while retaining the cause.</p>
+<p>The plain <code>int</code> in the first example is suitable only when calls are confined to one thread. If multiple threads share the wrapper, <code>completedRequests++</code> is not an atomic operation. Chapter 13 develops the thread-safety argument and appropriate counters. The API should either promise thread safety and implement it, or document that the object requires confinement or external synchronisation.</p>
+<h2 id="4-wrapper-composition-and-order"><a href="#4-wrapper-composition-and-order"><span class="section-number">8.4</span>Wrapper Composition and Order</a></h2>
+<p>A cache wrapper can implement the same interface:</p>
+<div class="code-block"><pre class="java"><code>public final class CachingRouter implements Router {
+    private final Router delegate;
+    private final Map&lt;RouteRequest, Route&gt; cache = new HashMap&lt;&gt;();
+
+    public CachingRouter(Router delegate) {
+        this.delegate = Objects.requireNonNull(delegate);
+    }
+
+    @Override
+    public Route route(RouteRequest request) {
+        return cache.computeIfAbsent(request, delegate::route);
+    }
+}</code></pre></div>
+<p>This code assumes that <code>RouteRequest</code> is an immutable value with suitable equality, as Chapter 7 required. It also assumes that caching is semantically valid. If the underlying timetable changes, an indefinitely cached result may violate the router's freshness contract. A real cache needs a policy for versioning, expiration, or invalidation.</p>
+<p>Wrappers can be nested:</p>
+<div class="code-block"><pre class="java"><code>Router router = new AuditedRouter(
+        new CachingRouter(
+                new TimetableRouter(network, timetable)));</code></pre></div>
+<p>The order is observable. In this arrangement, the auditor sees every client request, including cache hits. If the cache surrounds the auditor, only cache misses reach the auditor. Neither order is inherently correct. The monitoring specification decides which event the system needs to measure.</p>
+<p>The same analysis applies to timing. A timer outside the cache measures client latency, while a timer inside measures route computation on misses. Composition makes the choice visible at assembly time.</p>
+<p>Changing wrapper order can change behaviour. Authentication before caching may prevent an unauthorised request from observing cached data. Caching before authentication could be a security defect. An architectural diagram may show the sequence, but the contracts determine which sequences are valid.</p>
+<h2 id="5-composition-and-inheritance"><a href="#5-composition-and-inheritance"><span class="section-number">8.5</span>Composition and Inheritance</a></h2>
+<p>Java class inheritance establishes an <code>is-a</code> relationship and permits a subclass to reuse or override accessible implementation. This mechanism is appropriate when the subclass is a behavioural subtype and the superclass was designed for extension.</p>
+<p>Using inheritance only to obtain code reuse creates stronger coupling. A subclass can depend on protected methods, call order, self-use, and other details that do not appear in the public contract. A superclass update can then change subclass behaviour without changing any public signature.</p>
+<p>Suppose a router superclass implements <code>routeAll</code> by repeatedly calling its public <code>route</code> method. An auditing subclass overrides <code>route</code> to increment a counter. One call to <code>routeAll</code> then increments once per element. A later superclass version optimises <code>routeAll</code> to call a private batch algorithm. The subclass still compiles, but the count changes. The subclass depended on whether one superclass method called another overrideable method.</p>
+<p>A wrapper has a clearer boundary. It sees the calls that clients make through the wrapper's interface. It cannot depend on private control flow inside its delegate. The delegate may change its algorithm while preserving the <code>Router</code> contract.</p>
+<p>Composition has costs. A wrapper must forward every operation it promises. When a large interface gains a method, each wrapper needs a deliberate implementation. Object assembly also requires a place that chooses and connects collaborators. These costs are useful feedback: repeated forwarding can reveal an interface that serves too many client roles.</p>
+<p>Inheritance remains useful for frameworks with documented extension points and for true taxonomies whose behavioural contracts hold. The decision should follow the relationship. “Needs the services of” suggests composition. “Can replace every use of” is a necessary condition for public subtyping.</p>
+<h2 id="6-validation-and-failure-boundaries"><a href="#6-validation-and-failure-boundaries"><span class="section-number">8.6</span>Validation and Failure Boundaries</a></h2>
+<p>Each component should validate the conditions its own contract assigns to it. A <code>RouteRequest</code> constructor can reject null stops because no valid request contains them. A router can reject an unknown stop because only the network can answer whether a syntactically valid identifier belongs to it. A protocol adapter can reject an invalid response because it owns the external format boundary.</p>
+<p>Duplicating every check in every wrapper adds code without necessarily adding protection. Omitting checks at trust boundaries allows invalid state to travel into components that cannot diagnose its source. The specification should identify where an assumption first becomes available and where untrusted data becomes a domain value.</p>
+<p>Failure translation follows the same rule. A file-backed timetable may throw an <code>IOException</code>; a routing API may promise <code>TimetableUnavailableException</code>. The adapter that knows both abstractions can translate the exception and preserve the cause. An auditing wrapper should not translate it merely because the call passed through that wrapper.</p>
+<p>Resource ownership also belongs at a boundary. If a component opens a file, socket, or executor for one operation, it should normally close that resource. If assembly provides a long-lived resource, the owning application should define its lifetime. An interface that accepts a collaborator does not imply ownership of that collaborator.</p>
+<h3 id="construction-policy-outside-the-components"><a href="#construction-policy-outside-the-components">Construction policy outside the components</a></h3>
+<p>The place that creates the object graph decides which concrete router and wrappers the application uses. A command-line program may assemble a file-backed timetable, a cache with a fixed clock, and an auditor. A test can assemble an in-memory router and a recording monitor. None of the components needs to read a global configuration or construct its own replacement.</p>
+<p>Constructor injection makes required collaborators visible and prevents an object from being used before assembly is complete. Optional behaviour should still have a clear representation. Passing <code>null</code> for “no auditor” spreads conditional checks; using a no-operation implementation or constructing the unwrapped router keeps the normal call path explicit.</p>
+<p>Assembly also owns startup failure. If constructing the timetable requires a file that is absent, the program can stop before accepting requests. Delaying the same failure until the first route call changes the operational contract and may expose a partially available service. Both policies can be valid, but the application entry point should choose deliberately.</p>
+<h3 id="default-methods-are-part-of-the-contract"><a href="#default-methods-are-part-of-the-contract">Default methods are part of the contract</a></h3>
+<p>Java interfaces may provide <code>default</code> method implementations. A default can evolve an interface or express an operation in terms of more fundamental ones. It is not a free compatibility guarantee. Existing implementations may have performance, atomicity, or failure properties that the default does not preserve.</p>
+<p>If <code>Router</code> gained <code>routeAll</code> as a loop over <code>route</code>, a remote implementation would make one network round trip per request. A batch-capable server could provide a different atomicity and latency profile. The interface must specify those properties before clients can substitute either implementation confidently.</p>
+<h2 id="7-component-substitution-in-tests"><a href="#7-component-substitution-in-tests"><span class="section-number">8.7</span>Component Substitution in Tests</a></h2>
+<p>Composition allows a test to replace one collaborator without constructing the whole transit system. An in-memory test router can record its input and return a fixed route:</p>
+<div class="code-block"><pre class="java"><code>final class RecordingRouter implements Router {
+    RouteRequest received;
+
+    @Override
+    public Route route(RouteRequest request) {
+        received = request;
+        return new Route(List.of(&quot;UBC&quot;, &quot;WATERFRONT&quot;), true);
+    }
+}</code></pre></div>
+<p>A test of <code>AuditedRouter</code> can then check three separate facts: it forwarded the same request, returned the delegate's result, and changed the counter according to its specification. The test does not need a graph search or timetable file.</p>
+<p>This replacement is useful because the interface represents a genuine boundary. An interface introduced solely so every class can be mocked may scatter abstractions that have no stable meaning. Small concrete value objects such as <code>RouteRequest</code> usually need ordinary construction, not replacement.</p>
+<p>Tests should also cover wrapper order when order matters. A cache-and-audit integration test can issue the same request twice and state whether the expected count is one route computation or two client calls. That test records an architectural decision which a unit test of either wrapper alone cannot see.</p>
+<h2 id="8-common-misconception-an-interface-removes-coupling"><a href="#8-common-misconception-an-interface-removes-coupling"><span class="section-number">8.8</span>Common Misconception: An Interface Removes Coupling</a></h2>
+<p>Changing a field type from a class to an interface does not by itself produce a decoupled design. Components remain coupled to every promise and data type in that interface.</p>
+<p>An interface such as <code>TransitSystemService</code> with methods for routing, cache clearing, health checks, timetable replacement, metrics, and raw graph access couples every implementation and client to a broad administrative surface. Most clients use only a small part, yet changes affect all implementers.</p>
+<p>Likewise, an interface that returns an implementation-specific <code>HashMap</code> exposes a representation choice despite the interface declaration. Returning <code>Map</code> is better, but even that may expose more operations than a client needs. A domain result type can state ordering, immutability, and absence more precisely.</p>
+<p>Interfaces move dependencies onto contracts. Good API design makes those contracts coherent and no larger than the client role requires.</p>
+<h2 id="9-practice-by-reviewing-a-composition"><a href="#9-practice-by-reviewing-a-composition"><span class="section-number">8.9</span>Practice by Reviewing a Composition</a></h2>
+<p>For each design, identify the contract at the boundary and explain whether the composition preserves it.</p>
+<ol type="1">
+<li><code>FallbackRouter</code> calls its secondary router whenever the primary returns an empty route. The <code>Router</code> contract says an empty route means origin equals destination. Determine whether the wrapper confuses a valid result with failure.</li>
+<li><code>RetryingRouter</code> repeats every failed call three times. Some failures report an invalid request, while others report a temporarily unavailable timetable. Decide which failures may justify retry and where that policy belongs.</li>
+<li><code>CachingRouter</code> accepts mutable <code>RouteRequest</code> keys. Trace a lookup after a caller changes a key.</li>
+<li><code>AuditedRouter</code> is shared between request threads and uses <code>int++</code>. State the additional thread-safety contract or confinement rule needed.</li>
+<li>A subclass overrides <code>route</code> to remove inaccessible options even though the superclass promises to return the fastest route. Apply behavioural subtyping from Chapter 7.</li>
+</ol>
+<p>Design a <code>TimingRouter</code> that records elapsed time without changing the result or failure promised by its delegate. State whether it measures failed calls, which clock abstraction it accepts, and who owns the measurements. Then describe a test that does not depend on the computer's wall clock.</p>
+<h2 id="10-summary"><a href="#10-summary"><span class="section-number">8.10</span>Summary</a></h2>
+<ul>
+<li>Composition gives an object collaborators; delegation forwards an operation to a collaborator.</li>
+<li>An interface should describe a coherent client responsibility rather than expose an implementation's controls and representation.</li>
+<li>A wrapper can add auditing, caching, timing, validation, or translation while preserving the wrapped contract.</li>
+<li>Wrapper order can change observable behaviour and must follow the specification.</li>
+<li>Inheritance is suitable only when the subclass remains a behavioural subtype and the superclass supports extension.</li>
+<li>Component boundaries make focused testing possible, but interfaces still create coupling to their contracts.</li>
+</ul>
+<h2 id="references"><a href="#references">References</a></h2>
+<ul>
+<li>Alexander Pope. <a href="https://www.gutenberg.org/files/9413/9413-h/9413-h.htm"><em>An Essay on Man</em></a>.</li>
+<li>Joshua Bloch. <em>Effective Java</em>, 3rd ed., Item 18, “Favor composition over inheritance.” Addison-Wesley, 2018.</li>
+<li>Erich Gamma, Richard Helm, Ralph Johnson, and John Vlissides. <em>Design Patterns: Elements of Reusable Object-Oriented Software</em>, “Decorator.” Addison-Wesley, 1994.</li>
+<li>Oracle. <a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-9.html">Java Language Specification, Java SE 25, Chapter 9: Interfaces</a>.</li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../recursion-and-recursive-datatypes/">Recursion and Recursive Datatypes →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

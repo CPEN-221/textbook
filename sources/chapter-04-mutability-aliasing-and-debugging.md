@@ -43,8 +43,8 @@ int predicted = scheduled;
 predicted = 607;
 ```
 
-After the last line, `scheduled` is still `600`. The variables are independent cells;
-changing which value one cell holds does not reach into the other.
+After the last line, `scheduled` is still `600`. The two variables are separate
+cells, and storing a new value in one cell does not change the other.
 
 For a variable of reference type, assignment copies a **reference value**:
 
@@ -58,10 +58,10 @@ There is still one `ArrayList`. Both variables designate it, so adding through
 `displayOrder` is visible through `feedOrder`. Two references to the same object are
 **aliases**.
 
-Java's language specification deliberately does not expose a raw memory address
-through an ordinary reference. An address is a tempting mental shortcut, but the
-semantic fact we need is simpler: a reference may designate an object, and two
-reference values may designate the same object.
+Java's language specification does not expose a raw memory address through an
+ordinary reference, so we should not reason in terms of addresses. The property we
+need is weaker: a reference designates an object, and two reference values may
+designate the same object.
 
 ## 2. Draw the References
 
@@ -76,10 +76,10 @@ representation.](../../assets/diagrams/rendered/chapter-04/arrival-board-represe
 *Figure 4.1: Representation exposure before the repair. The three references all
 designate the same mutable list.*
 
-The diagram is not a description of physical memory. A Java Virtual Machine (JVM)
-may arrange or optimise storage in many ways. The model preserves the relationships Java makes
-observable: which variables can reach which objects, and where a mutation can be
-seen.
+The diagram is not a description of physical memory, because a Java Virtual Machine
+(JVM) may arrange or optimise storage in many ways. The diagram records only the
+relationships that Java makes observable: which variables reach which objects, and
+where a mutation becomes visible.
 
 When a stateful failure is difficult to explain, draw the state before and after the
 suspicious operation. The diagram makes aliases and visible mutations explicit.
@@ -123,8 +123,8 @@ routes.add("R4");                 // allowed: object mutation
 // routes = new ArrayList<>();    // does not compile: reassignment
 ```
 
-The arrow cannot move, but the object at its end may still change. A **final
-reference** is not an **immutable object**.
+The arrow cannot move, but the object at its end may still change. Declaring the
+reference `final` therefore says nothing about whether the object is immutable.
 
 This distinction matters in almost every Java class. Declaring a collection field
 `final` guarantees that the field continues to designate the same collection. It
@@ -221,8 +221,8 @@ cannot be mutated through its public interface. Immutability can make sharing
 
 ### Check the element types
 
-`List.copyOf` makes an unmodifiable copy of the list structure. It does not recursively
-copy each element. Our element type is:
+`List.copyOf` makes an unmodifiable copy of the list structure. It does not
+recursively copy each element. Our element type is:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -255,7 +255,8 @@ objects immutable.
 
 ## 6. Snapshot, View, Shallow Copy, Deep Copy
 
-These terms answer different questions.
+These four terms name different guarantees, and a design usually needs exactly one
+of them.
 
 A **shallow copy** creates a new outer object and copies references to its elements.
 `List.copyOf` is shallow with respect to element objects. It is sufficient when those
@@ -275,15 +276,15 @@ An **unmodifiable snapshot** such as the result we obtain from `List.copyOf(sour
 does not reflect later structural changes to `source`. That is the property our board
 needs.
 
-Neither “unmodifiable” nor “copied” guarantees deep immutability. Check two
-properties separately:
+Neither “unmodifiable” nor “copied” guarantees deep immutability. Ask two questions
+separately:
 
-1. Determine whether this reference can modify the container.
-2. Determine whether any reachable reference can modify an element or backing
-   object.
+1. Can this reference modify the container?
+2. Can any reachable reference modify an element or a backing object?
 
-The second question identifies mutations that remain possible through the elements
-or backing objects.
+The first question covers the list itself. The second covers the mutations that
+remain possible through the elements or through a backing collection, which is where
+an unmodifiable view differs from a snapshot.
 
 ## 7. Debug Representation Exposure
 
@@ -393,17 +394,17 @@ which that state can change.
 
 ### “I copied the list, so there are no aliases”
 
-A shallow list copy removes the alias to the outer list. It intentionally preserves
-aliases to its elements. That is safe for immutable `Departure` values and unsafe for
+A shallow list copy removes the alias to the outer list and preserves the aliases to
+its elements. That is safe for immutable `Departure` values and unsafe for
 mutable element objects unless the contract controls their mutation.
 
 Draw one more level of references and check whether a client can mutate an element.
 
 ## 10. Review Generated Classes with Mutable State
 
-Generated getters often return fields directly because the code is compact and the
-types line up. Review every constructor and observer of a state-holding class with a
-reference checklist:
+Generated getters often return a field directly, because the code is compact and the
+field's declared type already matches the return type. Review every constructor and
+observer of a state-holding class with a reference checklist:
 
 - Identify every mutable argument retained by the constructor.
 - Identify every mutable field or reachable element returned by a method.
@@ -481,10 +482,10 @@ its internal state. We repaired `ArrivalBoard` with an unmodifiable snapshot and
 immutable elements. Shallow copies, deep copies, views, and snapshots provide
 different guarantees; name the one the design actually needs.
 
-When a state-related failure appears, reproduce it, study evidence, form a falsifiable hypothesis,
-run a discriminating experiment, repair the cause, and preserve the failure as a
-regression test. Confining mutation reduces the number of operations and aliases that
-developers must examine when such a failure occurs.
+When a state-related failure appears, reproduce it, study the evidence, form a
+falsifiable hypothesis, run a discriminating experiment, repair the cause, and preserve
+the failure as a regression test. Confining mutation reduces the number of operations
+and aliases that developers must examine when such a failure occurs.
 
 We now have a feedback loop, meaningful types, explicit contracts and failure paths,
 and controlled mutable state. The next chapter uses these tools to define abstract

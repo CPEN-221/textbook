@@ -10,7 +10,8 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 217fae9781e7a43d39ad0052002469033371c63b79bcfc3cb2c84d04f50f5c0c -->
+  <!-- source-sha256: 463a9a70166b461e4b8f1ee0ea8df61235b75a6e75ead10ab3b72d7bf3c5a5eb -->
+  <!-- source-file: optional-beyond-the-java-call-stack.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -23,7 +24,7 @@
       <h2><a href="#top" aria-current="page">Beyond the Java Call Stack <small>+</small></a></h2>
       <ul>
         <li><a href="#1-separate-guarantees-from-observations"><small>+.1</small><span>Separate Guarantees from Observations</span></a></li>
-        <li><a href="#2-tracing-an-operand-stack"><small>+.2</small><span>Tracing an Operand Stack</span></a></li>
+        <li><a href="#2-trace-an-operand-stack"><small>+.2</small><span>Trace an Operand Stack</span></a></li>
         <li><a href="#3-method-calls-and-new-frames"><small>+.3</small><span>Method Calls and New Frames</span></a></li>
         <li><a href="#4-linking-symbolic-names"><small>+.4</small><span>Linking Symbolic Names</span></a></li>
         <li><a href="#5-frames-are-specification-level-structures"><small>+.5</small><span>Frames Are Specification-Level Structures</span></a></li>
@@ -76,7 +77,7 @@
 <p><cite>Alexander Pope, “An Essay on Criticism”</cite></p>
 </blockquote>
 <p>In <a href="../how-java-runs/">How a Java Program Runs</a>, we treated a frame as one box on a thread's call stack. That model held enough invocation state to trace calls, recursion, and exceptions, but it omitted several implementation details.</p>
-<p>This optional chapter examines the operand stack, method invocation in bytecode, inlining, thread diagnostics, and native stack memory. Later core readings do not require these details. The goal is to distinguish source-level reasoning, Java Virtual Machine (JVM) requirements, and observations about a particular implementation.</p>
+<p>This optional reading examines the operand stack, method invocation in bytecode, inlining, thread diagnostics, and native stack memory. Later core readings do not require these details. The goal is to distinguish source-level reasoning, Java Virtual Machine (JVM) requirements, and observations about a particular implementation.</p>
 <h2 id="1-separate-guarantees-from-observations"><a href="#1-separate-guarantees-from-observations"><span class="section-number">+.1</span>Separate Guarantees from Observations</a></h2>
 <p>Before interpreting a bytecode listing, we need to identify what kind of claim the listing supports.</p>
 <p>As we investigate, sort claims into three layers:</p>
@@ -91,7 +92,7 @@
 <div class="code-block"><pre class="bash"><code>javac -g BytecodeDemo.java
 javap -c -l -p BytecodeDemo</code></pre></div>
 <p><code>javap</code> displays bytecode, line and local-variable tables, and non-public members. Its output may change with the compiler version and options. Predict, run, and inspect; do not generalise from one listing without checking which details the specifications require.</p>
-<h2 id="2-tracing-an-operand-stack"><a href="#2-tracing-an-operand-stack"><span class="section-number">+.2</span>Tracing an Operand Stack</a></h2>
+<h2 id="2-trace-an-operand-stack"><a href="#2-trace-an-operand-stack"><span class="section-number">+.2</span>Trace an Operand Stack</a></h2>
 <p>The source expression <code>x + y</code> corresponds to several bytecode operations. The JVM must load two values, add them, and retain the result. We can inspect those operations in this method:</p>
 <div class="code-block"><pre class="java"><code>public final class BytecodeDemo {
     static int adjust(int x, int y) {
@@ -108,7 +109,7 @@ javap -c -l -p BytecodeDemo</code></pre></div>
 5: iconst_2
 6: imul
 7: ireturn</code></pre></div>
-<p>The instruction names are compact once we split them up. <code>iload_0</code> loads an integer from local slot 0. <code>istore_2</code> stores an integer in slot 2. For this static method, the slots begin as:</p>
+<p>Each instruction name combines a type prefix with an operation. <code>iload_0</code> loads an integer from local slot 0, and <code>istore_2</code> stores an integer in slot 2. For this static method, the slots begin as:</p>
 <div class="code-block"><pre class="text"><code>slot 0: x
 slot 1: y
 slot 2: sum</code></pre></div>
@@ -169,7 +170,7 @@ slot 2: sum</code></pre></div>
 </tr>
 </tbody>
 </table>
-<p>At <code>iadd</code>, the operands disappear and their sum takes their place. <code>istore_2</code> then moves that sum into the local slot for <code>sum</code>. Finally, <code>ireturn</code> sends <code>22</code> back to the caller.</p>
+<p><code>iadd</code> removes the two operands and pushes their sum in their place. <code>istore_2</code> then moves that sum into the local slot for <code>sum</code>, and <code>ireturn</code> returns <code>22</code> to the caller.</p>
 <p>The trace illustrates the distinction from the core chapter: local slots hold values across expressions, while the operand stack holds values used by the expression the JVM currently evaluates.</p>
 <h3 id="limits-of-the-bytecode-trace"><a href="#limits-of-the-bytecode-trace">Limits of the bytecode trace</a></h3>
 <p>That trace is exact about the bytecode's meaning. It does not imply that an optimised JVM performs the same sequence of physical memory operations.</p>
@@ -182,7 +183,7 @@ slot 2: sum</code></pre></div>
 <li>inline <code>adjust</code> into its caller;</li>
 <li>calculate a constant result at compile time when the compiler knows the arguments.</li>
 </ul>
-<p>The JVM may interpret, compile, inline, eliminate <code>sum</code>, or keep values in registers. <code>adjust(4, 7)</code> must still produce <code>22</code>; Java does not otherwise specify which rows of the table correspond to physical operations.</p>
+<p>Whichever of these the JVM does, <code>adjust(4, 7)</code> must still produce <code>22</code>. Java does not otherwise specify which rows of the table correspond to physical operations.</p>
 <h2 id="3-method-calls-and-new-frames"><a href="#3-method-calls-and-new-frames"><span class="section-number">+.3</span>Method Calls and New Frames</a></h2>
 <p>We can see how an invocation begins and ends by adding a caller:</p>
 <div class="code-block"><pre class="java"><code>static int score(int raw) {
@@ -218,7 +219,7 @@ slot 2: sum</code></pre></div>
 <li><code>invokespecial</code> for operations with special selection rules, including constructors;</li>
 <li><code>invokedynamic</code> for a call site whose behaviour the runtime links dynamically.</li>
 </ul>
-<p>The names help us read listings. The design connection matters more: a call written against an interface can select an implementation from the receiver's run-time type. These invocation instructions implement different method-selection rules.</p>
+<p>The names help us read listings, but the design consequence matters more: a call written against an interface can select its implementation from the receiver's run-time type.</p>
 <h2 id="4-linking-symbolic-names"><a href="#4-linking-symbolic-names"><span class="section-number">+.4</span>Linking Symbolic Names</a></h2>
 <p>A class file must call methods that the JVM may not have loaded yet. A process-memory address stored in the file would be invalid on another machine or when classes load in a different order.</p>
 <p>Instead, the class file carries a <strong>constant pool</strong>: symbolic information about classes, methods, fields, literals, and method types. When bytecode refers to a method, the JVM resolves that symbolic reference and links it to the appropriate run-time entity. It may perform some resolution early and defer other parts until execution needs them.</p>
@@ -232,7 +233,7 @@ slot 2: sum</code></pre></div>
 </ul>
 <p>Each frame can reach its method's class-level run-time constant pool. We omitted that connection from the core diagram because it does not help us trace <code>factorial(4)</code>. It matters here because we are examining how the JVM resolves symbolic bytecode.</p>
 <h2 id="5-frames-are-specification-level-structures"><a href="#5-frames-are-specification-level-structures"><span class="section-number">+.5</span>Frames Are Specification-Level Structures</a></h2>
-<p>Our bytecode trace makes a frame look concrete: three local slots beside a short operand stack. The JVM specification is more careful. It requires the frame to provide:</p>
+<p>Our bytecode trace makes a frame look concrete: three local slots beside a short operand stack. The JVM specification requires less than that picture shows. It requires the frame to provide:</p>
 <ul>
 <li>an array of local variables;</li>
 <li>an operand stack;</li>
@@ -258,7 +259,7 @@ slot 2: sum</code></pre></div>
 <p>These are the JVM-level steps behind stack unwinding.</p>
 <h3 id="finally-and-try-with-resources"><a href="#finally-and-try-with-resources"><code>finally</code> and try-with-resources</a></h3>
 <p>Source-level cleanup looks compact because the compiler does the bookkeeping. The JVM does not need one universal “run this <code>finally</code> block” instruction; <code>javac</code> emits control flow and handlers that reproduce the source semantics.</p>
-<p>Try-with-resources has one especially useful edge case. If the main operation fails and <code>close</code> fails too, then Java keeps the main exception and attaches the cleanup failure as a <strong>suppressed exception</strong>. <code>Throwable.getSuppressed()</code> retrieves it.</p>
+<p>Try-with-resources has one edge case worth knowing. If the main operation fails and <code>close</code> fails too, then Java keeps the main exception and attaches the cleanup failure as a <strong>suppressed exception</strong>. <code>Throwable.getSuppressed()</code> retrieves it.</p>
 <p>The compiler generates more control flow than appears in the source. Experiment 3 shows how both failures remain available for inspection.</p>
 <h2 id="7-inspecting-multiple-thread-stacks"><a href="#7-inspecting-multiple-thread-stacks"><span class="section-number">+.7</span>Inspecting Multiple Thread Stacks</a></h2>
 <p>One exception trace follows one thread. A concurrent program may be unable to progress because of the state of another thread.</p>
@@ -284,7 +285,7 @@ request-handler-2:
 <p>A long wait is not automatically a deadlock. Deadlock requires a dependency cycle, such as:</p>
 <div class="code-block"><pre class="text"><code>Thread A owns lock 1 and waits for lock 2.
 Thread B owns lock 2 and waits for lock 1.</code></pre></div>
-<p>The stacks show where each thread requested a lock; lock ownership completes the cycle. Blocking is normal. A cycle with no possible resolution is the bug.</p>
+<p>The stacks show where each thread requested a lock, and lock ownership completes the cycle. Blocking by itself is ordinary behaviour; a cycle that no thread can break is the defect.</p>
 <h2 id="8-from-jvm-frames-to-native-frames"><a href="#8-from-jvm-frames-to-native-frames"><span class="section-number">+.8</span>From JVM Frames to Native Frames</a></h2>
 <p>The JVM itself eventually runs native instructions, and native calls require their own bookkeeping. This moves the discussion from the portable JVM model to platform-specific calling conventions.</p>
 <p>We might draw a simplified native frame as:</p>
@@ -311,7 +312,7 @@ lower addresses</code></pre></div>
     read_without_a_bound(buffer);
 }</code></pre></div>
 <p>Write a seventeenth byte and the operation leaves the array. What it reaches next depends on the actual frame: another local value, saved state, padding, or control information.</p>
-<p>The stack is not full. The write is out of bounds. That distinction separates a native <strong>stack-buffer overflow</strong> from Java stack exhaustion.</p>
+<p>The stack has not run out of space; the write has left the bounds of the array. That distinction separates a native <strong>stack-buffer overflow</strong> from Java stack exhaustion.</p>
 <p>Possible consequences include:</p>
 <ul>
 <li>corrupted values and incorrect computation;</li>
@@ -320,7 +321,7 @@ lower addresses</code></pre></div>
 <li>control-flow redirection;</li>
 <li>execution of attacker-chosen behaviour.</li>
 </ul>
-<p>The exact outcome depends on the platform and surrounding code. One overflow may crash immediately; another may corrupt a value that fails much later. We should not turn one historical layout into a universal recipe.</p>
+<p>The exact outcome depends on the platform and surrounding code. One overflow may crash immediately; another may corrupt a value that fails much later. One historical layout should not be generalised into a universal account.</p>
 <h3 id="java-array-bounds-checking"><a href="#java-array-bounds-checking">Java array bounds checking</a></h3>
 <p>Now try the corresponding invalid index in ordinary Java:</p>
 <div class="code-block"><pre class="java"><code>byte[] buffer = new byte[16];
@@ -328,7 +329,7 @@ buffer[16] = 1; // ArrayIndexOutOfBoundsException</code></pre></div>
 <p>The JVM checks the index before the store. The program receives a specified exception at the invalid access instead of writing beyond the array.</p>
 <p>The guarantee applies to ordinary safe Java operations. Native libraries, the Java Native Interface (JNI), and low-level facilities cross into a different trust boundary and require their own memory-safety controls.</p>
 <h2 id="10-defence-in-depth-for-native-code"><a href="#10-defence-in-depth-for-native-code"><span class="section-number">+.10</span>Defence in Depth for Native Code</a></h2>
-<p>Preventing the write is best. Real native systems also assume that prevention may fail and add layers behind it.</p>
+<p>Preventing the write is the only control that removes the defect. Real native systems also assume that prevention may fail, and they add further layers behind it.</p>
 <h3 id="bounds-aware-programming"><a href="#bounds-aware-programming">Bounds-aware programming</a></h3>
 <p>Native code should carry buffer lengths, reject oversized input, and use memory-safe representations where practical. The remaining controls limit the consequences when prevention fails.</p>
 <h3 id="stack-canaries"><a href="#stack-canaries">Stack canaries</a></h3>
@@ -364,7 +365,7 @@ buffer[16] = 1; // ArrayIndexOutOfBoundsException</code></pre></div>
 <p>Each experiment begins with a prediction and ends with an explanation. The Java observations reported below came from Eclipse Temurin 25.0.4.1. Run the experiments in a temporary project rather than an assignment repository. Record the JDK, operating system, and command-line options you used; implementation observations can legitimately differ across machines.</p>
 <h3 id="experiment-1-predict-bytecode-before-viewing-it"><a href="#experiment-1-predict-bytecode-before-viewing-it">Experiment 1: Predict bytecode before viewing it</a></h3>
 <p><strong>Question:</strong> How do source-level temporary variables affect the bytecode's local slots and operand stack?</p>
-<p>We have already traced <code>BytecodeDemo</code> on paper. Start by asking whether an explicit temporary variable leaves a visible mark:</p>
+<p>We have already traced <code>BytecodeDemo</code> on paper. Start by asking whether an explicit temporary variable produces a local slot of its own:</p>
 <div class="code-block"><pre class="java"><code>public final class BytecodeDemo {
     static int adjust(int x, int y) {
         int sum = x + y;

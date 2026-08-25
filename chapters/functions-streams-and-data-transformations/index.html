@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build ordered, non-interfering transformations over transit observations.">
+  <title>Functions, Streams, and Data Transformations · CPEN 221 Readings</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: 814e5c5f62954fb7f0282877cc15cb2dc20eda1fd9b5a2aec637be3010198094 -->
+  <!-- source-file: chapter-10-functions-streams-and-data-transformations.md -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">Data and transformations</p>
+      <h2><a href="#top" aria-current="page">Functions, Streams, and Data Transformations <small>10</small></a></h2>
+      <ul>
+        <li><a href="#1-the-reporting-transformation"><small>10.1</small><span>The Reporting Transformation</span></a></li>
+        <li><a href="#2-functions-are-values-with-contracts"><small>10.2</small><span>Functions Are Values with Contracts</span></a></li>
+        <li><a href="#3-intermediate-operations-are-lazy"><small>10.3</small><span>Intermediate Operations Are Lazy</span></a></li>
+        <li><a href="#4-non-interfering-behavioural-parameters"><small>10.4</small><span>Non-Interfering Behavioural Parameters</span></a></li>
+        <li><a href="#5-stateless-and-stateful-operations"><small>10.5</small><span>Stateless and Stateful Operations</span></a></li>
+        <li><a href="#6-encounter-order"><small>10.6</small><span>Encounter Order</span></a></li>
+        <li><a href="#7-absence-and-reduction"><small>10.7</small><span>Absence and Reduction</span></a></li>
+        <li><a href="#8-loops-for-control-flow-oriented-algorithms"><small>10.8</small><span>Loops for Control-Flow-Oriented Algorithms</span></a></li>
+        <li><a href="#9-common-misconception-parallel-makes-a-pipeline-faster"><small>10.9</small><span>Common Misconception: parallel() Makes a Pipeline Faster</span></a></li>
+        <li><a href="#10-practice-by-explaining-a-pipeline"><small>10.10</small><span>Practice by Explaining a Pipeline</span></a></li>
+        <li><a href="#11-summary"><small>10.11</small><span>Summary</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../recursion-and-recursive-datatypes/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../systems-model-and-network-protocols/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../recursion-and-recursive-datatypes/" aria-label="Previous: Recursion and Recursive Datatypes">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../systems-model-and-network-protocols/" aria-label="Next: Systems Model and Network Protocols">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">10</div>
+      <header class="chapter-header">
+        <h1>Functions, Streams, and Data Transformations</h1>
+      </header>
+
+<blockquote class="epigraph">
+<p>Into the same river we go down, and we do not go down.</p>
+<p><cite>Heraclitus, as translated by W. T. Stace</cite></p>
+</blockquote>
+<p>A transit feed supplies arrival observations for several routes. Some observations are incomplete. The reliability report needs the mean delay for each route using only complete observations.</p>
+<p>One implementation can build mutable temporary lists, fill them in several loops, and update a collection of running totals. Another can state a sequence of data transformations: retain complete observations, group them by route, and average each group's delays. Java streams support the second form.</p>
+<p>The stream form is not automatically clearer or faster. It works well when each stage has a precise meaning and does not depend on hidden mutation. We need to understand when stream operations run, what order they preserve, and what their function arguments may safely do.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>treat a function value as an object with an input-output contract;</li>
+<li>distinguish intermediate from terminal stream operations;</li>
+<li>explain stream laziness and single-use consumption;</li>
+<li>build a transformation using <code>filter</code>, <code>map</code>, and <code>collect</code>;</li>
+<li>preserve non-interference and avoid stateful behavioural parameters;</li>
+<li>reason about encounter order and collector results;</li>
+<li>decide when a loop communicates the algorithm more directly; and</li>
+<li>review a stream pipeline for correctness before considering parallel execution.</li>
+</ul></section>
+<h2 id="1-the-reporting-transformation"><a href="#1-the-reporting-transformation"><span class="section-number">10.1</span>The Reporting Transformation</a></h2>
+<p>Each input value records a route, a delay, and whether the observation is complete:</p>
+<div class="code-block"><pre class="java"><code>public record ArrivalObservation(
+        String route,
+        int delayMinutes,
+        boolean complete) { }</code></pre></div>
+<p>The report has the following contract:</p>
+<div class="code-block"><pre class="text"><code>meanDelayByRoute(observations)
+
+requires: observations and every element are non-null
+effects: none
+returns: for each route with at least one complete observation, the arithmetic mean
+         of delayMinutes among its complete observations, in the order in which such
+         routes first occur in observations</code></pre></div>
+<p>This specification settles several questions before implementation. Incomplete observations do not count as zero-delay arrivals. Routes represented only by incomplete data do not appear. The result has a defined iteration order. The method does not change its input.</p>
+<p>The implementation follows the same stages:</p>
+<div class="code-block"><pre class="java"><code>public static Map&lt;String, Double&gt; meanDelayByRoute(
+        List&lt;ArrivalObservation&gt; observations) {
+    return observations.stream()
+            .filter(ArrivalObservation::complete)
+            .collect(Collectors.groupingBy(
+                    ArrivalObservation::route,
+                    LinkedHashMap::new,
+                    Collectors.averagingInt(
+                            ArrivalObservation::delayMinutes)));
+}</code></pre></div>
+<p>The method reference <code>ArrivalObservation::complete</code> supplies the predicate used by <code>filter</code>. The first argument to <code>groupingBy</code> obtains the route key. The map factory selects <code>LinkedHashMap</code> so that first-occurrence order is retained. The downstream collector averages delay values inside each group.</p>
+<p>The companion input contained complete R4 delays of 3 and 5, a complete 99 delay of 8, and an incomplete 99 observation. The validated Java 25 run printed:</p>
+<div class="code-block"><pre class="text"><code>{R4=4.0, 99=8.0}</code></pre></div>
+<p>The incomplete observation did not become a zero. The R4 key appeared first because the first complete R4 observation preceded the first complete 99 observation.</p>
+<blockquote class="design-note"><p><strong>Design principle:</strong> Use a stream when the computation can be stated as a sequence of data transformations with independent, non-interfering stages.</p>
+</blockquote>
+<h2 id="2-functions-are-values-with-contracts"><a href="#2-functions-are-values-with-contracts"><span class="section-number">10.2</span>Functions Are Values with Contracts</a></h2>
+<p>The package <code>java.util.function</code> contains interfaces for common function shapes. A <code>Predicate&lt;T&gt;</code> accepts a <code>T</code> and returns a boolean. A <code>Function&lt;T, R&gt;</code> maps a <code>T</code> to an <code>R</code>. A <code>Consumer&lt;T&gt;</code> accepts a <code>T</code> and returns no value. A <code>Supplier&lt;T&gt;</code> produces a <code>T</code> without an argument.</p>
+<p>A lambda expression creates an object implementing a compatible functional interface:</p>
+<div class="code-block"><pre class="java"><code>Predicate&lt;ArrivalObservation&gt; usable = observation -&gt; observation.complete();
+Function&lt;ArrivalObservation, String&gt; route = observation -&gt; observation.route();</code></pre></div>
+<p>Method references give shorter names to these two existing operations:</p>
+<div class="code-block"><pre class="java"><code>Predicate&lt;ArrivalObservation&gt; usable = ArrivalObservation::complete;
+Function&lt;ArrivalObservation, String&gt; route = ArrivalObservation::route;</code></pre></div>
+<p>The shorter form is useful when the referenced method already expresses the stage. A lambda is clearer when it combines operations or needs a meaningful parameter name.</p>
+<p>Functional interfaces are ordinary Java types. Their methods need specifications. For a route classifier, the contract must state its null policy and whether it may throw. For a function supplied to a reusable library, mutation and thread-safety properties can affect every caller.</p>
+<p>Lambdas may capture local variables only if those variables are final or effectively final. This language rule prevents a lambda from observing later reassignment of the local variable itself. It does not make the referenced object immutable:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; seen = new ArrayList&lt;&gt;();
+Consumer&lt;String&gt; remember = value -&gt; seen.add(value);</code></pre></div>
+<p><code>seen</code> is effectively final as a reference, but the consumer mutates the list. The ownership and concurrency issues from earlier chapters remain.</p>
+<h2 id="3-intermediate-operations-are-lazy"><a href="#3-intermediate-operations-are-lazy"><span class="section-number">10.3</span>Intermediate Operations Are Lazy</a></h2>
+<p>Calling <code>stream()</code> creates a stream associated with a data source. Intermediate operations such as <code>filter</code>, <code>map</code>, <code>sorted</code>, and <code>limit</code> describe another stream. They do not normally traverse the source immediately. A terminal operation such as <code>collect</code>, <code>count</code>, <code>reduce</code>, or <code>forEach</code> starts traversal.</p>
+<p>Consider:</p>
+<div class="code-block"><pre class="java"><code>Stream&lt;ArrivalObservation&gt; complete = observations.stream()
+        .filter(observation -&gt; {
+            System.out.println(&quot;checked &quot; + observation.route());
+            return observation.complete();
+        });</code></pre></div>
+<p>With no terminal operation, the Java Stream specification does not require the predicate to run. Adding <code>complete.count()</code> consumes the stream and may evaluate the predicate. A debugger may therefore not enter a lambda when the pipeline is merely assembled.</p>
+<p>Laziness also permits short-circuiting. <code>findFirst</code> can stop after locating one matching element. <code>limit(10)</code> allows later stages to avoid processing the rest when the pipeline and source permit it. The implementation may also elide a stage if it can prove that the stage cannot affect the terminal result; side effects in behavioural parameters can therefore be skipped in some pipelines.</p>
+<p>A stream is single-use. After a terminal operation consumes it, a second operation may throw <code>IllegalStateException</code>. Store the source collection or a <code>Supplier&lt;Stream&lt;T&gt;&gt;</code> when the program needs independent traversals. A stream object is a computation pipeline, not a reusable collection of results.</p>
+<h2 id="4-non-interfering-behavioural-parameters"><a href="#4-non-interfering-behavioural-parameters"><span class="section-number">10.4</span>Non-Interfering Behavioural Parameters</a></h2>
+<p>The Stream specification requires most behavioural parameters to be <strong>non-interfering</strong>: they must not modify the stream's data source while the pipeline executes. It also expects most parameters to be <strong>stateless</strong>, so a result does not depend on mutable state that changes during traversal.</p>
+<p>The following design is unsafe:</p>
+<div class="code-block"><pre class="java"><code>List&lt;ArrivalObservation&gt; observations = new ArrayList&lt;&gt;(source);
+long count = observations.stream()
+        .filter(observation -&gt; {
+            if (!observation.complete()) {
+                observations.remove(observation);
+            }
+            return observation.complete();
+        })
+        .count();</code></pre></div>
+<p>The predicate changes the list being traversed. The program may throw <code>ConcurrentModificationException</code>, skip values, or otherwise produce a result that does not follow the intended filter. The correct pipeline leaves the source alone and expresses removal as exclusion from the result.</p>
+<p>External accumulation is another common error:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; routes = new ArrayList&lt;&gt;();
+observations.stream()
+        .filter(ArrivalObservation::complete)
+        .forEach(observation -&gt; routes.add(observation.route()));</code></pre></div>
+<p>This works in many sequential runs, but the mutation is unnecessary and becomes unsafe under parallel execution. A collector states both the desired result and the rules for combining partial results:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; routes = observations.stream()
+        .filter(ArrivalObservation::complete)
+        .map(ArrivalObservation::route)
+        .toList();</code></pre></div>
+<p><code>Stream.toList()</code> returns an unmodifiable list. Code that needs a mutable result should request one explicitly, for example with <code>Collectors.toCollection(ArrayList::new)</code>. The API choice should reflect the ownership contract rather than an assumption about the concrete list class.</p>
+<h2 id="5-stateless-and-stateful-operations"><a href="#5-stateless-and-stateful-operations"><span class="section-number">10.5</span>Stateless and Stateful Operations</a></h2>
+<p>An operation such as <code>filter</code> can decide about one element without seeing other elements, assuming its predicate is stateless. <code>map</code> can transform one element in the same way. These are stateless intermediate operations.</p>
+<p><code>sorted</code> must observe enough elements to determine their relative order. <code>distinct</code> must remember values already encountered. These are stateful intermediate operations. They may buffer substantial data and limit how efficiently a pipeline can produce early results.</p>
+<p>Stateful does not mean incorrect. Sorting journey options by arrival is a legitimate operation. It means that cost and evaluation differ from a simple element-by-element map. A pipeline that sorts a million elements before taking five may be much more expensive than an algorithm that maintains the best five in a bounded data structure.</p>
+<p>The distinction also affects infinite streams. Mapping or filtering an infinite generated stream can still produce values one at a time. Sorting the whole infinite stream cannot complete. A terminating consumer such as <code>limit</code> must appear where the operation order permits progress.</p>
+<h2 id="6-encounter-order"><a href="#6-encounter-order"><span class="section-number">10.6</span>Encounter Order</a></h2>
+<p>Some stream sources have an <strong>encounter order</strong>. A <code>List</code> stream encounters elements in list order. A stream from a collection with no defined iteration order may have no stable encounter order.</p>
+<p>Operations interact with that order. <code>findFirst</code> respects it; <code>findAny</code> permits any element, which can support more freedom in a parallel pipeline. <code>forEachOrdered</code> preserves encounter order, while <code>forEach</code> does not promise it for parallel streams. Sorting imposes an order according to a comparator.</p>
+<p>Collectors also make order decisions. The two-argument <code>groupingBy</code> does not promise a particular <code>Map</code> implementation. Our report's contract requires first-occurrence order, so the implementation supplies <code>LinkedHashMap::new</code>. If the specification did not expose iteration order, selecting a particular map merely for one observed print format would overspecify the result.</p>
+<p>Ordering has a cost under parallel execution. Operations such as ordered <code>limit</code> may need coordination to return the first elements rather than any elements. Removing ordering with <code>unordered()</code> is valid only if the result contract does not distinguish orders.</p>
+<h2 id="7-absence-and-reduction"><a href="#7-absence-and-reduction"><span class="section-number">10.7</span>Absence and Reduction</a></h2>
+<p>Some terminal operations may have no result. <code>min</code>, <code>max</code>, <code>findFirst</code>, and <code>reduce(BinaryOperator)</code> return <code>Optional</code> values because an empty stream supplies no element.</p>
+<p>Calling <code>get()</code> without establishing presence replaces the domain question with <code>NoSuchElementException</code>. The caller should choose behaviour that matches its contract:</p>
+<div class="code-block"><pre class="java"><code>JourneyOption earliest = options.stream()
+        .min(Comparator.comparing(JourneyOption::arrival))
+        .orElseThrow(() -&gt; new IllegalArgumentException(&quot;no journey options&quot;));</code></pre></div>
+<p>A reduction with an identity can return a plain value. Summing an empty stream of durations produces zero because zero is the additive identity. The identity must be neutral, and the accumulator and combiner must satisfy the reduction contract if the pipeline may run in parallel.</p>
+<p>Floating-point reduction deserves additional care. Addition is not associative in finite-precision arithmetic, so regrouping operations can change the last bits of a result. A parallel average may be mathematically equivalent without being bit-for-bit identical to one sequential order. A specification for numerical software must say which tolerance or reproducibility requirement applies.</p>
+<p>The primitive specialisations <code>IntStream</code>, <code>LongStream</code>, and <code>DoubleStream</code> avoid boxing every numeric element. Calling <code>mapToInt(ArrivalObservation::delayMinutes)</code> produces an <code>IntStream</code> whose <code>sum</code>, <code>average</code>, and summary operations state the numeric computation directly. Its <code>average</code> returns <code>OptionalDouble</code> because an empty stream has no arithmetic mean. Choosing the primitive form can reduce allocation, but the same questions about emptiness, overflow, floating-point order, and measurement remain.</p>
+<h3 id="several-outputs-from-one-input-with-flatmap"><a href="#several-outputs-from-one-input-with-flatmap">Several outputs from one input with <code>flatMap</code></a></h3>
+<p><code>map</code> produces exactly one result for each input element. A route may instead contain several stops. Mapping routes to stop lists produces a stream of lists:</p>
+<div class="code-block"><pre class="java"><code>Stream&lt;List&lt;String&gt;&gt; stopLists = routes.stream().map(Route::stops);</code></pre></div>
+<p>If the next operation needs individual stop identifiers, <code>flatMap</code> maps each route to a stream and concatenates those streams:</p>
+<div class="code-block"><pre class="java"><code>List&lt;String&gt; stops = routes.stream()
+        .flatMap(route -&gt; route.stops().stream())
+        .distinct()
+        .toList();</code></pre></div>
+<p>The result preserves encounter order for an ordered source: it processes each route in order and each route's stops in order before <code>distinct</code> retains the first occurrence. This pipeline describes flattening and deduplication directly.</p>
+<p><code>flatMap</code> is also useful for optional results. A parser can return <code>Optional&lt;Prediction&gt;</code> and a pipeline can flatten present values with <code>Optional::stream</code>. Flattening is suitable when absence is an ordinary result. It is not suitable when a malformed record must be reported, because flattening an empty optional would silently discard the failure evidence.</p>
+<h3 id="null-in-the-pipeline-contract"><a href="#null-in-the-pipeline-contract">Null in the pipeline contract</a></h3>
+<p>Most stream operations can technically encounter null references, but method references and comparators often reject them later with an uninformative <code>NullPointerException</code>. A collection boundary should either reject null explicitly or define its meaning. Our report requires every observation to be non-null.</p>
+<p>Filtering with <code>Objects::nonNull</code> can be correct when null means “missing observation” by specification. Adding that filter merely to prevent an exception changes invalid input into silently omitted data. The specification must make that policy visible.</p>
+<h2 id="8-loops-for-control-flow-oriented-algorithms"><a href="#8-loops-for-control-flow-oriented-algorithms"><span class="section-number">10.8</span>Loops for Control-Flow-Oriented Algorithms</a></h2>
+<p>A stream is not a replacement for every loop. A parser that advances through tokens, reports a precise error location, and changes state according to a grammar may be clearer as explicit control flow. A search with several early exits and resource operations may also read more directly as a loop or dedicated algorithm.</p>
+<p>Long pipelines can hide intermediate types and duplicate computation. Naming a helper function or materialising a well-defined intermediate value may improve both the specification and diagnostics. The implementation should make the transformation and its assumptions visible.</p>
+<p>Performance requires measurement in the relevant workload. Streams add abstraction and may enable library optimisations, but allocation, boxing, data layout, and pipeline shape matter. A loop over primitive arrays can be more efficient. A stream can be clearer enough to justify a modest cost. Benchmark evidence, not syntax, settles the local decision.</p>
+<h2 id="9-common-misconception-parallel-makes-a-pipeline-faster"><a href="#9-common-misconception-parallel-makes-a-pipeline-faster"><span class="section-number">10.9</span>Common Misconception: <code>parallel()</code> Makes a Pipeline Faster</a></h2>
+<p>Calling <code>parallel()</code> requests a parallel execution mode. It does not guarantee lower latency. Splitting work, scheduling tasks, combining results, maintaining encounter order, and sharing memory all add costs. Small or cheap operations often become slower.</p>
+<p>Correctness comes before performance. Stateful lambdas and external mutable accumulators that appeared to work sequentially may race in parallel. Collectors must have valid combination behaviour. Blocking input/output operations may occupy workers in a pool whose design is unsuitable for that workload.</p>
+<p>Chapter 12 separates concurrency from parallelism and introduces virtual threads for blocking tasks. The choice of a parallel stream or executor follows the computation and measurement; it is not a finishing switch applied to an arbitrary pipeline.</p>
+<h2 id="10-practice-by-explaining-a-pipeline"><a href="#10-practice-by-explaining-a-pipeline"><span class="section-number">10.10</span>Practice by Explaining a Pipeline</a></h2>
+<p>For each exercise, state the source, intermediate stages, terminal operation, result order, and mutation effects.</p>
+<ol type="1">
+<li>Produce the identifiers of routes whose mean delay exceeds five minutes, sorted alphabetically. Decide whether a route with only incomplete observations appears.</li>
+<li>Predict which diagnostic messages can print before and after adding <code>findFirst</code> to a pipeline with a printing predicate.</li>
+<li>Replace an external mutable list used by <code>forEach</code> with a collector. State whether the returned list is mutable.</li>
+<li>Compare <code>findFirst</code> and <code>findAny</code> on an ordered parallel stream. Identify which client postcondition permits each choice.</li>
+<li>Review a generated pipeline that uses <code>peek</code> to update a counter. Explain why the counter may not record every source element and redesign the measurement.</li>
+<li>Write a loop equivalent to <code>meanDelayByRoute</code>. Compare the two versions by their stated invariants and intermediate state, not by line count.</li>
+</ol>
+<p>Before changing a working sequential pipeline to parallel, identify the cost per element, dataset size, ordering requirement, collector behaviour, and all shared mutable state. Form a measurable performance claim and retain the sequential version as a correctness reference.</p>
+<h2 id="11-summary"><a href="#11-summary"><span class="section-number">10.11</span>Summary</a></h2>
+<ul>
+<li>Functional interfaces give lambdas and method references explicit Java types and contracts.</li>
+<li>Intermediate stream operations are lazy; a terminal operation consumes the single-use pipeline.</li>
+<li>Behavioural parameters should not modify the source and should normally be stateless.</li>
+<li>Stateful operations such as sorting and deduplication may buffer data and affect termination or parallel cost.</li>
+<li>Encounter order comes from the source and operations; collectors must preserve it only when the result contract requires it.</li>
+<li>Streams communicate data transformations well. Explicit loops remain appropriate when control flow and mutable algorithm state are central.</li>
+<li>Parallel execution needs a correctness argument and measurements.</li>
+</ul>
+<h2 id="references"><a href="#references">References</a></h2>
+<ul>
+<li>W. T. Stace. <a href="https://www.gutenberg.org/cache/epub/33411/pg33411-images.html"><em>A Critical History of Greek Philosophy</em>, Chapter III</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/function/package-summary.html"><code>java.util.function</code> Package Summary (Java SE 25)</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/package-summary.html"><code>java.util.stream</code> Package Summary (Java SE 25)</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Stream.html"><code>Stream</code> (Java SE 25)</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Collectors.html"><code>Collectors</code> (Java SE 25)</a>.</li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../systems-model-and-network-protocols/">Systems Model and Network Protocols →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

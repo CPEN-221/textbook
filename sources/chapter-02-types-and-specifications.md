@@ -46,7 +46,8 @@ reference type contains `null` and references to objects of compatible classes, 
 its declared methods determine which operations the compiler permits.
 
 That definition is more useful than “a type tells Java how many bytes to use.”
-Storage is an implementation concern. Types help us reason about meaning.
+Storage is an implementation concern; the set of values and the set of operations are
+what let us decide which expressions in our program are meaningful.
 
 Consider three integers in a transit system:
 
@@ -57,8 +58,9 @@ int minutesUntilArrival = 4;
 ```
 
 Java allows `stopId + routeId` and `routeId = minutesUntilArrival`. Integer arithmetic
-defines both operations even though the transit application does not. Primitive
-types are useful, but they are often too permissive for the concepts we care about.
+defines both operations even though the transit application gives neither a meaning.
+A primitive type is often more permissive than the application concept it stands
+for.
 
 ### Static and dynamic checks
 
@@ -150,8 +152,9 @@ If we later introduce `RouteId`, then this call can fail at compile time:
 findStop(new RouteId("R4"));
 ```
 
-That is **making an invalid state harder to express**. Every application-specific
-type also adds a name and an abstraction for readers to learn. A private calculation
+The compiler now rejects a program that confuses the two identifiers, so the invalid
+combination becomes harder to express. Every application-specific type also adds a
+name and an abstraction for readers to learn. A private calculation
 may be clear with two `double` variables; a public boundary that accepts coordinates
 from many clients may justify stronger types. The expected reduction in errors
 should justify the additional abstraction.
@@ -180,10 +183,10 @@ client-visible decisions unspecified:
 - whether the method may reorder the list; and
 - how the method reports an invalid input.
 
-A specification answers the questions a client needs to use the method correctly
-and the implementer needs to know when the work is done. It forms an **abstraction
-boundary**: the client depends on the promised behaviour without depending on the
-implementation's private algorithm.
+A specification answers the questions that a client must resolve to call the method
+correctly and that an implementer must resolve to know when the work is finished. It
+forms an **abstraction boundary**: the client depends on the promised behaviour without
+depending on the implementation's private algorithm.
 
 Conceptually, the contract divides responsibility:
 
@@ -273,7 +276,8 @@ clients have to infer its meaning separately at every call.
 The transit system uses the following convention unless an individual method's
 specification says otherwise:
 
-> **References passed to or returned from its public methods are non-null.**
+> **Convention.** In the transit system, references passed to or returned from a
+> public method are non-null.
 
 We will still document and check `null` at important public boundaries, as
 `nearestStop` does. Later we will use types such as `Optional` when absence is a
@@ -358,9 +362,8 @@ clients. They may check every promise, but they may not promote a current
 implementation detail into a permanent requirement by accident.
 
 For our deterministic contract, the assertion is appropriate because tie-breaking
-order is public. This is why test design begins with the specification rather than
-with a tour through the implementation. The contract identifies the observations a
-test may require.
+order is public. Test design therefore begins with the specification rather than with the
+implementation. The contract identifies the observations that a test may require.
 
 It also reveals three missing decisions: the result for an empty list, whether
 distance accounts for roads, and whether a closed stop remains a candidate. If we
@@ -376,19 +379,20 @@ the other.
 
 ## 9. Common Misconception: Type-Checking Does Not Prove Correctness
 
-The original coordinate call type-checked. So does integer overflow. So does choosing
-the farthest stop when the return type is still `Stop`.
+The reversed coordinate call at the start of this chapter type-checked. So does an
+integer addition that overflows, and so does an implementation that returns the
+farthest stop, because its return type is still `Stop`.
 
 Static typing establishes that the program obeys the language's type rules. More
 specific application types make those rules correspond more closely to the problem.
 They do not prove that the algorithm, specification, or requirement is correct.
 
-Records deserve one related warning. Their component fields are final, but records
-are only **shallowly immutable**. A record with a `List<String>` component can still
-refer to a mutable list. Our `GeoPoint` is immutable because its components are
-primitive values and exposes no mutation. Declaring a type as a record does not make
-objects reachable through its components immutable. Chapter 4 examines those
-references.
+Records deserve one related warning. Their component fields are final, but records are
+only **shallowly immutable**. A record with a `List<String>` component can still refer
+to a mutable list. Our `GeoPoint` is immutable because both components are primitive
+values and the record declares no operation that changes them. Declaring a type as a
+record does not make objects reachable through its components immutable. Chapter 4
+examines those references.
 
 ## Try the Contract
 

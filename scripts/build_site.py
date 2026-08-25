@@ -78,12 +78,69 @@ CHAPTERS = (
         "State and abstraction",
     ),
     Chapter(
+        "chapter-07-equality-hashing-and-behavioural-subtyping.md",
+        "equality-hashing-and-behavioural-subtyping",
+        "7",
+        "Equality, Hashing, and Behavioural Subtyping",
+        "Define value equality, use hash-based collections correctly, and preserve supertype contracts.",
+        "Interfaces and relationships",
+    ),
+    Chapter(
+        "chapter-08-composition-delegation-and-api-design.md",
+        "composition-delegation-and-api-design",
+        "8",
+        "Composition, Delegation, and API Design",
+        "Assemble routing behaviour behind focused interfaces and explicit component boundaries.",
+        "Interfaces and relationships",
+    ),
+    Chapter(
+        "chapter-09-recursion-and-recursive-datatypes.md",
+        "recursion-and-recursive-datatypes",
+        "9",
+        "Recursion and Recursive Datatypes",
+        "Represent recursive journeys and justify recursive traversal, termination, and correctness.",
+        "Data and transformations",
+    ),
+    Chapter(
+        "chapter-10-functions-streams-and-data-transformations.md",
+        "functions-streams-and-data-transformations",
+        "10",
+        "Functions, Streams, and Data Transformations",
+        "Build ordered, non-interfering transformations over transit observations.",
+        "Data and transformations",
+    ),
+    Chapter(
+        "chapter-11-systems-model-and-network-protocols.md",
+        "systems-model-and-network-protocols",
+        "11",
+        "Systems Model and Network Protocols",
+        "Specify and implement a prediction exchange across a process boundary.",
+        "Networked and concurrent systems",
+    ),
+    Chapter(
+        "chapter-12-parallelism-concurrency-and-virtual-threads.md",
+        "parallelism-concurrency-and-virtual-threads",
+        "12",
+        "Parallelism, Concurrency, and Virtual Threads",
+        "Coordinate blocking tasks with virtual threads, explicit lifetimes, and resource limits.",
+        "Networked and concurrent systems",
+    ),
+    Chapter(
+        "chapter-13-thread-safety-integration-and-reliability.md",
+        "thread-safety-integration-and-reliability",
+        "13",
+        "Thread Safety, Integration, and Reliability",
+        "Publish coherent snapshots and connect local contracts to system reliability.",
+        "Networked and concurrent systems",
+    ),
+    Chapter(
         "chapter-12-how-java-runs.md",
         "how-java-runs",
-        "12",
+        "+",
         "How a Java Program Runs",
         "Trace Java calls, frames, recursion, exceptions, and shared reachable objects.",
-        "The running program",
+        "Optional reading",
+        optional=True,
     ),
     Chapter(
         "optional-beyond-the-java-call-stack.md",
@@ -133,12 +190,10 @@ def plain_text(html: str) -> str:
 
 
 def rewrite_markdown_links(markdown: str) -> str:
-    replacements = {
-        "chapter-12-how-java-runs.md": "../how-java-runs/",
-        "optional-beyond-the-java-call-stack.md": "../beyond-java-call-stack/",
-    }
-    for old, new in replacements.items():
-        markdown = markdown.replace(f"]({old})", f"]({new})")
+    for chapter in CHAPTERS:
+        markdown = markdown.replace(
+            f"]({chapter.source})", f"](../{chapter.slug}/)"
+        )
     return markdown
 
 
@@ -289,6 +344,7 @@ def chapter_page(
 </head>
 <body id="top">
   <!-- source-sha256: {digest} -->
+  <!-- source-file: {escape(chapter.source)} -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -342,11 +398,15 @@ def contents_page() -> str:
     core_items = []
     optional_items = []
     for chapter in CHAPTERS:
+        optional_label = (
+            '                <span class="optional-label">Optional reading</span>\n'
+            if chapter.optional
+            else ""
+        )
         item = f"""            <li>
               <span class="num">{escape(chapter.number)}</span>
               <div>
-                {('<span class="optional-label">Optional reading</span>' if chapter.optional else '')}
-                <strong><a href="chapters/{chapter.slug}/">{escape(chapter.title)}</a></strong>
+{optional_label}                <strong><a href="chapters/{chapter.slug}/">{escape(chapter.title)}</a></strong>
                 <p>{escape(chapter.description)}</p>
               </div>
             </li>"""
@@ -380,7 +440,7 @@ def contents_page() -> str:
         <li><a href="#further-exploration"><small>+</small><span>Further exploration</span></a></li>
       </ul>
       <div class="prev-next">
-        <a href="#about">About</a>
+        <a href="#core-heading">Readings</a>
         <a href="chapters/engineering-reliable-software/">Read →</a>
       </div>
     </div>
@@ -442,7 +502,7 @@ def copy_publication_assets() -> None:
         shutil.copytree(external_figures, published_figures)
 
     external_examples = COURSE_ROOT / "examples"
-    for project_name in ("chapters-01-04", "chapters-05-06"):
+    for project_name in ("chapters-01-04", "chapters-05-06", "chapters-07-13"):
         source = external_examples / project_name
         target = SITE_ROOT / "examples" / project_name
         if source.is_dir():
@@ -527,6 +587,7 @@ def build() -> None:
     example_pages = {
         "chapters-01-04": "Chapters 1–4 companion project",
         "chapters-05-06": "Chapters 5–6 companion project",
+        "chapters-07-13": "Chapters 7–13 companion project",
     }
     for project_name, title in example_pages.items():
         project = SITE_ROOT / "examples" / project_name

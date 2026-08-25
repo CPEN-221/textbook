@@ -10,7 +10,8 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 650f648822c9b3cd52ae5452e7996660df8ddf15ff366cba09bd7e9156f9156a -->
+  <!-- source-sha256: b138ad294cdc5347c77b959cbf50b39c1914e0d346bec51f7891c9466c8025a3 -->
+  <!-- source-file: chapter-05-adts-and-representation-independence.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -100,7 +101,7 @@
 <h2 id="2-define-operations-for-clients"><a href="#2-define-operations-for-clients"><span class="section-number">5.2</span>Define Operations for Clients</a></h2>
 <p>An application programming interface (API) that exposes the representation might include this method:</p>
 <div class="code-block"><pre class="java"><code>Map&lt;StopId, Set&lt;StopId&gt;&gt; adjacencyMap()</code></pre></div>
-<p>The method requires every client to understand a map of sets. It also requires the ADT to keep that representation or emulate it. A client checking for a direct connection should not need to understand the map structure.</p>
+<p>The method requires every client to understand a map of sets, and it requires the ADT to keep that representation or emulate it. A client that only needs to know whether two stops are directly connected should not have to read a map of sets to find out.</p>
 <p>Instead, we name the questions and transformations clients need:</p>
 <div class="code-block"><pre class="java"><code>public interface TransitNetwork {
     static TransitNetwork empty(Set&lt;StopId&gt; stops) {
@@ -172,7 +173,7 @@ static TransitNetwork empty(Set&lt;StopId&gt; stops)</code></pre></div>
 TransitNetwork withConnection(StopId from, StopId to)</code></pre></div>
 <p>The receiver remains unchanged because the type is immutable. Adding an existing edge has no effect on the abstract value. The specification permits the implementation to return the receiver in that case.</p>
 <p>Our observers return unmodifiable sets. They do not promise an iteration order. That omission is deliberate: a client can test set membership and equality, but it cannot depend on the current hash-table order. If stable order becomes a requirement, then we can add it to the specification and accept the associated implementation cost.</p>
-<p>Specifications do not need to expose every implementation failure. Running out of memory, for example, is not useful network behaviour to restate on each method. They do need to settle predictable boundary cases such as <code>null</code>, unknown stops, self-connections, mutation, and ordering.</p>
+<p>A specification does not need to restate every implementation failure; running out of memory, for example, is not useful network behaviour to repeat on each method. A specification does need to settle the predictable boundary cases: <code>null</code> arguments, unknown stops, self-connections, permitted mutation, and iteration order.</p>
 <h2 id="5-return-the-interface-from-a-factory"><a href="#5-return-the-interface-from-a-factory"><span class="section-number">5.5</span>Return the Interface from a Factory</a></h2>
 <p>The static creator returns the interface type:</p>
 <div class="code-block"><pre class="java"><code>static TransitNetwork empty(Set&lt;StopId&gt; stops) {
@@ -213,7 +214,7 @@ public Set&lt;StopId&gt; directDestinationsFrom(StopId stop) {
     private final Set&lt;StopId&gt; stops;
     private final Set&lt;Connection&gt; connections;
 }</code></pre></div>
-<p>Its direct-destination observer scans and filters <code>connections</code>; the adjacency-map implementation performs a lookup. The connection set makes bulk construction and whole-edge operations natural. The map makes neighbourhood queries natural. The better choice depends on the operations and performance requirements of the application.</p>
+<p>Its direct-destination observer scans and filters <code>connections</code>, whereas the adjacency-map implementation performs a single lookup. Building a network from a feed of connections is the reverse: the connection set stores the records as they arrive, while the adjacency map must group them by origin stop first. The better choice depends on which of those two operations the application performs more often, and on whether the measured cost of the scan matters at the network sizes involved.</p>
 <p>Now run ordinary client code:</p>
 <div class="code-block"><pre class="java"><code>TransitNetwork original = TransitNetwork.empty(Set.of(ubc, wesbrook));
 TransitNetwork extended = original.withConnection(ubc, wesbrook);
@@ -246,7 +247,7 @@ void producerLeavesOriginalUnchanged(
 <p>White-box tests still have a place. An implementation may need focused tests for a complicated private algorithm. Every implementation must also pass the shared contract tests before the factory can substitute it for another implementation. The shared factory also keeps implementation-specific setup out of individual test cases.</p>
 <blockquote class="design-note"><p><strong>Design principle: expose only the operations clients need, and keep the representation data structures private.</strong></p>
 </blockquote>
-<p>This principle also makes clients easier to read because their operations use transit terms. It simplifies correctness arguments by restricting clients to specified operations instead of arbitrary map mutation.</p>
+<p>Client code then reads in transit terms rather than in map operations, and a correctness argument about the network has to consider only the specified operations instead of every mutation a client could perform on an exposed map.</p>
 <h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">5.9</span>Common Misconceptions</a></h2>
 <h3 id="an-adt-is-a-class-with-private-fields"><a href="#an-adt-is-a-class-with-private-fields">“An ADT is a class with private fields”</a></h3>
 <p>Private fields are useful access control, but they do not define the abstract values or specify the operations. A class can keep every field private while returning a mutable alias, exposing representation-shaped methods, or leaving its behaviour ambiguous.</p>

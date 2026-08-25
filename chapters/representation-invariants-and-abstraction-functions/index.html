@@ -10,7 +10,8 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 0a12accac553223fd2394291adfdf29a64a82167a73f329b7a7443ae6ff60356 -->
+  <!-- source-sha256: 84611ffdd5c8317b64db395c384695ae1cce89e3462327d869a3941affda2cec -->
+  <!-- source-file: chapter-06-representation-invariants-and-abstraction-functions.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -39,7 +40,7 @@
       <div class="prev-next">
         <a href="../adts-and-representation-independence/">← Previous</a>
         <a href="../../">Up</a>
-        <a href="../how-java-runs/">Next →</a>
+        <a href="../equality-hashing-and-behavioural-subtyping/">Next →</a>
       </div>
     </div>
   </nav>
@@ -47,7 +48,7 @@
   <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
     <a class="mobile-arrow" href="../adts-and-representation-independence/" aria-label="Previous: ADTs and Representation Independence">←</a>
     <a class="mobile-title" href="../../">CPEN 221</a>
-    <a class="mobile-arrow" href="../how-java-runs/" aria-label="Next: How a Java Program Runs">→</a>
+    <a class="mobile-arrow" href="../equality-hashing-and-behavioural-subtyping/" aria-label="Next: Equality, Hashing, and Behavioural Subtyping">→</a>
   </nav>
 
   <div class="typeface-tools">
@@ -97,7 +98,7 @@
 <div class="code-block"><pre class="text"><code>AF(r) is the directed graph (V, E) where
 V = r.outgoing.keySet(), and
 E = { (from, to) | to is in r.outgoing.get(from) }.</code></pre></div>
-<p>This is the <strong>abstraction function</strong>, written <code>AF: R_valid -&gt; A</code>. It maps a concrete representation to the abstract value that clients observe. The function is a reasoning device and a documentation obligation; it need not be an executable Java method.</p>
+<p>This is the abstraction function, written <code>AF: R_valid -&gt; A</code>. It maps a concrete representation to the abstract value that clients observe. The function is a reasoning device and a documentation obligation; it need not be an executable Java method.</p>
 <p>Trace a small value. Suppose the map is:</p>
 <div class="code-block"><pre class="text"><code>UBC      -&gt; {WESBROOK}
 WESBROOK -&gt; {ALMA}
@@ -106,7 +107,7 @@ ALMA     -&gt; {}</code></pre></div>
 <p>Several representations may map to the same abstract value. A map's iteration order does not belong to our graph, so two maps that iterate differently can mean the same network. An abstraction function therefore need not be one-to-one.</p>
 <p>The abstraction function must be precise enough to settle every public observation. If we wrote only “the map stores the network,” then we would not know whether keys with empty sets count as stops, whether direction matters, or whether duplicate-looking data has meaning.</p>
 <h2 id="3-define-the-representation-invariant"><a href="#3-define-the-representation-invariant"><span class="section-number">6.3</span>Define the Representation Invariant</a></h2>
-<p>The <strong>representation invariant</strong>, or <strong>RI</strong>, is a predicate over candidate representations. It is true exactly for the representations our implementation allows between public operations.</p>
+<p>The representation invariant is a predicate over candidate representations. It is true exactly for the representations our implementation allows between public operations.</p>
 <p>For <code>AdjacencyMapNetwork</code>:</p>
 <div class="code-block"><pre class="text"><code>RI(r) is true exactly when:
 1. r.outgoing is non-null;
@@ -134,7 +135,7 @@ ALMA     -&gt; {}</code></pre></div>
     }
 }</code></pre></div>
 <p>We use Java assertions because an RI violation is an internal implementation bug, not a client input error. Assertions are disabled by default unless the Java Virtual Machine (JVM) receives <code>-ea</code> (or <code>-enableassertions</code>). The companion build enables them while running tests. Public argument checks still use ordinary conditionals and documented exceptions; Chapter 3 explained why assertions are unsuitable for enforcing preconditions.</p>
-<p>There is a small defensive detail in the loop. We inspect each destination for <code>null</code> instead of calling <code>destinations.contains(null)</code>. Some unmodifiable collection implementations are permitted to reject an ineligible query with <code>NullPointerException</code>. An invariant checker should report the broken invariant, not trip over its own inspection.</p>
+<p>The loop contains one defensive detail. We inspect each destination for <code>null</code> instead of calling <code>destinations.contains(null)</code>, because an unmodifiable collection is permitted to reject an ineligible query with <code>NullPointerException</code>. An invariant checker that threw from its own inspection would replace the diagnostic we want with one about the checker.</p>
 <p><code>Map.copyOf</code> and <code>Set.copyOf</code> already reject <code>null</code> while this implementation builds its snapshots. We retain the non-null clauses in the RI because they document the assumptions used by every method. Some checks are redundant at runtime and still support the correctness argument.</p>
 <h2 id="5-establish-and-preserve-the-ri"><a href="#5-establish-and-preserve-the-ri"><span class="section-number">6.5</span>Establish and Preserve the RI</a></h2>
 <p>Writing an RI comment does not enforce it. We must inspect every operation that creates or changes a representation.</p>
@@ -182,7 +183,7 @@ public TransitNetwork withConnection(StopId from, StopId to) {
 <p>If the field held mutable sets, then checking after construction would not be enough. A leaked alias could invalidate the rep while no ADT method was running. Representation exposure breaks encapsulation and the invariant argument.</p>
 <h2 id="6-limits-of-checkrep"><a href="#6-limits-of-checkrep"><span class="section-number">6.6</span>Limits of <code>checkRep</code></a></h2>
 <p>An RI tells us whether a concrete state is well formed. It does not tell us whether that state is the <em>right</em> result of an operation.</p>
-<p>Imagine an <code>empty(stops)</code> implementation that returns a valid empty map regardless of its argument. The map satisfies our RI: it contains no nulls, outside destinations, or self-connections. Its abstraction is the empty graph. But the creator's postcondition says that the result contains exactly the requested stops. For a nonempty argument, the method is wrong.</p>
+<p>Imagine an <code>empty(stops)</code> implementation that returns a valid empty map regardless of its argument. The map satisfies our RI: it contains no nulls, outside destinations, or self-connections. Its abstraction is the empty graph. The creator's postcondition, however, says that the result contains exactly the requested stops, so the method is wrong for every nonempty argument.</p>
 <p>This distinction separates two checks:</p>
 <ul>
 <li><strong>Representation correctness.</strong> Determine whether the rep satisfies the RI and which value the AF assigns it.</li>
@@ -274,7 +275,7 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 </ul>
 
       <footer class="book-footer">
-        <a class="next" href="../how-java-runs/">How a Java Program Runs →</a>
+        <a class="next" href="../equality-hashing-and-behavioural-subtyping/">Equality, Hashing, and Behavioural Subtyping →</a>
         CPEN 221 · Software Construction I · Fall 2026
       </footer>
     </article>

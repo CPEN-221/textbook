@@ -10,7 +10,8 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 51d421c64ba3e6ace2c20ee4391031e97a7c8a4a7b573cd526dd2b9dbd170eee -->
+  <!-- source-sha256: cf1691d72d36a5b610877361d6ec93e943aaf89a80194f4c0d3ca5e22c5d9188 -->
+  <!-- source-file: chapter-03-exceptions-testing-and-evidence.md -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -73,10 +74,16 @@
 <p>Program testing can be used very effectively to show the presence of bugs but never to show their absence.</p>
 <p><cite>Edsger W. Dijkstra, “On the Reliability of Programs”</cite></p>
 </blockquote>
-<p>The feed line is short:</p>
+<p>One line of the feed reads:</p>
 <div class="code-block"><pre class="text"><code>UBC_EXCHANGE|soon</code></pre></div>
 <p>Our parser expects a stop identifier, a vertical bar, and a non-negative number of minutes. <code>UBC_EXCHANGE</code> is a valid stop identifier, but the parser cannot convert <code>soon</code> to an integer.</p>
-<p>The parser must report this failure without creating a misleading prediction. Returning zero would claim that a bus is at the stop. Returning <code>null</code> would require every client to interpret the absence. Printing inside the parser would couple a reusable component to one user interface. A partially created prediction would leave the program in an invalid state.</p>
+<p>The parser must report this failure without creating a misleading prediction. Four plausible responses each fail for a different reason:</p>
+<ul>
+<li>returning zero claims that a bus is at the stop;</li>
+<li>returning <code>null</code> requires every client to interpret the absence;</li>
+<li>printing inside the parser couples a reusable component to one user interface;</li>
+<li>returning a partially populated prediction leaves the program in an invalid state.</li>
+</ul>
 <p>Failures are part of a program's behaviour. We need to specify them, signal them at a useful abstraction level, and test them with the same care as ordinary results.</p>
 <section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
 <li>distinguish precondition violations, malformed external data, and failures of the execution environment;</li>
@@ -311,10 +318,10 @@ void executesParserWithoutCheckingResult() throws FeedFormatException {
 <p>In our parser, explicit checks and exceptions enforce the public contract. An assertion after the field-count check could document an internal fact, but it adds little because the fact is already local and obvious. Use assertions for meaningful invariants rather than restating a check performed immediately before them.</p>
 <h2 id="8-design-for-testability"><a href="#8-design-for-testability"><span class="section-number">3.8</span>Design for Testability</a></h2>
 <p><code>PredictionParser.parse</code> has a useful property: all input arrives through a parameter and all ordinary output leaves through a return value. It does not read a hard-coded file, consult the wall clock, modify global state, or print. A test can call it directly and observe the result.</p>
-<p><code>PredictionFile.load</code> owns file I/O separately. We can test the parser rapidly with strings and reserve a smaller set of integration tests for the file boundary. This separation is not a concession to the test framework. It is a modular design in which computation and effects have clear owners.</p>
+<p><code>PredictionFile.load</code> owns file I/O separately. We can test the parser rapidly with strings and reserve a smaller set of integration tests for the file boundary. This separation serves the design rather than the test framework: computation and external effects have separate owners, and either can change without disturbing the other.</p>
 <blockquote class="design-note"><p><strong>Design principle: specify each failure at the component boundary, then derive tests from the component's contract.</strong></p>
 </blockquote>
-<p>A named failure lets clients choose a response. A focused component makes that failure directly reproducible in a test. A test linked to a contract explains why its observation matters.</p>
+<p>A named failure lets a client choose its response, and a component whose inputs and outputs all cross its parameter list makes that failure reproducible in a test. The contract then explains why the test's observation matters.</p>
 <h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">3.9</span>Common Misconceptions</a></h2>
 <h3 id="catch-every-exception-so-the-program-does-not-crash"><a href="#catch-every-exception-so-the-program-does-not-crash">“Catch every exception so the program does not crash”</a></h3>
 <p>Catching an exception without restoring a valid state can make the system less reliable. It hides the failure and may leave the program in an invalid state. Catch narrowly where you can recover, translate, or report; otherwise let the failure propagate.</p>

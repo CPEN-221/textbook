@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Represent recursive journeys and justify recursive traversal, termination, and correctness.">
+  <title>Recursion and Recursive Datatypes · CPEN 221 Readings</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: ca2cfbb1d3ea4e018ce71a827b056a60120a202692a744bc7b4ca02a4ff17886 -->
+  <!-- source-file: chapter-09-recursion-and-recursive-datatypes.md -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">Data and transformations</p>
+      <h2><a href="#top" aria-current="page">Recursion and Recursive Datatypes <small>9</small></a></h2>
+      <ul>
+        <li><a href="#1-a-recursive-journey-representation"><small>9.1</small><span>A Recursive Journey Representation</span></a></li>
+        <li><a href="#2-structurally-recursive-observers"><small>9.2</small><span>Structurally Recursive Observers</span></a></li>
+        <li><a href="#3-termination"><small>9.3</small><span>Termination</span></a></li>
+        <li><a href="#4-correctness-by-structural-induction"><small>9.4</small><span>Correctness by Structural Induction</span></a></li>
+        <li><a href="#5-heap-structure-and-call-frames"><small>9.5</small><span>Heap Structure and Call Frames</span></a></li>
+        <li><a href="#6-iterative-traversal-for-unbounded-depth"><small>9.6</small><span>Iterative Traversal for Unbounded Depth</span></a></li>
+        <li><a href="#7-cycles-in-recursive-representations"><small>9.7</small><span>Cycles in Recursive Representations</span></a></li>
+        <li><a href="#8-structural-and-numeric-recursion"><small>9.8</small><span>Structural and Numeric Recursion</span></a></li>
+        <li><a href="#9-common-misconception-a-base-case-guarantees-termination"><small>9.9</small><span>Common Misconception: A Base Case Guarantees Termination</span></a></li>
+        <li><a href="#10-practice-by-tracing-structure-and-calls"><small>9.10</small><span>Practice by Tracing Structure and Calls</span></a></li>
+        <li><a href="#11-summary"><small>9.11</small><span>Summary</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../composition-delegation-and-api-design/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../functions-streams-and-data-transformations/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../composition-delegation-and-api-design/" aria-label="Previous: Composition, Delegation, and API Design">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../functions-streams-and-data-transformations/" aria-label="Next: Functions, Streams, and Data Transformations">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">9</div>
+      <header class="chapter-header">
+        <h1>Recursion and Recursive Datatypes</h1>
+      </header>
+
+<blockquote class="epigraph">
+<p>To see a World in a Grain of Sand And a Heaven in a Wild Flower</p>
+<p><cite>William Blake, “Auguries of Innocence”</cite></p>
+</blockquote>
+<p>A journey can contain one travel leg followed by the rest of the journey. The rest has exactly the same possibilities: it may contain another leg, or it may state that the traveller has arrived. This description is finite, but one of its cases refers back to the whole type.</p>
+<p>Lists, directory trees, arithmetic expressions, and many protocol messages have the same form. Their data has no fixed number of layers. A recursive datatype represents the alternatives directly, and a recursive method follows the structure one case at a time.</p>
+<p>The method still needs a termination argument. A recursive call is not justified merely because it eventually returned for the examples tried in a test. We must identify a smaller subproblem and a base case that stops the descent.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>define a recursive datatype using records and a sealed interface;</li>
+<li>identify the base and recursive cases in a representation;</li>
+<li>implement structurally recursive observers;</li>
+<li>argue that a recursive method terminates and returns the specified result;</li>
+<li>distinguish object structure from call-stack state;</li>
+<li>recognise malformed or excessively deep recursive data; and</li>
+<li>choose an iterative implementation when recursion depth is not safely bounded.</li>
+</ul></section>
+<h2 id="1-a-recursive-journey-representation"><a href="#1-a-recursive-journey-representation"><span class="section-number">9.1</span>A Recursive Journey Representation</a></h2>
+<p>Our model has two alternatives:</p>
+<ol type="1">
+<li><code>Arrive(stop)</code> contains no further leg.</li>
+<li><code>Travel(route, from, to, minutes, rest)</code> contains one leg and another journey.</li>
+</ol>
+<p>In Java 25, a sealed interface can list the permitted implementations:</p>
+<div class="code-block"><pre class="java"><code>public sealed interface Journey permits Arrive, Travel { }
+
+public record Arrive(String stop) implements Journey { }
+
+public record Travel(String route, String from, String to,
+                     int minutes, Journey rest) implements Journey {
+    public Travel {
+        if (minutes &lt; 0) {
+            throw new IllegalArgumentException(&quot;negative duration&quot;);
+        }
+        if (!to.equals(firstStop(rest))) {
+            throw new IllegalArgumentException(&quot;disconnected journey&quot;);
+        }
+    }
+}</code></pre></div>
+<p><code>Journey</code> is a <strong>recursive datatype</strong> because the <code>Travel</code> case contains a <code>Journey</code> component. The declaration does not create an infinite object. Each constructed <code>Travel</code> refers to one already constructed, finite remainder. Construction ends at an <code>Arrive</code> value.</p>
+<p>The sealed declaration closes the set of direct implementations in this module. The compiler can use that information when checking a pattern-matching <code>switch</code>. If a later revision permits a third case, such as <code>Wait</code>, switches over <code>Journey</code> must either handle it or retain a suitable default. That compiler check connects the data definition to the operations that consume it.</p>
+<p>The compact constructor enforces two local conditions. Durations are non-negative, and the destination of a leg equals the first stop of its remainder. The second condition makes disconnected chains unrepresentable through this constructor. A production version would also reject null components and might use the <code>StopId</code> and <code>RouteId</code> domain types introduced earlier.</p>
+<blockquote class="design-note"><p><strong>Design principle:</strong> For data defined by alternatives, make each alternative explicit and make recursive calls only on structurally smaller components.</p>
+</blockquote>
+<h2 id="2-structurally-recursive-observers"><a href="#2-structurally-recursive-observers"><span class="section-number">9.2</span>Structurally Recursive Observers</a></h2>
+<p>The total duration mirrors the two cases:</p>
+<div class="code-block"><pre class="java"><code>public static int totalMinutes(Journey journey) {
+    return switch (journey) {
+        case Arrive(String stop) -&gt; 0;
+        case Travel(String route, String from, String to,
+                    int minutes, Journey rest) -&gt;
+                minutes + totalMinutes(rest);
+    };
+}</code></pre></div>
+<p>For <code>Arrive</code>, no travel remains, so the duration is zero. For <code>Travel</code>, the duration is the current leg's minutes plus the duration of the remainder. The recursive call receives <code>rest</code>, a proper component with one fewer <code>Travel</code> node than the original value.</p>
+<p>The switch is an expression, so both cases produce the returned <code>int</code>. It has no <code>default</code> because <code>Journey</code> is sealed and the two permitted record patterns are exhaustive. Several pattern variables do not affect this computation. Java still checks their component types while matching the record pattern.</p>
+<p>Leg count has the same structure:</p>
+<div class="code-block"><pre class="java"><code>public static int legCount(Journey journey) {
+    return switch (journey) {
+        case Arrive(String stop) -&gt; 0;
+        case Travel(String route, String from, String to,
+                    int minutes, Journey rest) -&gt; 1 + legCount(rest);
+    };
+}</code></pre></div>
+<p>The similarity is not accidental. The datatype definition tells us what cases every total observer must consider. It also identifies the recursive component available in the <code>Travel</code> case.</p>
+<p>The companion program constructed an R4 leg followed by a Canada Line leg and an arrival. The validated Java 25 run printed:</p>
+<div class="code-block"><pre class="text"><code>minutes=42, legs=2</code></pre></div>
+<p>The arithmetic followed the constructed values: <code>28 + 14 + 0</code> minutes and <code>1 + 1 + 0</code> legs.</p>
+<h2 id="3-termination"><a href="#3-termination"><span class="section-number">9.3</span>Termination</a></h2>
+<p>A useful termination argument identifies a non-negative measure that decreases on every recursive call. For <code>totalMinutes</code>, let the measure be the number of <code>Travel</code> nodes reachable from the argument.</p>
+<ul>
+<li>The <code>Arrive</code> case makes no recursive call.</li>
+<li>The <code>Travel</code> case calls <code>totalMinutes(rest)</code>, whose measure is one smaller.</li>
+<li>A finite journey cannot decrease this non-negative integer forever.</li>
+</ul>
+<p>Therefore the method reaches <code>Arrive</code> and terminates for every finite valid journey.</p>
+<p>A useful termination argument names the dimension that decreases and connects it to a lower bound. A binary tree method may call itself twice, once on each child; node count or height still decreases along every call path. A numeric method that calls itself on <code>n / 2</code> needs a precondition that makes the measure well founded. For negative integers, division and rounding may not follow the intended argument.</p>
+<p>Termination and correctness are separate obligations. A method that always returns zero terminates but does not compute travel duration. A method that adds minutes correctly but recurses on the original journey does not terminate.</p>
+<h2 id="4-correctness-by-structural-induction"><a href="#4-correctness-by-structural-induction"><span class="section-number">9.4</span>Correctness by Structural Induction</a></h2>
+<p>Structural induction matches the datatype.</p>
+<p>Claim: <code>totalMinutes(journey)</code> returns the sum of the duration of every <code>Travel</code> node in a valid finite journey.</p>
+<p><strong>Base case.</strong> The journey is <code>Arrive</code>. It has no <code>Travel</code> nodes, the sum is zero, and the method returns zero.</p>
+<p><strong>Recursive case.</strong> The journey is <code>Travel(route, from, to, minutes, rest)</code>. Assume the method returns the correct sum for <code>rest</code>. The method adds the current node's <code>minutes</code> to that sum. Those values are exactly the durations in the complete journey, so the result is correct.</p>
+<p>The assumption about <code>rest</code> is the induction hypothesis. It applies because <code>rest</code> is structurally smaller. The proof does not depend on a particular journey length.</p>
+<p>The same case analysis supports representation-invariant arguments. Suppose every <code>Travel</code> constructor verifies that its <code>to</code> stop equals <code>firstStop(rest)</code>. The base <code>Arrive</code> value is connected by definition. Adding a verified <code>Travel</code> in front of a valid remainder preserves connectivity. Induction then establishes that the entire constructed chain is connected.</p>
+<p>Tests still matter. A proof concerns the method and specification as written; tests can reveal a mistaken implementation, constructor path, or assumption. The two forms of evidence address different risks.</p>
+<h2 id="5-heap-structure-and-call-frames"><a href="#5-heap-structure-and-call-frames"><span class="section-number">9.5</span>Heap Structure and Call Frames</a></h2>
+<p>The journey nodes are objects on the heap. A call to <code>totalMinutes</code> does not copy the whole remainder. Each invocation receives a reference to one node and creates a call frame containing its parameter, pattern variables, and return location.</p>
+<p>For the two-leg example, the active calls develop in this order:</p>
+<div class="code-block"><pre class="text"><code>totalMinutes(first Travel)
+  totalMinutes(second Travel)
+    totalMinutes(Arrive)</code></pre></div>
+<p><code>totalMinutes(Arrive)</code> returns zero. The second call adds 14 and returns 14. The first adds 28 and returns 42. The object links exist independently of these temporary call frames; another method could traverse the same immutable journey at the same time.</p>
+<p>Java does not guarantee tail-call elimination. Even a recursive call in final position may use another frame. A sufficiently deep valid structure can therefore cause <code>StackOverflowError</code>. The Java language does not specify a portable maximum recursion depth, and the available stack depends on runtime and implementation conditions.</p>
+<p>An implementation must therefore consider expected depth. A journey normally has a modest number of legs. A syntax tree produced from untrusted nested input or a linked structure with millions of nodes needs a different risk assessment.</p>
+<p>The optional reading <a href="../how-java-runs/">How a Java Program Runs</a> traces frames, exception unwinding, and runtime observations in more detail.</p>
+<h2 id="6-iterative-traversal-for-unbounded-depth"><a href="#6-iterative-traversal-for-unbounded-depth"><span class="section-number">9.6</span>Iterative Traversal for Unbounded Depth</a></h2>
+<p>A chain-shaped journey can be processed with a loop:</p>
+<div class="code-block"><pre class="java"><code>public static int totalMinutesIterative(Journey journey) {
+    int total = 0;
+    Journey current = journey;
+    while (current instanceof Travel travel) {
+        total = Math.addExact(total, travel.minutes());
+        current = travel.rest();
+    }
+    return total;
+}</code></pre></div>
+<p>The loop keeps one current reference rather than one Java call frame per leg. It also uses <code>Math.addExact</code> to turn integer overflow into <code>ArithmeticException</code>. The recursive version could use the same checked addition.</p>
+<p>For a branching tree, an iterative traversal usually needs an explicit stack or queue. That data structure consumes memory too, but the program controls its representation and may apply limits or use breadth-first order. Replacing recursion with iteration does not remove the need for a termination argument. The loop must advance to a smaller remainder, and its explicit worklist must eventually empty.</p>
+<p>Choose between the forms using the data and operational constraints. A recursive method often states the definition directly and supports a short correctness argument. An iterative method avoids dependence on call-stack depth and can expose the traversal order more explicitly.</p>
+<h3 id="immutable-recursive-values-can-share-structure"><a href="#immutable-recursive-values-can-share-structure">Immutable recursive values can share structure</a></h3>
+<p>Because a <code>Journey</code> does not change, two values can safely refer to the same remainder. Suppose two alternative first legs both arrive at Oakridge and then use the same Canada Line remainder. The program can allocate that remainder once and use its reference in both <code>Travel</code> records.</p>
+<p>This <strong>structural sharing</strong> does not merge the two abstract journeys. Each root still defines its own complete sequence. It saves allocation and preserves old versions when a producer adds a new prefix. A method that prepends one leg can run in constant time because it creates one record and reuses the existing remainder.</p>
+<p>Mutation would make this sharing observable in a more dangerous way. If one client could change the shared remainder, both journeys would change. The immutable record design permits sharing without an ownership negotiation between readers.</p>
+<p>Recursive equality follows the same links. Generated record equality compares the remainder by value, so structurally distinct allocations with equal sequences compare equal. Hashing a long chain also traverses the remainder and may be costly; caching a hash would introduce more representation state and require a new invariant.</p>
+<h2 id="7-cycles-in-recursive-representations"><a href="#7-cycles-in-recursive-representations"><span class="section-number">9.7</span>Cycles in Recursive Representations</a></h2>
+<p>The <code>Journey</code> records are immutable and constructed from an existing remainder. Ordinary construction cannot later redirect <code>rest</code> to form a cycle. Immutability supports the finite-chain argument.</p>
+<p>A mutable node type can create a different structure:</p>
+<div class="code-block"><pre class="text"><code>first.rest = second
+second.rest = first</code></pre></div>
+<p>A traversal that expects a finite chain will revisit the same objects forever or until the call stack is exhausted. The type may still be recursively declared, but its values now include cyclic graphs.</p>
+<p>If cycles belong to the abstraction, the traversal needs a visited set or another cycle-aware algorithm. If cycles do not belong, the representation should prevent them or check for them at construction boundaries. A representation invariant such as “following <code>rest</code> reaches an <code>Arrive</code> node without revisiting an object” is meaningful, though a mutable implementation must also prevent later mutation from invalidating it.</p>
+<p>Object equality can complicate cycle detection. A visited set intended to detect object revisits may need identity semantics rather than value equality. Two distinct equal nodes are not necessarily a cycle, while returning to the same allocation is. <code>IdentityHashMap</code> can support an identity-based set when that is the required relation.</p>
+<h2 id="8-structural-and-numeric-recursion"><a href="#8-structural-and-numeric-recursion"><span class="section-number">9.8</span>Structural and Numeric Recursion</a></h2>
+<p>Structural recursion follows a component of recursively defined data. The termination measure usually comes from the construction: list length, tree height, or node count.</p>
+<p>Numeric recursion computes a new numeric argument, as factorial does with <code>n - 1</code>. Its safety depends on an explicit precondition and arithmetic reasoning. Mutual recursion distributes the recursive path across multiple methods, so the measure must decrease across the combined call sequence.</p>
+<p>Some algorithms recurse on a problem that is not stored recursively. Binary search recurses on a smaller index interval. Merge sort recurses on smaller array regions. The same obligations apply: define the base case, show that every recursive branch makes progress, and combine sub-results according to the postcondition.</p>
+<p>Memoisation changes the cost of repeated recursive subproblems but not the basic correctness argument. It also introduces a cache whose equality, ownership, and thread-safety properties must be designed. Techniques from Chapters 7, 8, and 13 then become part of the implementation.</p>
+<h2 id="9-common-misconception-a-base-case-guarantees-termination"><a href="#9-common-misconception-a-base-case-guarantees-termination"><span class="section-number">9.9</span>Common Misconception: A Base Case Guarantees Termination</a></h2>
+<p>A method can contain a base case that its recursive calls never reach. Consider a method intended to count down to zero but called with a negative number while each step subtracts one. The base case <code>n == 0</code> exists, but the distance from zero grows.</p>
+<p>A tree traversal can have a leaf case yet recurse repeatedly on the original root. A graph traversal can reach nodes with no outgoing edges but loop inside a reachable cycle. The presence of a conditional branch does not establish termination.</p>
+<p>The required evidence is a progress argument for every recursive call under the method's precondition. When no simple decreasing measure exists, termination may need a visited set, a stronger precondition, or a different algorithm.</p>
+<h2 id="10-practice-by-tracing-structure-and-calls"><a href="#10-practice-by-tracing-structure-and-calls"><span class="section-number">9.10</span>Practice by Tracing Structure and Calls</a></h2>
+<p>Perform each trace without running the code first.</p>
+<ol type="1">
+<li>Draw the three journey objects in the companion example and the references between them. Then list the active <code>totalMinutes</code> frames at maximum depth.</li>
+<li>Add a <code>Wait(stop, minutes, rest)</code> case to the sealed hierarchy. State the changes required in <code>firstStop</code>, <code>totalMinutes</code>, and <code>legCount</code>. Decide whether waiting counts as a leg.</li>
+<li>Specify and implement <code>lastStop(Journey)</code>. Give its termination and correctness arguments.</li>
+<li>Change <code>Travel.minutes</code> to an arbitrary <code>int</code>. Construct an input for which plain addition overflows. Decide whether the datatype or observer should reject it.</li>
+<li>Design an iterative traversal that returns the route names in encounter order. State the ownership of the returned list.</li>
+<li>Consider a binary itinerary tree in which a traveller may choose either branch. Identify a measure that decreases along both recursive calls.</li>
+</ol>
+<p>Review a recursive method produced by a code generator or assistant. Check all cases against the datatype declaration, identify the exact measure used for termination, and test the smallest value in every case. Reject an explanation that only says the method “eventually reaches the base case.”</p>
+<h2 id="11-summary"><a href="#11-summary"><span class="section-number">9.11</span>Summary</a></h2>
+<ul>
+<li>A recursive datatype contains values of its own general type in at least one case.</li>
+<li>Sealed interfaces and records can make a closed set of cases explicit.</li>
+<li>Structural recursion handles each case and recurses on smaller components.</li>
+<li>A termination argument names a non-negative measure that decreases on every call.</li>
+<li>Structural induction proves results using the same base and recursive cases.</li>
+<li>Heap objects and recursive call frames are different runtime structures.</li>
+<li>Java does not guarantee tail-call elimination, so unbounded depth may require an iterative traversal or explicit worklist.</li>
+</ul>
+<h2 id="references"><a href="#references">References</a></h2>
+<ul>
+<li>William Blake. <a href="https://gutenberg.org/cache/epub/79363/pg79363-images.html">“Auguries of Innocence”</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/language/sealed-classes-interfaces.html">Sealed Classes and Interfaces</a>, Java SE 25.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/language/pattern-matching-switch.html">Pattern Matching with <code>switch</code></a>, Java SE 25.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/language/pattern-matching.html">Pattern Matching</a>, Java SE 25.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/language/java-language-changes-summary.html">Java Language Changes Summary</a>, Java SE 25.</li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../functions-streams-and-data-transformations/">Functions, Streams, and Data Transformations →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

@@ -117,27 +117,28 @@ for path, page in pages.items():
         failures.append(f"{display_name}: loads a font from an external Google host")
 
     source_digest = re.search(r"source-sha256:\s*([0-9a-f]{64})", page_source)
+    source_file = re.search(r"source-file:\s*([A-Za-z0-9_.-]+\.md)", page_source)
     if path.parent.parent == SITE_ROOT / "chapters":
         if "references" not in page.ids:
             failures.append(f"{display_name}: missing references section")
         if source_digest is None:
             failures.append(f"{display_name}: missing source digest")
-        source_links = [
-            reference
-            for reference in page.references
-            if reference.startswith("../../sources/") and reference.endswith(".md")
-        ]
-        if len(source_links) != 1:
-            failures.append(f"{display_name}: expected exactly one Markdown source link")
+        if source_file is None:
+            failures.append(f"{display_name}: missing source filename")
         elif source_digest is not None:
-            source_target, _ = local_target(path, source_links[0])
-            if source_target is not None and source_target.is_file():
-                observed_digest = sha256(source_target.read_bytes()).hexdigest()
-                if observed_digest != source_digest.group(1):
-                    failures.append(
-                        f"{display_name}: generated page is stale relative to "
-                        f"{source_target.relative_to(SITE_ROOT)}"
-                    )
+            source_target = SITE_ROOT / "sources" / source_file.group(1)
+            if not source_target.is_file():
+                failures.append(
+                    f"{display_name}: missing source file {source_target.name}"
+                )
+            elif (
+                sha256(source_target.read_bytes()).hexdigest()
+                != source_digest.group(1)
+            ):
+                failures.append(
+                    f"{display_name}: generated page is stale relative to "
+                    f"{source_target.relative_to(SITE_ROOT)}"
+                )
 
     for identifier in set(page.ids):
         if page.ids.count(identifier) > 1:

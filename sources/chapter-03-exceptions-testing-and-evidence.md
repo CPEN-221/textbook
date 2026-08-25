@@ -5,7 +5,7 @@
 >
 > <cite>Edsger W. Dijkstra, “On the Reliability of Programs”</cite>
 
-The feed line is short:
+One line of the feed reads:
 
 ```text
 UBC_EXCHANGE|soon
@@ -15,11 +15,13 @@ Our parser expects a stop identifier, a vertical bar, and a non-negative number 
 minutes. `UBC_EXCHANGE` is a valid stop identifier, but the parser cannot convert
 `soon` to an integer.
 
-The parser must report this failure without creating a misleading prediction.
-Returning zero would claim that a bus is at the stop. Returning `null` would require
-every client to interpret the absence. Printing inside the parser would couple a
-reusable component to one user interface. A partially created prediction would leave
-the program in an invalid state.
+The parser must report this failure without creating a misleading prediction. Four
+plausible responses each fail for a different reason:
+
+- returning zero claims that a bus is at the stop;
+- returning `null` requires every client to interpret the absence;
+- printing inside the parser couples a reusable component to one user interface;
+- returning a partially populated prediction leaves the program in an invalid state.
 
 Failures are part of a program's behaviour. We need to specify them, signal them at a
 useful abstraction level, and test them with the same care as ordinary results.
@@ -85,9 +87,9 @@ That was a design choice rather than a universal rule. The statement "checked me
 expected; unchecked means bug" is too categorical. Java defines the categories by
 their class hierarchy and compiler rules. Application programming interface (API)
 designers choose between them based on client needs, recoverability, local
-conventions, and the cost of mandatory handling.
-A malformed command-line argument might reasonably produce an unchecked exception
-in one API and a result object in another.
+conventions, and the cost of mandatory handling. A malformed command-line argument
+might reasonably produce an unchecked exception in one API and a result object in
+another.
 
 ## 2. Implement the Parser in Observable Steps
 
@@ -124,8 +126,8 @@ still produces two fields and reaches the integer check. Without it, Java would 
 that trailing empty string. That small library detail decides which diagnostic the
 client sees, so it belongs in a test.
 
-The parser delegates semantic checks to application-specific types. `StopId` rejects a blank
-identifier, and `ArrivalPrediction` rejects negative minutes:
+The parser delegates semantic checks to application-specific types. `StopId` rejects
+a blank identifier, and `ArrivalPrediction` rejects negative minutes:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -392,15 +394,15 @@ directly and observe the result.
 
 `PredictionFile.load` owns file I/O separately. We can test the parser rapidly with
 strings and reserve a smaller set of integration tests for the file boundary. This
-separation is not a concession to the test framework. It is a modular design in
-which computation and effects have clear owners.
+separation serves the design rather than the test framework: computation and external
+effects have separate owners, and either can change without disturbing the other.
 
 > **Design principle: specify each failure at the component boundary, then derive
 > tests from the component's contract.**
 
-A named failure lets clients choose a response. A focused component makes that
-failure directly reproducible in a test. A test linked to a contract explains why
-its observation matters.
+A named failure lets a client choose its response, and a component whose inputs and
+outputs all cross its parameter list makes that failure reproducible in a test. The
+contract then explains why the test's observation matters.
 
 ## 9. Common Misconceptions
 
@@ -486,8 +488,8 @@ layer has enough context to implement it.
 ## Summary
 
 Exception types identify failures, and exceptions use a separate control-flow path.
-Checked and unchecked exceptions differ by Java hierarchy and compiler treatment; choosing
-between them is an API design decision. Catch only where the program can recover,
+Checked and unchecked exceptions differ by Java hierarchy and compiler treatment;
+choosing between them is an API design decision. Catch only where the program can recover,
 translate while preserving a cause, or report at an owning boundary. Use
 try-with-resources to tie resource cleanup to scope.
 

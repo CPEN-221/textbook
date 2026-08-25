@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Publish coherent snapshots and connect local contracts to system reliability.">
+  <title>Thread Safety, Integration, and Reliability · CPEN 221 Readings</title>
+  <link rel="stylesheet" href="../../assets/fonts/fonts.css">
+  <link rel="stylesheet" href="../../assets/css/site.css">
+  <script src="../../assets/js/typeface-switcher.js"></script>
+</head>
+<body id="top">
+  <!-- source-sha256: f48e6681ee4412fad236161f2a97c6ebe5c8570290fc4a7278667c50b2e46c08 -->
+  <!-- source-file: chapter-13-thread-safety-integration-and-reliability.md -->
+  <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
+
+  <nav class="book-nav" aria-label="Chapter navigation">
+    <a class="wordmark" href="../../">
+      <strong>CPEN 221</strong>
+      <span>Software Construction</span>
+    </a>
+    <div class="nav-contents">
+      <p class="part-label">Networked and concurrent systems</p>
+      <h2><a href="#top" aria-current="page">Thread Safety, Integration, and Reliability <small>13</small></a></h2>
+      <ul>
+        <li><a href="#1-permitted-concurrent-observations"><small>13.1</small><span>Permitted Concurrent Observations</span></a></li>
+        <li><a href="#2-atomicity-visibility-and-ordering"><small>13.2</small><span>Atomicity, Visibility, and Ordering</span></a></li>
+        <li><a href="#3-atomic-publication-of-an-immutable-snapshot"><small>13.3</small><span>Atomic Publication of an Immutable Snapshot</span></a></li>
+        <li><a href="#4-the-compare-and-set-loop"><small>13.4</small><span>The Compare-and-Set Loop</span></a></li>
+        <li><a href="#5-compound-actions-on-concurrent-collections"><small>13.5</small><span>Compound Actions on Concurrent Collections</span></a></li>
+        <li><a href="#6-coordination-strategies"><small>13.6</small><span>Coordination Strategies</span></a></li>
+        <li><a href="#7-the-thread-safety-argument-and-the-ri"><small>13.7</small><span>The Thread-Safety Argument and the RI</span></a></li>
+        <li><a href="#8-the-integrated-journey-planning-system"><small>13.8</small><span>The Integrated Journey-Planning System</span></a></li>
+        <li><a href="#9-design-revisions-from-failure-evidence"><small>13.9</small><span>Design Revisions from Failure Evidence</span></a></li>
+        <li><a href="#10-common-misconception-thread-safe-parts-make-a-thread-safe-whole"><small>13.10</small><span>Common Misconception: Thread-Safe Parts Make a Thread-Safe Whole</span></a></li>
+        <li><a href="#11-practice-by-constructing-interleavings"><small>13.11</small><span>Practice by Constructing Interleavings</span></a></li>
+        <li><a href="#12-summary"><small>13.12</small><span>Summary</span></a></li>
+        <li><a href="#references"><small>§</small><span>References</span></a></li>
+      </ul>
+      <div class="prev-next">
+        <a href="../parallelism-concurrency-and-virtual-threads/">← Previous</a>
+        <a href="../../">Up</a>
+        <a href="../how-java-runs/">Next →</a>
+      </div>
+    </div>
+  </nav>
+
+  <nav class="book-nav-mobile" aria-label="Compact chapter navigation">
+    <a class="mobile-arrow" href="../parallelism-concurrency-and-virtual-threads/" aria-label="Previous: Parallelism, Concurrency, and Virtual Threads">←</a>
+    <a class="mobile-title" href="../../">CPEN 221</a>
+    <a class="mobile-arrow" href="../how-java-runs/" aria-label="Next: How a Java Program Runs">→</a>
+  </nav>
+
+  <div class="typeface-tools">
+    <label>
+      <span>Reading type</span>
+      <select data-typeface-picker aria-label="Reading typeface combination">
+        <option value="literata">Literata + IBM Plex Sans</option>
+        <option value="newsreader">Newsreader + Public Sans</option>
+        <option value="source">Source Serif 4 + Source Sans 3</option>
+        <option value="fraunces">Fraunces heads + Literata text</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="chapter-content" class="page">
+    <article class="chapter">
+      <div class="chapter-number" aria-hidden="true">13</div>
+      <header class="chapter-header">
+        <h1>Thread Safety, Integration, and Reliability</h1>
+      </header>
+
+<blockquote class="epigraph">
+<p>If you can keep your head when all about you Are losing theirs and blaming it on you,</p>
+<p><cite>Rudyard Kipling, “If—”</cite></p>
+</blockquote>
+<p>The prediction service keeps the latest departure-board snapshot in memory. Network tasks replace the snapshot as updates arrive, while request tasks read it to answer clients. Every snapshot is valid on its own. The program can still fail if one thread publishes a new value without the coordination needed by its readers.</p>
+<p>Concurrency changes the set of states an implementation can expose. Operations that look indivisible in source code may consist of several reads and writes. A thread may observe stale data unless the Java memory model establishes the required ordering. A concurrent collection alone cannot supply thread safety. We need a specification and an argument for the whole abstraction.</p>
+<p>This final chapter publishes immutable snapshots through an atomic reference. It then connects that implementation to the design decisions made throughout the readings: types, specifications, testing, ownership, abstraction, equality, composition, recursion, transformations, protocols, and task lifetimes.</p>
+<section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
+<li>state a thread-safety policy for a shared abstraction;</li>
+<li>distinguish atomicity, visibility, and ordering;</li>
+<li>identify a data race and explain the role of happens-before relationships;</li>
+<li>publish an immutable snapshot through <code>AtomicReference</code>;</li>
+<li>recognise a compound action that a thread-safe collection does not make atomic;</li>
+<li>compare confinement, immutability, locks, and atomic variables;</li>
+<li>write a representation and concurrency argument for an integrated component; and</li>
+<li>use failures and operational evidence to revise a software design.</li>
+</ul></section>
+<h2 id="1-permitted-concurrent-observations"><a href="#1-permitted-concurrent-observations"><span class="section-number">13.1</span>Permitted Concurrent Observations</a></h2>
+<p><code>SnapshotStore</code> has two operations:</p>
+<div class="code-block"><pre class="text"><code>read()
+effects: none
+returns: one complete snapshot published by the store
+
+update(operation)
+requires: operation is non-null and safe to call more than once
+effects: atomically replaces the current snapshot with a value computed from it
+returns: the replacement snapshot</code></pre></div>
+<p>The word <em>atomically</em> states an observable property. Each successful update should appear to take effect at one point between its invocation and return. A reader may see the old snapshot or the new snapshot when the calls overlap, but it must not see a mixture of their fields.</p>
+<p>The contract does not promise that a reader obtains the latest external transit observation. Network delay, refresh policy, and clock time determine freshness. It promises a coherent snapshot among those published by this store.</p>
+<p><code>update</code> may invoke its operation repeatedly when competing updates occur. The function must therefore have no non-repeatable external effect. Sending a message or incrementing an unrelated counter inside it could happen more than once even though only one replacement succeeds.</p>
+<blockquote class="design-note"><p><strong>Design principle:</strong> State the concurrent observations an abstraction permits, then use one coordination policy for all state that must change together.</p>
+</blockquote>
+<h2 id="2-atomicity-visibility-and-ordering"><a href="#2-atomicity-visibility-and-ordering"><span class="section-number">13.2</span>Atomicity, Visibility, and Ordering</a></h2>
+<p><strong>Atomicity</strong> means an operation appears indivisible with respect to the relevant threads. Reading or writing one reference is atomic, but a sequence such as “read, compute, write” is a compound action and can interleave with another thread.</p>
+<p><strong>Visibility</strong> concerns whether a write by one thread becomes observable to another. A thread can retain or reuse values according to the Java memory model when no synchronisation relationship requires it to observe another thread's write.</p>
+<p><strong>Ordering</strong> concerns which actions are guaranteed to precede others. Compilers, processors, and the runtime may reorder operations when the allowed observations of a correctly synchronised program remain unchanged. Source line order in one thread does not by itself create an inter-thread guarantee.</p>
+<p>The Java Language Specification defines a <strong>happens-before</strong> relation. If action A happens-before action B, then B is guaranteed to observe the effects of A in the ways specified by the memory model. Important examples include:</p>
+<ul>
+<li>releasing a monitor happens-before a later successful acquisition of that monitor;</li>
+<li>a write to a <code>volatile</code> field happens-before every subsequent read of that field;</li>
+<li>actions before starting a thread happen-before actions in the started thread; and</li>
+<li>all actions in a thread happen-before another thread successfully returns from joining it.</li>
+</ul>
+<p>Two conflicting accesses to the same variable form a <strong>data race</strong> when at least one is a write and they are not ordered by happens-before. Correctly synchronised programs have sequentially consistent behaviour under the Java memory model: their actions can be understood as an interleaving that respects each thread's program order.</p>
+<h2 id="3-atomic-publication-of-an-immutable-snapshot"><a href="#3-atomic-publication-of-an-immutable-snapshot"><span class="section-number">13.3</span>Atomic Publication of an Immutable Snapshot</a></h2>
+<p>The snapshot value copies its map during construction:</p>
+<div class="code-block"><pre class="java"><code>public record BoardSnapshot(
+        long version,
+        Instant observedAt,
+        Map&lt;String, Integer&gt; predictions) {
+    public BoardSnapshot {
+        predictions = Map.copyOf(predictions);
+    }
+}</code></pre></div>
+<p>The record components do not change after construction. <code>Instant</code> is immutable, and <code>Map.copyOf</code> creates an unmodifiable snapshot of the entries. The string keys and integer values are immutable. Once safely published, a <code>BoardSnapshot</code> can be shared without locks because readers do not race with mutations inside it.</p>
+<p>The store coordinates replacement of the reference:</p>
+<div class="code-block"><pre class="java"><code>public static final class SnapshotStore {
+    private final AtomicReference&lt;BoardSnapshot&gt; current;
+
+    public SnapshotStore(BoardSnapshot initial) {
+        current = new AtomicReference&lt;&gt;(initial);
+    }
+
+    public BoardSnapshot read() {
+        return current.get();
+    }
+
+    public BoardSnapshot update(UnaryOperator&lt;BoardSnapshot&gt; operation) {
+        return current.updateAndGet(operation);
+    }
+}</code></pre></div>
+<p><code>AtomicReference.get</code> and the successful update supply the memory effects documented for atomic variables. Readers obtain either the complete old reference or the complete new reference, and publication makes the constructed snapshot's state visible.</p>
+<p>The companion program started two virtual threads. Each performed 1,000 updates that incremented the version. After joining both threads, the validated Java 25 run printed:</p>
+<div class="code-block"><pre class="text"><code>version=2000</code></pre></div>
+<p>The result relies on the atomic read-modify-write operation. A plain sequence that reads <code>current</code>, computes a replacement, and assigns it can lose an increment when two threads read the same version before either writes.</p>
+<h2 id="4-the-compare-and-set-loop"><a href="#4-the-compare-and-set-loop"><span class="section-number">13.4</span>The Compare-and-Set Loop</a></h2>
+<p><code>updateAndGet</code> is conceptually a compare-and-set loop. It reads the current reference, applies the operation, and attempts to replace the reference only if no other update changed it in the meantime. If the comparison fails, it retries with the newer value.</p>
+<p>The successful compare-and-set is the <strong>linearisation point</strong> for the update: the instant at which the operation takes effect in a sequential account of concurrent calls. The <code>get</code> operation similarly observes one reference at its atomic read.</p>
+<p>This reasoning gives the store a linearizable contract. Each call can be placed in a total order consistent with real-time order for non-overlapping calls. Linearizability is useful for a “current value” abstraction because clients can reason as if updates occurred one at a time.</p>
+<p>The retry explains the requirement on the update function. Consider:</p>
+<div class="code-block"><pre class="java"><code>store.update(old -&gt; {
+    billingService.chargeForRefresh();
+    return refresh(old);
+});</code></pre></div>
+<p>Contention can call <code>chargeForRefresh</code> more than once before one replacement succeeds. The atomic reference protects only its stored reference. It does not roll back effects performed by the function. Compute a side-effect-free candidate inside the update, or use a different protocol that separates external effects and defines idempotence.</p>
+<p>Atomic replacement also has a retry cost. If snapshots are large and contention is high, several threads may compute discarded candidates. A lock can be more suitable when the update is expensive, requires exactly-once execution, or spans several mutable resources.</p>
+<h2 id="5-compound-actions-on-concurrent-collections"><a href="#5-compound-actions-on-concurrent-collections"><span class="section-number">13.5</span>Compound Actions on Concurrent Collections</a></h2>
+<p>Replacing <code>HashMap</code> with <code>ConcurrentHashMap</code> makes individual documented map operations safe for concurrent use. It does not make an arbitrary sequence of calls atomic.</p>
+<p>This check-then-act sequence can fetch the same stop twice:</p>
+<div class="code-block"><pre class="java"><code>if (!cache.containsKey(stop)) {
+    cache.put(stop, provider.fetch(stop));
+}
+return cache.get(stop);</code></pre></div>
+<p>Two threads can both observe absence, both call the provider, and both put. The map remains structurally valid, but the program may duplicate network load or an external effect.</p>
+<p><code>ConcurrentHashMap.computeIfAbsent</code> performs the per-key computation according to its documented atomicity rules:</p>
+<div class="code-block"><pre class="java"><code>return cache.computeIfAbsent(stop, provider::fetch);</code></pre></div>
+<p>The mapping function must follow that API's constraints. It should be short and should not recursively update the same map in a way that violates the contract. A failed computation leaves absence rather than caching an exception. The application must still decide whether failures or stale values should be cached.</p>
+<p>A thread-safe container also does not make its elements immutable. A concurrent map can safely publish a reference to a mutable <code>ArrayList</code> that callers then modify without coordination. Thread safety must cover the reachable representation and the compound observations promised by the abstraction.</p>
+<h2 id="6-coordination-strategies"><a href="#6-coordination-strategies"><span class="section-number">13.6</span>Coordination Strategies</a></h2>
+<p>Four strategies cover many designs.</p>
+<h3 id="confinement"><a href="#confinement">Confinement</a></h3>
+<p>State is <strong>confined</strong> when only one thread accesses it. A request handler can build a mutable route locally and return an immutable result. No synchronisation is needed for the confined builder because concurrent tasks do not share it.</p>
+<p>Confinement is usually the simplest policy. It must be preserved when references are passed to callbacks, stored in fields, or returned. Virtual threads do not imply confinement if they share the same object.</p>
+<h3 id="immutability"><a href="#immutability">Immutability</a></h3>
+<p>An immutable value does not change after construction. Safe publication lets any number of threads read it. The snapshot design combines immutable state with atomic replacement, so readers never coordinate with one another.</p>
+<p>Immutability must include reachable mutable objects or make defensive copies. A final field pointing to a mutable map does not make the map immutable.</p>
+<h3 id="locks"><a href="#locks">Locks</a></h3>
+<p>The <code>synchronized</code> statement and explicit locks provide mutual exclusion and happens-before relationships. A lock can protect a multi-field invariant and an operation that must execute exactly once within the critical section.</p>
+<p>Every access participating in that invariant must follow the same locking policy. Calling an unknown or slow network operation while holding a lock can block unrelated clients and risk deadlock through callbacks. Often the program can copy the required state under the lock, release it, perform slow work, and validate before committing a result.</p>
+<h3 id="atomic-variables-and-concurrent-collections"><a href="#atomic-variables-and-concurrent-collections">Atomic variables and concurrent collections</a></h3>
+<p>Atomic variables support operations on one independently updated value or reference. Concurrent collections provide specified atomic operations and scalable access patterns. They work well when the abstraction aligns with those operations.</p>
+<p>Several atomics do not automatically make a multi-variable invariant atomic. If <code>latestData</code> and <code>latestVersion</code> must always correspond, publishing them in one immutable snapshot is clearer than updating two atomic fields separately.</p>
+<h2 id="7-the-thread-safety-argument-and-the-ri"><a href="#7-the-thread-safety-argument-and-the-ri"><span class="section-number">13.7</span>The Thread-Safety Argument and the RI</a></h2>
+<p>The representation invariant (RI) for <code>SnapshotStore</code> can state:</p>
+<div class="code-block"><pre class="text"><code>current is non-null;
+current.get() is non-null;
+the snapshot&#39;s map contains no null key or value;
+every prediction is non-negative.</code></pre></div>
+<p>The abstraction function maps the current referenced record to the board value observed by clients. If non-negative predictions belong to the abstract invariant, the <code>BoardSnapshot</code> constructor should check them rather than relying on the store. Then every construction path establishes the property.</p>
+<p>The thread-safety argument adds a coordination policy:</p>
+<ol type="1">
+<li><code>current</code> is the only mutable representation state.</li>
+<li>All accesses to it use <code>AtomicReference</code> operations.</li>
+<li>Each referenced <code>BoardSnapshot</code> and everything reachable from it is immutable.</li>
+<li>The update function has no externally visible effect that depends on being called exactly once.</li>
+<li>Therefore readers observe complete safely published snapshots, and successful updates can be ordered by their atomic replacement points.</li>
+</ol>
+<p>The detailed argument is more useful than the comment “thread safe.” It identifies the state, the access rule, the publication mechanism, and the client observation being protected. A future edit that adds a mutable <code>lastError</code> field must extend the policy or reveal that the argument no longer covers the whole representation.</p>
+<h2 id="8-the-integrated-journey-planning-system"><a href="#8-the-integrated-journey-planning-system"><span class="section-number">13.8</span>The Integrated Journey-Planning System</a></h2>
+<p>The completed journey-planning example now crosses several boundaries:</p>
+<div class="code-block"><pre class="text"><code>request data
+  -&gt; validated domain types
+  -&gt; router interface and composed policies
+  -&gt; recursive or graph-based journey values
+  -&gt; concurrent provider tasks
+  -&gt; protocol adapters
+  -&gt; immutable published snapshot
+  -&gt; response data</code></pre></div>
+<p>Each arrow carries a contract. Integration failures commonly occur where two locally reasonable assumptions disagree. A protocol adapter may represent an absent prediction as <code>-1</code>, while the domain type rejects negative minutes. A cache may use a request type whose equality omits an accessibility requirement. A retry wrapper may repeat a non-idempotent provider operation. A stream may discard encounter order that the user interface treats as ranking.</p>
+<p>Integration tests should concentrate on these boundaries. A deterministic local server can return malformed and delayed responses. A fixed clock can control cache expiry. A test executor or latch can arrange concurrent events without depending only on repeated luck. Tests should state the observation that demonstrates the contract, including allowed sets of outcomes for genuinely concurrent calls.</p>
+<p>System reliability also needs operational evidence. Timeouts, failure categories, queue depth, request latency, cache age, and rejected work can reveal whether runtime assumptions hold. Metrics require definitions just as method results do. A “failure count” that mixes invalid client requests with unavailable providers cannot support a clear diagnosis.</p>
+<h2 id="9-design-revisions-from-failure-evidence"><a href="#9-design-revisions-from-failure-evidence"><span class="section-number">13.9</span>Design Revisions from Failure Evidence</a></h2>
+<p>A failing integration test or production incident supplies evidence about a violated assumption. The next step is to locate that assumption in a contract, representation, boundary, or concurrency policy.</p>
+<p>Suppose readers occasionally see a new version paired with old predictions. The immediate defect may be separate field updates. The design correction is to publish one immutable snapshot so the values that must agree change together. A test that only increases delays might reproduce the old race, but the snapshot abstraction prevents the mixed state by construction.</p>
+<p>Suppose a provider receives duplicate purchases after a client timeout. Increasing the timeout may reduce frequency without resolving ambiguity. The protocol needs an idempotency mechanism or an operation whose retry semantics are explicit.</p>
+<p>Suppose route lookup fails after a cached request object changes. Synchronising the map does not repair a mutable hash key. Equality and ownership must be corrected.</p>
+<p>Reliability depends on decisions made throughout the design. The types, specifications, state ownership, APIs, and protocols determine which failures are possible and how much evidence the system can retain.</p>
+<h2 id="10-common-misconception-thread-safe-parts-make-a-thread-safe-whole"><a href="#10-common-misconception-thread-safe-parts-make-a-thread-safe-whole"><span class="section-number">13.10</span>Common Misconception: Thread-Safe Parts Make a Thread-Safe Whole</a></h2>
+<p>An application can use <code>AtomicInteger</code>, <code>ConcurrentHashMap</code>, and immutable records and still violate its concurrent contract. Two atomic counters can disagree when the abstraction requires them to advance together. A concurrent map can contain mutable values. A check followed by an update can race even though both calls are individually safe.</p>
+<p>Thread safety is a property of an abstraction under a stated access pattern. The analysis begins with what clients may observe, identifies all shared reachable state, and checks every compound action. Selecting a class with “Concurrent” in its name is an implementation step within that argument.</p>
+<p>The opposite overstatement is also wrong. A class does not need internal locks when its specification requires single-thread confinement and the system enforces that ownership. Making every object independently thread-safe can add contention and obscure which component owns mutation.</p>
+<h2 id="11-practice-by-constructing-interleavings"><a href="#11-practice-by-constructing-interleavings"><span class="section-number">13.11</span>Practice by Constructing Interleavings</a></h2>
+<p>For each exercise, write one interleaving that violates the intended property, then propose a coordination policy.</p>
+<ol type="1">
+<li>Two threads execute <code>counter = counter + 1</code> on a shared <code>int</code>. Break the expression into reads, arithmetic, and writes and produce a final value of one.</li>
+<li>A board stores <code>version</code> and <code>predictions</code> in separate volatile fields. Show how a reader can observe values from different updates, then redesign the state.</li>
+<li>A <code>ConcurrentHashMap</code> stores mutable lists of arrivals. Identify which accesses the map protects and which require another policy.</li>
+<li>An <code>AtomicReference.updateAndGet</code> function writes a log entry. Explain why one successful update can produce multiple entries under contention.</li>
+<li>A router holds a lock while making an HTTP request. Identify effects on latency, cancellation, and deadlock risk. Split the operation if its invariant permits.</li>
+<li>Design a deterministic test for two concurrent snapshot updates. State why joining both threads creates the observation point for the final assertion.</li>
+</ol>
+<p>Finally, review the journey-planning system as a whole. Select one boundary from each of the following categories: data representation, component API, external protocol, and concurrent state. For each boundary, write the contract, one failure, and the evidence that would distinguish that failure from its nearest alternative cause.</p>
+<h2 id="12-summary"><a href="#12-summary"><span class="section-number">13.12</span>Summary</a></h2>
+<ul>
+<li>A thread-safety contract states which observations concurrent clients may make.</li>
+<li>Atomicity, visibility, and ordering are distinct concerns connected by the Java memory model's happens-before relation.</li>
+<li>Immutable snapshots plus atomic publication keep related state coherent for readers.</li>
+<li>Atomic update functions may run more than once and therefore should not contain non-repeatable effects.</li>
+<li>Concurrent collections protect their documented operations, not arbitrary compound actions or mutable elements.</li>
+<li>Confinement, immutability, locks, atomic variables, and concurrent collections each fit different ownership and update patterns.</li>
+<li>Reliability follows from decisions across the system and improves when failures lead to corrected contracts and representations.</li>
+</ul>
+<h2 id="references"><a href="#references">References</a></h2>
+<ul>
+<li>Rudyard Kipling. <a href="https://www.gutenberg.org/files/556/556-h/556-h.htm">“If—,” <em>Rewards and Fairies</em></a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html">Java Language Specification, Java SE 25, Chapter 17: Threads and Locks</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/atomic/AtomicReference.html"><code>AtomicReference</code> (Java SE 25)</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/ConcurrentHashMap.html"><code>ConcurrentHashMap</code> (Java SE 25)</a>.</li>
+<li>Oracle. <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/locks/ReentrantLock.html"><code>ReentrantLock</code> (Java SE 25)</a>.</li>
+</ul>
+
+      <footer class="book-footer">
+        <a class="next" href="../how-java-runs/">Optional: How a Java Program Runs →</a>
+        CPEN 221 · Software Construction I · Fall 2026
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

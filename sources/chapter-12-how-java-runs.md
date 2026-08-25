@@ -1,4 +1,4 @@
-# Chapter 12 | How a Java Program Runs
+# Optional Reading | How a Java Program Runs
 
 > We can only see a short distance ahead, but we can see plenty there that needs to
 > be done.
@@ -47,7 +47,10 @@ Java bytecode (.class)
 Running JVM
 ```
 
-`javac` translates Java source into JVM instructions called **bytecode**. When we run the program, the JVM loads and verifies that bytecode. It may interpret instructions directly, compile frequently executed code into native machine instructions, or mix the two approaches.
+`javac` translates Java source into JVM instructions called **bytecode**. When we run
+the program, the JVM loads and verifies that bytecode. It may interpret instructions
+directly, compile frequently executed code into native machine instructions, or mix the
+two approaches.
 
 Java source describes required behaviour; it is not a transcript of processor
 instructions. One source expression may expand into several bytecode instructions,
@@ -62,7 +65,7 @@ javap -c FrameDemo
 
 The view is useful, but most application debugging should begin with contracts,
 tests, debugger state, and stack traces at the Java method level. We will stay at
-that level for now and return to bytecode in the optional chapter.
+that level for now and return to bytecode in the optional reading.
 
 ## 2. The Call Stack
 
@@ -137,7 +140,9 @@ top     +----------------------------------+
 bottom  +----------------------------------+
 ```
 
-Now unwind it. `twice` returns `40`, and its frame comes off the top. `twicePlusOne` resumes, stores `40` in `doubled`, and returns `41`. Its frame comes off too. Finally, `main` resumes and stores `41` in `answer`.
+Now unwind it. `twice` returns `40`, and its frame comes off the top. `twicePlusOne`
+resumes, stores `40` in `doubled`, and returns `41`. Its frame comes off too. Finally,
+`main` resumes and stores `41` in `answer`.
 
 This model lets us predict calls and returns without reasoning about machine
 registers.
@@ -149,7 +154,8 @@ choices must preserve the program's observable behaviour.
 
 ## 3. Frame Contents
 
-Our stack diagram records method names and a few variables, but the JVM needs a little more machinery. Conceptually, each frame carries three kinds of information.
+Our stack diagram records method names and a few variables, but the JVM needs more than
+that. Conceptually, each frame carries three kinds of information.
 
 ### Local variables
 
@@ -162,22 +168,29 @@ static int addOne(int x) {
 }
 ```
 
-Two calls to `addOne` may execute at the same time. One can have `x == 10` while the other has `x == 50`; each invocation owns a separate local-variable slot. This separation will matter when we introduce threads.
+Two calls to `addOne` may execute at the same time. One can have `x == 10` while the
+other has `x == 50`; each invocation owns a separate local-variable slot. This
+separation will matter when we introduce threads.
 
 ### An operand stack
 
-Local variables are not enough. The JVM also needs somewhere to place values while it combines them. Bytecode commonly pushes operands onto an **operand stack**, performs an operation, and pushes the result. To evaluate `x + 1`, it obtains `x`, obtains `1`, adds them, and keeps the sum.
+Local variables are not enough. The JVM also needs somewhere to place values while it
+combines them. Bytecode commonly pushes operands onto an **operand stack**, performs an
+operation, and pushes the result. To evaluate `x + 1`, it obtains `x`, obtains `1`, adds
+them, and keeps the sum.
 
 The call stack organises method invocations. The operand stack inside one
 frame organises intermediate values used by that invocation.
 
 ### Return and bookkeeping information
 
-Finally, the JVM must know how to resume the caller and how the current method refers to fields, methods, and constants. We can leave the linking details below the abstraction barrier for now.
+Finally, the JVM must know how to resume the caller and how the current method refers
+to fields, methods, and constants. How the JVM resolves those references does not
+affect the reasoning in this chapter.
 
-That is enough machinery for the rest of this chapter: each invocation has its own
+That is enough machinery for the rest of the chapter: each invocation has its own
 state, space for intermediate computation, and a well-defined caller. The optional
-chapter examines the lower-level details.
+reading examines the lower-level details.
 
 ## 4. Local References Can Designate Shared Objects
 
@@ -191,7 +204,8 @@ static void rename(StringBuilder builder) {
 }
 ```
 
-`builder` and `alias` are distinct local variables. Their values, however, are references to the same mutable `StringBuilder`:
+`builder` and `alias` are distinct local variables. Their values, however, are
+references to the same mutable `StringBuilder`:
 
 ```text
 frame for rename                    shared object
@@ -205,22 +219,26 @@ Calling `alias.append("!")` therefore changes the object that the caller passed 
 `builder`. A new local variable did not produce a new object; it produced another
 reference to the existing object.
 
-Programmers often summarise this model as “locals live on the stack and objects live on the heap.” That is a useful sketch, with several limits:
+Programmers often summarise this model as “locals live on the stack and objects live on
+the heap.” That is a useful sketch, with several limits:
 
 - A local variable of reference type contains a reference, not the object itself.
 - Two frames can contain references to the same object.
-- An object reachable through a local reference can also be reachable from fields or other threads.
-- A JVM may optimise storage as long as the optimisation preserves Java's observable behaviour.
+- An object reachable through a local reference can also be reachable from fields or
+  other threads.
+- A JVM may optimise storage as long as the optimisation preserves Java's observable
+  behaviour.
 
 For software design, the reachability of a mutable object is usually more useful than
 whether a particular implementation stores a reference on a stack or heap.
-**Aliasing** gives multiple references access to one object. Reachability determines
+Aliasing gives multiple references access to one object. Reachability determines
 who can observe a mutation. The same analysis applies when several threads share
 objects.
 
 ## 5. Recursive Calls Create Additional Frames
 
-Recursion can look as though a method loops back into itself. It does not. Every recursive call creates a fresh invocation and therefore a fresh frame.
+Recursion can look as though a method loops back into itself, but every recursive
+call creates a fresh invocation and therefore a fresh frame.
 
 ```java
 static long factorial(int n) {
@@ -274,7 +292,8 @@ Frames accumulate until the thread runs out of stack space, and the JVM throws
 that each call makes progress. If valid inputs can produce extreme depth, then choose
 an iterative algorithm with an explicit work structure.
 
-Java does not guarantee tail-call optimisation. Do not assume that a tail-recursive Java method uses constant stack space.
+Java does not guarantee tail-call optimisation. Do not assume that a tail-recursive Java
+method uses constant stack space.
 
 ## 6. Exception Handling Removes Frames
 
@@ -303,7 +322,10 @@ public final class ParsingDemo {
 }
 ```
 
-`Integer.parseInt("twenty")` cannot produce an integer, so it throws `NumberFormatException`. `parse` has no handler. Neither does `printDouble`. Their frames unwind, the exception remains uncaught, and the JVM prints a trace resembling:
+`Integer.parseInt("twenty")` cannot produce an integer, so it throws
+`NumberFormatException`. Neither `parse` nor `printDouble` declares a handler, so
+their frames unwind, the exception remains uncaught, and the JVM prints a trace
+resembling:
 
 ```text
 Exception in thread "main" java.lang.NumberFormatException: For input string: "twenty"
@@ -320,7 +342,8 @@ Read the trace as a call chain:
 3. Inspect that source line.
 4. Continue downward to understand how control reached the bad call.
 
-The first application frame shows where the failure became visible. It may not show where the defective value originated. The frames below it tell us how we arrived there.
+The first application frame shows where the failure became visible. It may not show
+where the defective value originated. The frames below it tell us how we arrived there.
 
 ### Preserve causes when translating exceptions
 
@@ -346,7 +369,8 @@ the abstraction; it should preserve the diagnostic chain.
 
 ## 7. Each Thread Uses a Separate Stack
 
-One call stack can describe one flow of control. A concurrent program has several flows, so each Java thread gets its own JVM stack:
+One call stack can describe one flow of control. A concurrent program has several flows,
+so each Java thread gets its own JVM stack:
 
 ```text
 Thread A stack          Thread B stack            shared objects
@@ -357,11 +381,14 @@ Thread A stack          Thread B stack            shared objects
 +---------------+      +---------------+
 ```
 
-`update` has no direct access to `render`'s local-variable slots. Nevertheless, both frames may contain references to the same `Model`. Separate stacks isolate invocation state, not the objects reachable from that state.
+`update` has no direct access to `render`'s local-variable slots. Nevertheless, both
+frames may contain references to the same `Model`. Separate stacks isolate invocation
+state, not the objects reachable from that state.
 
 This distinction leads to a useful rule:
 
-> Each thread owns its invocation state; several threads may still share reachable mutable objects.
+> Each thread owns its invocation state; several threads may still share reachable
+> mutable objects.
 
 That is why one thread's trace may not explain a concurrent failure. A request thread
 may be waiting for a lock while another thread holds the lock and waits for network
@@ -372,9 +399,7 @@ input. We need both traces to see the dependency.
 > that depend on an exact stack shape are brittle because optimisation can change
 > that shape.
 
-This distinction connects the stack model to concurrency: each thread owns its
-stack, but several threads may share mutable objects. Later chapters examine how to
-control that sharing.
+Later chapters examine how to control that sharing.
 
 ## 8. Distinguish Java Stack Exhaustion from Native Stack Corruption
 
@@ -389,7 +414,9 @@ write to adjacent memory or redirect execution.
 
 ### Native stack buffer overflow
 
-In a memory-unsafe native language, a program may instead write beyond the bounds of an array that a native frame stores. Depending on the platform and compiler, that write may corrupt adjacent data, including information that controls execution.
+In a memory-unsafe native language, a program may instead write beyond the bounds of an
+array that a native frame stores. Depending on the platform and compiler, that write may
+corrupt adjacent data, including information that controls execution.
 
 Java prevents ordinary code from performing an out-of-bounds array access:
 
@@ -402,14 +429,17 @@ The bounds check changes the failure mode. Instead of writing outside the array,
 raises a specified exception at the invalid access. A specified exception identifies
 the failed operation and is easier to test and diagnose than memory corruption.
 
-This does not make Java programs automatically secure. Java software can still contain injection flaws, unsafe deserialisation, authorisation bugs, denial-of-service vulnerabilities, races, and misuse of native libraries. Memory safety removes an important class of defects; it does not remove the need for secure design.
+This does not make Java programs automatically secure. Java software can still contain
+injection flaws, unsafe deserialisation, authorisation bugs, denial-of-service
+vulnerabilities, races, and misuse of native libraries. Memory safety removes an
+important class of defects; it does not remove the need for secure design.
 
-> **Optional direction:** The companion chapter examines native frames, stack canaries,
-> address randomisation, and related mitigations. The comparison here needs only the
-> following design principle:
+The optional reading examines native frames, stack canaries, address randomisation,
+and related mitigations. The comparison here needs only one principle.
 
-> Prefer language and library designs that make invalid states or dangerous
-> operations impossible, and otherwise make failures immediate and diagnosable.
+> **Design principle: prefer language and library designs that make invalid states or
+> dangerous operations impossible, and otherwise make failures immediate and
+> diagnosable.**
 
 ## 9. Use the Stack Model for Debugging
 
@@ -424,7 +454,8 @@ conditions that produced it.
 
 ### Locate the first relevant frame
 
-Library frames explain the mechanism. Application frames show where our program entered it. Start with the first frame in code you control.
+Library frames explain the mechanism. Application frames show where our program entered
+it. Start with the first frame in code you control.
 
 ### Inspect values and contracts
 
@@ -452,7 +483,9 @@ The stack model also informs several design decisions.
 
 ### Keep methods small enough to understand
 
-Small methods do not reduce the number of frames. They make those frames informative. A trace through `readFeed`, `parseTrip`, and `validateStop` communicates more than three consecutive methods named `process`.
+Small methods do not reduce the number of frames. They make those frames informative. A
+trace through `readFeed`, `parseTrip`, and `validateStop` communicates more than three
+consecutive methods named `process`.
 
 ### Fail near the violated assumption
 
@@ -481,7 +514,8 @@ literal memory layout.
 
 ## Try the Model
 
-The diagrams are useful only if you can build and challenge them yourself. These problems ask you to transfer the model rather than repeat the worked example.
+The diagrams are useful only if you can build and challenge them yourself. These
+problems ask you to transfer the model rather than repeat the worked example.
 
 ### 1. Draw the stack
 
@@ -531,7 +565,9 @@ static int sum(int[] values, int index) {
 
 ### 4. Read a trace
 
-Given a trace whose first application frame is `TransitFeed.parseTime`, but whose caller is `TransitFeed.loadTrip`, decide what evidence you would inspect before changing either method.
+Given a trace whose first application frame is `TransitFeed.parseTime`, but whose caller
+is `TransitFeed.loadTrip`, decide what evidence you would inspect before changing either
+method.
 
 ### 5. Compare failures
 
