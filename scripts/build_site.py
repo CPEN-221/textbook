@@ -419,7 +419,7 @@ def contents_page() -> str:
       <header class="contents-header">
         <p class="kicker">Software Construction I · Fall 2026</p>
         <h1>CPEN 221</h1>
-        <p class="deck">Build programs we can reason about, test, and change without losing the plot.</p>
+        <p class="deck">How do we build software that is correct, that we can reason about, and is designed to evolve over time?</p>
       </header>
 
       <p>Software construction begins after the syntax starts making sense. These chapters connect Java programs to the contracts, representations, tests, and design arguments that make software dependable.</p>
