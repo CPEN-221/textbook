@@ -2,18 +2,17 @@
 
 The arrival board says the next bus is **−3 minutes away**.
 
-The arithmetic is not difficult. The program subtracted the current time from a
-prediction, converted the result to minutes, and printed the number. Every line did
-what its author asked. The result is still nonsense to the person standing in the
-rain.
+The computing system executed the arithmetic operations correctly. The program
+subtracted the current time from a prediction, converted the result to minutes, and
+printed the number. And someone standing in the Vancouver rain saw something that
+did not make sense.
 
-That tiny failure captures the work of software construction. Code has to compute,
-but it also has to express the right problem, reject bad states, survive change, and
-give us enough evidence to find mistakes. A program that merely runs has cleared a
-very low bar. The floor is delighted; our passengers are less impressed.
+The program ran, but its output was not useful. Software construction requires code
+that expresses the right problem, rejects bad states, survives change, and gives us
+enough evidence to find mistakes.
 
-Our first small piece of a transit information system will establish the working
-loop for the course.
+We will start by building one small part of a transit information system and using
+it to establish the working loop for the course.
 
 By the end, you should be able to:
 
