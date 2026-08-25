@@ -23,7 +23,7 @@ By the end, you should be able to:
 - treat generated code as an implementation to inspect, not as evidence of
   correctness.
 
-## 1. A Program Is More Than Its Happy Path
+## 1. Match the Implementation to the Requirement
 
 Suppose our first requirement reads:
 
@@ -97,11 +97,11 @@ make the calculation more sophisticated. They make its meaning available.
 
 ### Changeable
 
-Software is **changeable** when we can alter one decision without surprising damage
-elsewhere. Transit data supplies a steady stream of changes: a new route, a renamed
-stop, an accessibility rule, a feed-format revision, or a different way to classify
-lateness. Modules and specifications let us change a part while preserving the
-promises on which clients rely.
+Software is **changeable** when we can alter one decision without causing unintended
+changes elsewhere. Transit data and requirements may change because of a new route,
+a renamed stop, an accessibility rule, a feed-format revision, or a different way to
+classify lateness. Modules and specifications let us change one part while preserving
+the promises on which clients rely.
 
 These qualities reinforce one another. A precise contract makes code easier to test.
 Focused code is easier to understand. An automated test suite makes a later change
@@ -129,7 +129,7 @@ The running example is not intended to reproduce a production trip planner. We w
 state when it leaves out a production concern. It provides a consistent setting in
 which to examine each concept.
 
-## 4. The Build–Test–Inspect Loop
+## 4. Build, Test, and Inspect
 
 A modern Java project needs a repeatable process for turning source files into
 checked results.
@@ -166,11 +166,11 @@ From the project directory, one command runs the tests:
 
 That command does several jobs. Gradle locates the source sets and dependencies,
 invokes `javac`, runs the JUnit tests, and reports whether the build succeeded. Your
-IDE may run the same tasks through a graphical control. Learn the command as well; it
-gives your laptop, a teammate's laptop, and continuous integration a common entry
-point.
+integrated development environment (IDE) may run the same tasks through a graphical
+control. Learn the command as well; it gives your laptop, a teammate's laptop, and
+continuous integration a common entry point.
 
-### Read the first failure
+### Classify the first diagnostic
 
 When a build fails, begin with the first relevant diagnostic and classify the
 failure before deciding what to inspect next.
@@ -186,7 +186,7 @@ These categories suggest different questions. A missing semicolon does not need 
 debugger. A wrong status at a boundary does not need a clean reinstall of the IDE.
 Match the tool to the evidence.
 
-## 5. Our First Regression Test
+## 5. Record the Failure with a Regression Test
 
 We will record the missing `EARLY` behaviour in a test before changing the
 implementation. This is the complete JUnit test class from the companion project:
@@ -239,10 +239,11 @@ integer, and we certainly did not prove the transit system reliable.
 We will design stronger tests in Chapter 3. At this stage, the work follows a short
 sequence: record the failure, make a focused change, and observe the result again.
 
-## 6. Git Records Decisions
+## 6. Use Git to Record Changes
 
-The tests protect behaviour; Git records change. A **repository** stores a history of
-snapshots called **commits**. A useful commit records one coherent change, such as
+Tests check behaviour after a change. Git stores snapshots of the source and tests. A
+**repository** stores a history of snapshots called **commits**. A useful commit
+records one coherent change, such as
 "classify early arrivals and test all three cases." Unrelated work belongs in a
 different commit.
 
@@ -283,31 +284,31 @@ small commits, and inspect `git status` before each commit.
 > what you want, but inspect the target and diff first. Version control is a safety
 > system only for work that actually reached version control.
 
-## 7. Short Feedback Changes How We Design
+## 7. Use Short Feedback Loops
 
 Builds, tests, and commits are part of the design process. A short feedback loop
 changes which designs are practical.
 
 If a method can be tested in isolation, we can explore an alternative quickly. If a
 commit contains one idea, review can focus on that idea. If the build is reproducible,
-we can distinguish a code failure from a teammate's private machine setup. The tools
-shape the program by making some mistakes cheap to discover.
+we can distinguish a code failure from a teammate's private machine setup. These
+tools affect design decisions because they make some mistakes faster to detect.
 
 Our first design principle follows:
 
-> **Design principle: shorten the distance between a decision and trustworthy
-> feedback about that decision.**
+> **Design principle: obtain trustworthy feedback soon after each design or
+> implementation decision.**
 
 This does not mean running every conceivable analysis after every keystroke. It means
 matching the cost of feedback to the risk of the change. Compile often. Run focused
 tests while developing. Run the full suite before sharing. Ask for human review when
 the difficult question is whether the contract itself is sensible.
 
-## 8. Generated Code Enters the Same Loop
+## 8. Review Generated Code with the Same Process
 
-An AI tool can produce an `ArrivalStatus` implementation in seconds. It can also
-invent a threshold, omit an edge case, use an API that does not exist, or explain a
-wrong answer confidently.
+An artificial intelligence (AI) tool can produce an `ArrivalStatus` implementation
+in seconds. It can also invent a threshold, omit an edge case, call a library method
+that does not exist, or explain a wrong answer confidently.
 
 The engineering workflow does not change according to who typed the code:
 
@@ -315,7 +316,7 @@ The engineering workflow does not change according to who typed the code:
 2. Treat the generated implementation as untrusted input.
 3. Compile it with warnings enabled.
 4. Derive tests from the contract, especially boundaries and failure cases.
-5. Review surprising API calls against authoritative documentation.
+5. Review surprising library calls against authoritative documentation.
 6. Record what was generated and what you verified independently.
 
 Generated code can reduce mechanical effort. It cannot determine what "correct"
@@ -371,8 +372,9 @@ should reveal it first:
 ### 4. Design a commit
 
 You changed the classification logic, reformatted twenty unrelated files, and added
-a temporary log statement containing an API token. What belongs in the next commit?
-Explain what you would do with each remaining change instead of listing Git commands.
+a temporary log statement containing a service access token. What belongs in the
+next commit? Explain what you would do with each remaining change instead of listing
+Git commands.
 
 ### 5. Audit a generated answer
 

@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 87dd63ce11739148e9750177b4f208e67ced3a161be5fa26f21285e080e5d8c5 -->
+  <!-- source-sha256: 3161dedbdbfa875fec4dae1db72017262ae368938909a9289a6c60554929d385 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -22,15 +22,15 @@
       <p class="part-label">Foundations</p>
       <h2><a href="#top" aria-current="page">Types and Specifications <small>2</small></a></h2>
       <ul>
-        <li><a href="#1-types-carry-meaning"><small>2.1</small><span>Types Carry Meaning</span></a></li>
-        <li><a href="#2-build-the-domain-into-the-type"><small>2.2</small><span>Build the Domain into the Type</span></a></li>
-        <li><a href="#3-a-signature-is-only-the-beginning"><small>2.3</small><span>A Signature Is Only the Beginning</span></a></li>
-        <li><a href="#4-write-the-nearest-stop-contract"><small>2.4</small><span>Write the Nearest-Stop Contract</span></a></li>
-        <li><a href="#5-our-null-and-mutation-conventions"><small>2.5</small><span>Our Null and Mutation Conventions</span></a></li>
-        <li><a href="#6-determinism-is-a-design-choice"><small>2.6</small><span>Determinism Is a Design Choice</span></a></li>
+        <li><a href="#1-types-define-values-and-operations"><small>2.1</small><span>Types Define Values and Operations</span></a></li>
+        <li><a href="#2-define-types-for-application-concepts"><small>2.2</small><span>Define Types for Application Concepts</span></a></li>
+        <li><a href="#3-specify-behaviour-beyond-the-method-signature"><small>2.3</small><span>Specify Behaviour Beyond the Method Signature</span></a></li>
+        <li><a href="#4-define-the-nearest-stop-contract"><small>2.4</small><span>Define the Nearest-Stop Contract</span></a></li>
+        <li><a href="#5-null-and-mutation-conventions"><small>2.5</small><span>Null and Mutation Conventions</span></a></li>
+        <li><a href="#6-choose-tie-breaking-behaviour"><small>2.6</small><span>Choose Tie-Breaking Behaviour</span></a></li>
         <li><a href="#7-specification-strength"><small>2.7</small><span>Specification Strength</span></a></li>
-        <li><a href="#8-specifications-define-the-testable-surface"><small>2.8</small><span>Specifications Define the Testable Surface</span></a></li>
-        <li><a href="#9-a-common-misconception-if-it-type-checks-it-is-correct"><small>2.9</small><span>A Common Misconception: If It Type-Checks, It Is Correct</span></a></li>
+        <li><a href="#8-use-specifications-to-design-tests"><small>2.8</small><span>Use Specifications to Design Tests</span></a></li>
+        <li><a href="#9-common-misconception-type-checking-does-not-prove-correctness"><small>2.9</small><span>Common Misconception: Type-Checking Does Not Prove Correctness</span></a></li>
         <li><a href="#try-the-contract"><small>§</small><span>Try the Contract</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
         <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
@@ -77,34 +77,34 @@
 
 <p>Our trip planner asks for two coordinates:</p>
 <div class="code-block"><pre class="java"><code>nearestStop(49.261, -123.249);</code></pre></div>
-<p>The first number is a latitude and the second is a longitude. Reverse them and Java still sees two perfectly respectable <code>double</code> values:</p>
+<p>The first number is a latitude and the second is a longitude. Reverse them and Java still sees two <code>double</code> arguments:</p>
 <div class="code-block"><pre class="java"><code>nearestStop(-123.249, 49.261);</code></pre></div>
 <p>The compiler accepts the call even though a latitude cannot be −123 degrees. We represented two different concepts with the same machine type, so only argument position distinguishes them.</p>
 <p>We will express that missing meaning with types and specifications. A <strong>type</strong> defines which values and operations belong to a concept. A <strong>specification</strong> defines what a program component requires and guarantees. Both make assumptions available for code, tools, and other programmers to inspect.</p>
 <section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
 <li>explain a type in terms of its values and permitted operations;</li>
 <li>distinguish compile-time checks from checks performed while a program runs;</li>
-<li>introduce domain types that prevent meaningless combinations;</li>
+<li>introduce application-specific types that prevent meaningless combinations;</li>
 <li>write a declarative method specification with preconditions, postconditions, mutation, null behaviour, and exceptions;</li>
 <li>compare deterministic and underdetermined specifications;</li>
 <li>compare specification strength by examining client and implementer freedom.</li>
 </ul></section>
-<h2 id="1-types-carry-meaning"><a href="#1-types-carry-meaning"><span class="section-number">2.1</span>Types Carry Meaning</a></h2>
+<h2 id="1-types-define-values-and-operations"><a href="#1-types-define-values-and-operations"><span class="section-number">2.1</span>Types Define Values and Operations</a></h2>
 <p>A <strong>type</strong> defines a set of values together with the operations available on those values. Java's <code>int</code> type contains the integers from −2<sup>31</sup> through 2<sup>31</sup>−1 and supports operations such as addition and comparison. A Java reference type contains <code>null</code> and references to objects of compatible classes, and its declared methods determine which operations the compiler permits.</p>
 <p>That definition is more useful than “a type tells Java how many bytes to use.” Storage is an implementation concern. Types help us reason about meaning.</p>
 <p>Consider three integers in a transit system:</p>
 <div class="code-block"><pre class="java"><code>int stopId = 50201;
 int routeId = 99;
 int minutesUntilArrival = 4;</code></pre></div>
-<p>Java allows <code>stopId + routeId</code> and <code>routeId = minutesUntilArrival</code>. Integer arithmetic defines both operations even though the transit domain does not. Primitive types are useful, but they are often too permissive for the concepts we care about.</p>
+<p>Java allows <code>stopId + routeId</code> and <code>routeId = minutesUntilArrival</code>. Integer arithmetic defines both operations even though the transit application does not. Primitive types are useful, but they are often too permissive for the concepts we care about.</p>
 <h3 id="static-and-dynamic-checks"><a href="#static-and-dynamic-checks">Static and dynamic checks</a></h3>
 <p>Java performs a <strong>static check</strong> using program text, before that program runs. This assignment fails to compile:</p>
 <div class="code-block"><pre class="java"><code>// Does not compile: a String value cannot be assigned to an int variable.
 int minutes = &quot;four&quot;;</code></pre></div>
 <p>A <strong>dynamic check</strong> happens during execution and can use the actual input. Java cannot decide at compile time whether a coordinate read from a file is within range. Our code has to test that value when it arrives.</p>
 <p>Static checking prevents an ill-typed program from starting. It can enforce only the rules represented in the type system. A variable called <code>latitude</code> still has type <code>double</code>; its name does not tell the compiler which values are valid latitudes.</p>
-<h2 id="2-build-the-domain-into-the-type"><a href="#2-build-the-domain-into-the-type"><span class="section-number">2.2</span>Build the Domain into the Type</a></h2>
-<p>Java records give us a compact way to model plain data. The companion project defines <code>GeoPoint</code> as follows:</p>
+<h2 id="2-define-types-for-application-concepts"><a href="#2-define-types-for-application-concepts"><span class="section-number">2.2</span>Define Types for Application Concepts</a></h2>
+<p>Java records provide a compact way to model plain data. The companion project defines <code>GeoPoint</code> as follows:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
 
 import java.util.Objects;
@@ -147,11 +147,11 @@ public record StopId(String value) {
 <p>If we later introduce <code>RouteId</code>, this call can fail at compile time:</p>
 <div class="code-block"><pre class="java"><code>// Does not compile if findStop expects StopId.
 findStop(new RouteId(&quot;R4&quot;));</code></pre></div>
-<p>That is <strong>making an invalid state harder to express</strong>. Every domain type also adds a name and an abstraction for readers to learn. A private calculation may be clear with two <code>double</code> variables; a public boundary that accepts coordinates from many clients may justify stronger types. The expected reduction in errors should justify the additional abstraction.</p>
+<p>That is <strong>making an invalid state harder to express</strong>. Every application-specific type also adds a name and an abstraction for readers to learn. A private calculation may be clear with two <code>double</code> variables; a public boundary that accepts coordinates from many clients may justify stronger types. The expected reduction in errors should justify the additional abstraction.</p>
 <blockquote>
-<p><strong>GTFS detail:</strong> transit service times do not always fit a civil-time type such as <code>LocalTime</code>. GTFS may write <code>25:35:00</code> for 1:35 a.m. after midnight on the same service day. A later <code>ServiceTime</code> type should preserve that domain rule instead of forcing the value into a clock type with a different meaning.</p>
+<p><strong>General Transit Feed Specification (GTFS) detail:</strong> transit service times do not always fit a civil-time type such as <code>LocalTime</code>. GTFS may write <code>25:35:00</code> for 1:35 a.m. after midnight on the same service day. A later <code>ServiceTime</code> type should preserve that rule instead of forcing the value into a clock type with a different meaning.</p>
 </blockquote>
-<h2 id="3-a-signature-is-only-the-beginning"><a href="#3-a-signature-is-only-the-beginning"><span class="section-number">2.3</span>A Signature Is Only the Beginning</a></h2>
+<h2 id="3-specify-behaviour-beyond-the-method-signature"><a href="#3-specify-behaviour-beyond-the-method-signature"><span class="section-number">2.3</span>Specify Behaviour Beyond the Method Signature</a></h2>
 <p>We can now give a nearest-stop query a useful signature:</p>
 <div class="code-block"><pre class="java"><code>public static Stop nearestStop(GeoPoint origin, List&lt;Stop&gt; stops)</code></pre></div>
 <p>It says far more than <code>(double, double, List) -&gt; Object</code>, but important questions remain.</p>
@@ -171,7 +171,7 @@ findStop(new RouteId(&quot;R4&quot;));</code></pre></div>
 </ul>
 <p>Exceptional behaviour and permitted mutation also belong in the contract. Java's method signature captures some of it, but not enough.</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-02/specification-boundary.svg" alt="The client supplies inputs that satisfy the precondition across a contract boundary, and the implementation returns a result satisfying the postcondition without exposing its private algorithm." /><figcaption>Figure 2.1: A specification separates responsibilities. The client depends on the promise without depending on the implementation's private algorithm.</figcaption></figure>
-<h2 id="4-write-the-nearest-stop-contract"><a href="#4-write-the-nearest-stop-contract"><span class="section-number">2.4</span>Write the Nearest-Stop Contract</a></h2>
+<h2 id="4-define-the-nearest-stop-contract"><a href="#4-define-the-nearest-stop-contract"><span class="section-number">2.4</span>Define the Nearest-Stop Contract</a></h2>
 <p>For our teaching system, we will use squared coordinate distance. This metric is not walking distance and is not an accurate general-purpose geodesic calculation. It is good enough for a tiny frozen campus map, and the specification says exactly which simplification we chose.</p>
 <div class="code-block"><pre class="java"><code>/**
  * Finds the stop nearest to an origin in coordinate space.
@@ -208,10 +208,10 @@ public static Stop nearestStop(GeoPoint origin, List&lt;Stop&gt; stops)</code></
     }
     return nearest;
 }</code></pre></div>
-<p>The strict <code>&lt;</code> comparison is not an incidental detail: it preserves the first stop when distances tie. The spec makes that observable behaviour part of the promise.</p>
-<p>The implementation also checks inputs even though the domain types already validate their own contents. A well-formed <code>GeoPoint</code> cannot carry an impossible latitude, but the reference to it can still be <code>null</code>, and a <code>List&lt;Stop&gt;</code> can still be empty or contain <code>null</code>. Type safety and input validation cover different ground.</p>
-<h2 id="5-our-null-and-mutation-conventions"><a href="#5-our-null-and-mutation-conventions"><span class="section-number">2.5</span>Our Null and Mutation Conventions</a></h2>
-<p>Ambiguity about <code>null</code> spreads quickly. If one method uses it for "not found," another for "not loaded," and a third silently forbids it, clients have to infer its meaning separately at every call.</p>
+<p>The strict <code>&lt;</code> comparison preserves the first stop when distances tie. The specification makes that observable behaviour part of the promise.</p>
+<p>The implementation also checks inputs even though the application-specific types already validate their own contents. A well-formed <code>GeoPoint</code> cannot carry an impossible latitude, but the reference to it can still be <code>null</code>, and a <code>List&lt;Stop&gt;</code> can still be empty or contain <code>null</code>. Type safety and input validation cover different ground.</p>
+<h2 id="5-null-and-mutation-conventions"><a href="#5-null-and-mutation-conventions"><span class="section-number">2.5</span>Null and Mutation Conventions</a></h2>
+<p>Inconsistent use of <code>null</code> makes public methods harder to use. If one method uses it for "not found," another for "not loaded," and a third silently forbids it, clients have to infer its meaning separately at every call.</p>
 <p>Unless a CPEN 221 specification says otherwise:</p>
 <blockquote>
 <p><strong>References passed to or returned from our public methods are non-null.</strong></p>
@@ -219,7 +219,7 @@ public static Stop nearestStop(GeoPoint origin, List&lt;Stop&gt; stops)</code></
 <p>We will still document and check <code>null</code> at important public boundaries, as <code>nearestStop</code> does. Later we will use types such as <code>Optional</code> when absence is a legitimate result that needs a name.</p>
 <p>Mutation needs the same clarity. Unless the specification explicitly says that a method modifies an argument, clients may assume it does not. <code>nearestStop</code> observes the list and its stops; it does not reorder or replace them.</p>
 <p>This convention reduces prose, but APIs must still describe surprising behaviour. If a method called <code>normalize</code> changes its input list, state that effect prominently or choose a name that indicates mutation.</p>
-<h2 id="6-determinism-is-a-design-choice"><a href="#6-determinism-is-a-design-choice"><span class="section-number">2.6</span>Determinism Is a Design Choice</a></h2>
+<h2 id="6-choose-tie-breaking-behaviour"><a href="#6-choose-tie-breaking-behaviour"><span class="section-number">2.6</span>Choose Tie-Breaking Behaviour</a></h2>
 <p>Suppose two stops have the same coordinate. We could write either contract:</p>
 <div class="code-block"><pre class="text"><code>returns a stop whose distance from origin is minimal</code></pre></div>
 <p>or:</p>
@@ -228,7 +228,7 @@ public static Stop nearestStop(GeoPoint origin, List&lt;Stop&gt; stops)</code></
 <p>An underdetermined specification can be deliberate. The first contract gives an implementer freedom to choose a faster data structure or parallel search. If a client does not care which equally near stop wins, the specification need not impose a tie-breaking rule.</p>
 <p>Determinism can also be useful. Stable results make interfaces predictable and tests easier to interpret. Here, preserving the list's order is inexpensive, so we choose the deterministic contract. In a large parallel route search, the trade-off may change.</p>
 <h2 id="7-specification-strength"><a href="#7-specification-strength"><span class="section-number">2.7</span>Specification Strength</a></h2>
-<p>Specifications allocate freedom. A client likes weak preconditions because more calls are legal, and strong postconditions because more results are guaranteed. An implementer likes the reverse.</p>
+<p>Specifications determine which calls are legal and which results are guaranteed. A weaker precondition permits more calls, while a stronger postcondition guarantees more about each result. Both choices place additional obligations on the implementation.</p>
 <p>We say specification A is <strong>stronger than</strong> specification B when A:</p>
 <ol type="1">
 <li>has a precondition no stronger than B's, so it accepts at least the calls B accepts;</li>
@@ -239,19 +239,19 @@ public static Stop nearestStop(GeoPoint origin, List&lt;Stop&gt; stops)</code></
 effects:  returns any candidate with minimal distance from origin</code></pre></div>
 <p>Our Javadoc contract accepts an empty list too, then promises a specific <code>IllegalArgumentException</code>. For a nonempty list it promises the <em>first</em> minimum, not just any minimum. It accepts more inputs and says more about every outcome, so it is stronger.</p>
 <p>Stronger does not automatically mean better. More promises constrain future implementations and create more behaviour that clients may depend on. “Returns the same object instance on every call” would be stronger and probably harmful. Good specifications promise what clients need while leaving irrelevant choices private.</p>
-<h2 id="8-specifications-define-the-testable-surface"><a href="#8-specifications-define-the-testable-surface"><span class="section-number">2.8</span>Specifications Define the Testable Surface</a></h2>
+<h2 id="8-use-specifications-to-design-tests"><a href="#8-use-specifications-to-design-tests"><span class="section-number">2.8</span>Use Specifications to Design Tests</a></h2>
 <p>The following test would be too strong for an underdetermined nearest-stop specification:</p>
 <div class="code-block"><pre class="java"><code>assertEquals(exchange, nearestStop(origin, List.of(exchange, loop)));</code></pre></div>
 <p>If both stops tie and the contract allows either, the test is wrong. Tests are clients. They may check every promise, but they may not promote a current implementation detail into a permanent requirement by accident.</p>
-<p>For our deterministic contract, the assertion is appropriate because tie-breaking order is public. This is why test design begins with the specification rather than with a tour through the implementation. The contract tells us which observations mean something.</p>
+<p>For our deterministic contract, the assertion is appropriate because tie-breaking order is public. This is why test design begins with the specification rather than with a tour through the implementation. The contract identifies the observations a test may require.</p>
 <p>It also reveals missing decisions. What should happen for an empty list? Does distance account for roads? Should a closed stop be a candidate? If we cannot write the expected observation, we may not understand the requirement yet.</p>
 <p>Our design principle for this chapter is:</p>
-<blockquote class="design-note"><p><strong>Design principle: put domain distinctions in types, and put behavioural obligations in specifications.</strong></p>
+<blockquote class="design-note"><p><strong>Design principle: put application distinctions in types, and put behavioural obligations in specifications.</strong></p>
 </blockquote>
 <p>Types prevent broad classes of meaningless operations. Specifications cover semantic relationships that the type system cannot conveniently express. Neither replaces the other.</p>
-<h2 id="9-a-common-misconception-if-it-type-checks-it-is-correct"><a href="#9-a-common-misconception-if-it-type-checks-it-is-correct"><span class="section-number">2.9</span>A Common Misconception: If It Type-Checks, It Is Correct</a></h2>
+<h2 id="9-common-misconception-type-checking-does-not-prove-correctness"><a href="#9-common-misconception-type-checking-does-not-prove-correctness"><span class="section-number">2.9</span>Common Misconception: Type-Checking Does Not Prove Correctness</a></h2>
 <p>The original coordinate call type-checked. So does integer overflow. So does choosing the farthest stop when the return type is still <code>Stop</code>.</p>
-<p>Static typing proves a limited but powerful statement: the program obeys the language's type rules. Better domain types make those rules align more closely with our problem. They still do not prove the algorithm, the specification, or the user's need correct.</p>
+<p>Static typing establishes that the program obeys the language's type rules. More specific application types make those rules correspond more closely to the problem. They do not prove that the algorithm, specification, or requirement is correct.</p>
 <p>Records deserve one related warning. Their component fields are final, but records are only <strong>shallowly immutable</strong>. A record with a <code>List&lt;String&gt;</code> component can still refer to a mutable list. Our <code>GeoPoint</code> is immutable because its components are primitive values and exposes no mutation. Declaring a type as a record does not make objects reachable through its components immutable. Chapter 4 examines those references.</p>
 <h2 id="try-the-contract"><a href="#try-the-contract">Try the Contract</a></h2>
 <h3 id="1-find-what-the-compiler-knows"><a href="#1-find-what-the-compiler-knows">Find what the compiler knows</a></h3>
@@ -269,14 +269,14 @@ effects:  returns any candidate with minimal distance from origin</code></pre></
 <p>Rewrite the nearest-stop postcondition so that any tied minimum is permitted. Name one implementation strategy the weaker promise allows. Name one guarantee a client loses.</p>
 <h3 id="4-strengthen-a-type"><a href="#4-strengthen-a-type">Strengthen a type</a></h3>
 <p>Design separate <code>Latitude</code> and <code>Longitude</code> record headers. Which invalid programs become impossible to compile? Which invalid values still require constructor checks?</p>
-<h3 id="5-review-an-ai-generated-contract"><a href="#5-review-an-ai-generated-contract">Review an AI-generated contract</a></h3>
+<h3 id="5-review-a-generated-contract"><a href="#5-review-a-generated-contract">Review a generated contract</a></h3>
 <p>An assistant writes: “Loops through all stops and returns the nearest one.” Identify at least four client-visible questions that remain unanswered, and rewrite the sentence declaratively.</p>
 <h2 id="summary"><a href="#summary">Summary</a></h2>
-<p>Types define values and permitted operations. Static checks reject ill-typed program text; dynamic checks validate facts available only while the program runs. Domain types such as <code>StopId</code> and <code>GeoPoint</code> make important distinctions explicit and move failures closer to their source.</p>
+<p>Types define values and permitted operations. Static checks reject ill-typed program text; dynamic checks validate facts available only while the program runs. Application-specific types such as <code>StopId</code> and <code>GeoPoint</code> make important distinctions explicit and reject invalid values when those values are constructed.</p>
 <p>Specifications define client and implementer responsibilities, describe normal and exceptional outcomes, and state whether mutation is allowed. Declarative specifications preserve implementation freedom. The appropriate degree of determinism and specification strength depends on client needs.</p>
 <p>We can now state what our transit query must do. The next chapter uses that contract to select tests and to decide how the program reports inputs or external events that prevent a normal result.</p>
 <h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>
-<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's central ideas that types combine values with operations and that specifications act as client–implementer contracts. The outline, prose, transit domain, <code>GeoPoint</code>/<code>StopId</code> examples, and Figure 2.1 are new. No old image or worked example was reused.</p>
+<p>This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old manuscript's central ideas that types combine values with operations and that specifications act as client–implementer contracts. The outline, prose, transit setting, <code>GeoPoint</code>/<code>StopId</code> examples, and Figure 2.1 are new. No old image or worked example was reused.</p>
 <p>Technical references:</p>
 <ul>
 <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/">Java Language Specification, Java SE 25</a></li>

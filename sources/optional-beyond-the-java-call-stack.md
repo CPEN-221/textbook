@@ -6,8 +6,9 @@ recursion, and exceptions, but it omitted several implementation details.
 
 This optional chapter examines the operand stack, method invocation in bytecode,
 inlining, thread diagnostics, and native stack memory. The main course path does not
-require these details. The goal is to distinguish source-level reasoning, JVM
-requirements, and observations about a particular implementation.
+require these details. The goal is to distinguish source-level reasoning, Java
+Virtual Machine (JVM) requirements, and observations about a particular
+implementation.
 
 ## 1. A Laboratory Method
 
@@ -25,7 +26,7 @@ Java guarantees the specified result of `a + b`. The JVM instruction set include
 For each claim, identify which layer guarantees it. This prevents an observation from
 one JVM run from being stated as a Java guarantee.
 
-We will begin with two tools already included in the JDK:
+We will begin with two tools included in the Java Development Kit (JDK):
 
 ```bash
 javac -g BytecodeDemo.java
@@ -39,7 +40,9 @@ require.
 
 ## 2. Tracing an Operand Stack
 
-The expression `x + y` looks atomic in source. The JVM still needs to fetch two values, combine them, and keep the result somewhere. The smallest useful method lets us watch:
+The source expression `x + y` corresponds to several bytecode operations. The JVM
+must load two values, add them, and retain the result. We can inspect those operations
+in this method:
 
 ```java
 public final class BytecodeDemo {
@@ -87,7 +90,9 @@ Now call `adjust(4, 7)` and follow the values. The rightmost item is the top of 
 
 At `iadd`, the operands disappear and their sum takes their place. `istore_2` then moves that sum into the local slot for `sum`. Finally, `ireturn` sends `22` back to the caller.
 
-We have earned the distinction from the core chapter: local slots hold values across expressions; the operand stack carries values through the expression the JVM currently evaluates.
+The trace illustrates the distinction from the core chapter: local slots hold values
+across expressions, while the operand stack holds values used by the expression the
+JVM currently evaluates.
 
 ### What this does not prove
 
@@ -148,7 +153,7 @@ For `score(4)`, the new frame receives `4` and `3`. `adjust` returns `14`; the c
 
 An instance method needs one more argument: the receiver. In an ordinary instance method, local slot 0 contains `this`; the declared parameters occupy the slots that follow.
 
-### More than one invocation instruction
+### Invocation instructions
 
 Not every call selects its target in the same way. The JVM therefore has several invocation instructions:
 
@@ -170,7 +175,7 @@ in a different order.
 
 Instead, the class file carries a **constant pool**: symbolic information about classes, methods, fields, literals, and method types. When bytecode refers to a method, the JVM resolves that symbolic reference and links it to the appropriate run-time entity. It may perform some resolution early and defer other parts until execution needs them.
 
-The extra step buys portability and flexibility:
+Symbolic references support several JVM capabilities:
 
 - the JVM can load classes at run time;
 - the same class file can run on different processor architectures;
@@ -193,9 +198,12 @@ Our bytecode trace makes a frame look concrete: three local slots beside a tiny 
 
 It does not require every JVM to arrange those components in the same physical layout.
 
-That freedom is deliberate. A native application binary interface may prescribe registers, alignment, argument locations, and return conventions for one platform. JVM bytecode sits above those choices so the same class file can travel.
+A native application binary interface may prescribe registers, alignment, argument
+locations, and return conventions for one platform. JVM bytecode does not encode
+those platform-specific choices, so the same class file can run on different
+platforms.
 
-### Inlining complicates the picture
+### Inlining and logical frames
 
 Suppose `score` calls the tiny `adjust` method millions of times. A just-in-time compiler may **inline** it: substitute the body of `adjust` into the compiled body of `score`. The native code may contain no separate call and no ordinary physical frame for `adjust`.
 
@@ -229,7 +237,8 @@ Source-level cleanup looks compact because the compiler does the bookkeeping. Th
 
 Try-with-resources has one especially useful edge case. If the main operation fails and `close` fails too, Java keeps the main exception and attaches the cleanup failure as a **suppressed exception**. `Throwable.getSuppressed()` retrieves it.
 
-The source stays small; the compiler generates considerably more machinery. Experiment 3 lets you watch both failures survive.
+The compiler generates more control flow than appears in the source. Experiment 3
+shows how both failures remain available for inspection.
 
 ## 7. Inspecting Multiple Thread Stacks
 
@@ -258,7 +267,9 @@ We can investigate without guessing:
 5. Inspect what the owners are doing while holding them.
 6. Repeat the capture to distinguish a transient wait from persistent lack of progress.
 
-The JDK's `jcmd` tool can request thread information from a running JVM; IDEs and monitoring systems often present the same evidence graphically. Experiment 4 constructs a stable blocked thread for inspection.
+The JDK's `jcmd` tool can request thread information from a running JVM. Integrated
+development environments (IDEs) and monitoring systems often present the same
+evidence graphically. Experiment 4 constructs a stable blocked thread for inspection.
 
 ### Deadlock as a cycle
 
@@ -273,7 +284,9 @@ The stacks show where each thread requested a lock; lock ownership completes the
 
 ## 8. From JVM Frames to Native Frames
 
-We have pushed the portable JVM model as far as it can go without touching the host machine. Eventually the JVM itself runs native instructions, and native calls need their own bookkeeping.
+The JVM itself eventually runs native instructions, and native calls require their
+own bookkeeping. This moves the discussion from the portable JVM model to
+platform-specific calling conventions.
 
 We might draw a simplified native frame as:
 
@@ -336,11 +349,12 @@ byte[] buffer = new byte[16];
 buffer[16] = 1; // ArrayIndexOutOfBoundsException
 ```
 
-The JVM checks the index before the store. The program gets a specified exception at the bad access instead of permission to scribble beyond the array.
+The JVM checks the index before the store. The program receives a specified exception
+at the invalid access instead of writing beyond the array.
 
-The guarantee applies to ordinary safe Java operations. Native libraries, JNI, and
-low-level facilities cross into a different trust boundary and require their own
-memory-safety controls.
+The guarantee applies to ordinary safe Java operations. Native libraries, the Java
+Native Interface (JNI), and low-level facilities cross into a different trust
+boundary and require their own memory-safety controls.
 
 ## 10. Defence in Depth for Native Code
 
@@ -348,7 +362,9 @@ Preventing the write is best. Real native systems also assume that prevention ma
 
 ### Bounds-aware programming
 
-Start at the source: carry buffer lengths, reject oversized input, and prefer memory-safe representations where practical. Everything that follows is a backup plan.
+Native code should carry buffer lengths, reject oversized input, and use memory-safe
+representations where practical. The remaining controls limit the consequences when
+prevention fails.
 
 ### Stack canaries
 
@@ -374,7 +390,7 @@ Compilers and processors can protect return addresses or restrict indirect
 transfers. These mechanisms can limit exploitation, but the program must still
 prevent the out-of-bounds write.
 
-The durable engineering lesson is defence in depth:
+These controls form a defence-in-depth strategy:
 
 > Prevent the invalid operation where possible; detect it when prevention fails; limit its consequences if detection also fails.
 
@@ -393,7 +409,7 @@ The detailed model adds the following information to the core frame model:
 - A Java `StackOverflowError` is not a native stack buffer overflow.
 - Bounds checking and layered mitigations prevent or constrain native memory-corruption attacks.
 
-## Things to Try
+## Experiments
 
 The following six experiments compare the model with observations from actual tools
 and programs.
@@ -694,7 +710,7 @@ This experiment demonstrates an invalid write; it does not construct an exploit.
 
 **Question:** Can you observe a JVM changing its execution strategy?
 
-Give the JVM a method hot enough to notice:
+Invoke a method often enough that the just-in-time compiler may optimize it:
 
 ```java
 public final class HotMethodDemo {

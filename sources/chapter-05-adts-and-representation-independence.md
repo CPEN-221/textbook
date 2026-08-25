@@ -30,7 +30,7 @@ By the end of this chapter, you should be able to:
 - explain representation independence and the conditions it requires;
 - test two implementations through one public contract.
 
-## 1. Start with the Abstract Value
+## 1. Define the Abstract Value
 
 Before choosing fields, say what a value of the type *means*. Our
 `TransitNetwork` represents a finite directed graph:
@@ -50,20 +50,21 @@ Alma do not imply a direct edge from UBC to Alma. A later route-search operation
 derive reachability through several edges, but that is a different observation.
 
 We will make the network immutable. `withConnection` produces a network value; it
-does not change the receiver. Immutability gives clients a simple temporal rule:
-once they hold a network, its stops and connections do not change underneath them.
+does not change the receiver. Once a client receives a network, its stops and
+connections remain unchanged.
 
-## 2. Choose Operations for Clients
+## 2. Define Operations for Clients
 
-A representation-first API is easy to spot:
+An application programming interface (API) that exposes the representation might
+include this method:
 
 ```java
 Map<StopId, Set<StopId>> adjacencyMap()
 ```
 
-The method asks every client to understand a map of sets. It also forces the ADT to
-keep that shape or emulate it forever. A client trying to answer “is this a direct
-connection?” should not have to know which bucket owns the answer.
+The method requires every client to understand a map of sets. It also requires the
+ADT to keep that representation or emulate it. A client checking
+for a direct connection should not need to understand the map structure.
 
 Instead, we name the questions and transformations clients need:
 
@@ -83,8 +84,8 @@ public interface TransitNetwork {
 
 The complete interface in the
 [companion project](../../examples/chapters-05-06/src/main/java/ca/ubc/ece/cpen221/transit/TransitNetwork.java)
-includes the specifications. The short view above reveals the vocabulary: stops,
-direct destinations, and connections. No method returns “the representation.”
+includes the specifications. The public operations refer to stops, direct
+destinations, and connections. No method returns the representation.
 
 This interface is one Java expression of the ADT, but an ADT is not the same thing as
 a Java interface. A final class with private fields and a well-specified public API
@@ -103,10 +104,10 @@ values. Let `T` stand for the ADT.
 | **Observer** | returns information of another type | `network.stops()` |
 | **Mutator** | changes an existing `T` | none in this immutable design |
 
-The categories overlap at the edges. `withConnection` may return `this` when the
-connection already exists. It still acts as a producer: its contract describes the
-returned abstract value, not a fresh object identity. A test that insists on
-`result != network` would claim a promise the ADT never made.
+An operation may fit more than one category. `withConnection` may return `this` when
+the connection already exists. It still acts as a producer because its contract
+describes the returned abstract value rather than requiring a fresh object. A test
+that insists on `result != network` would require behaviour absent from the contract.
 
 The classification also exposes omissions. If an API has a creator and three
 mutators but no observer, clients cannot learn anything about the value except by
@@ -114,7 +115,7 @@ remembering its history. If it returns a mutable `Map` as its only observer, it 
 mixed observation with unrestricted mutation. The table helps us review the design;
 an ADT does not need one operation in every category.
 
-## 4. Specify the Boundary
+## 4. Define the Public Contract
 
 The creator has a compact promise:
 
@@ -160,7 +161,7 @@ memory, for example, is not useful network behaviour to restate on each method.
 They do need to settle predictable boundary cases such as `null`, unknown stops,
 self-connections, mutation, and ordering.
 
-## 5. Put the Implementation Behind a Factory
+## 5. Return the Interface from a Factory
 
 The static creator returns the interface type:
 
@@ -178,7 +179,7 @@ TransitNetwork network = TransitNetwork.empty(Set.of(ubc, wesbrook, alma));
 ```
 
 The declared type matters. If the factory returned `AdjacencyMapNetwork`, or clients
-constructed that class directly, the implementation name would leak into method
+constructed that class directly, the implementation name would appear in method
 signatures and tests. Changing representations would then become a migration rather
 than a private edit.
 
@@ -186,7 +187,7 @@ A factory chooses an implementation while returning the abstraction. We could la
 make that choice depend on input size or a configuration setting, provided every
 returned object satisfies the same contract.
 
-## 6. Implement Without Reopening the Boundary
+## 6. Implement Without Exposing the Representation
 
 Our first implementation stores an **adjacency map**:
 
@@ -232,10 +233,10 @@ The public contract tells clients what they may assume. The private constructor 
 helpers may depend on representation details. Data abstraction requires us to keep
 those dependencies out of the public API.
 
-## 7. Change the Representation
+## 7. Compare Two Representations
 
 Suppose feed import gives us a set of distinct directed connections. A second
-implementation stores exactly that shape:
+implementation stores exactly that representation:
 
 ```java
 final class ConnectionSetNetwork implements TransitNetwork {
@@ -274,8 +275,8 @@ not on which valid representation implements it.
 Representation independence has requirements. The implementations must realize the
 same abstract values, satisfy the same operation specifications, and prevent clients
 from observing representation-only differences. A public downcast, leaked mutable
-collection, promised iteration order, or implementation-specific exception can poke
-a hole through the boundary.
+collection, promised iteration order, or implementation-specific exception can make
+client behaviour depend on the representation.
 
 It also has limits. Performance can be observable and may matter to a specification
 with explicit complexity bounds. Serialization formats, reflection, and debugging
@@ -283,7 +284,7 @@ tools can reveal concrete classes. We do not pretend implementations are physica
 indistinguishable. We design ordinary program dependencies so clients need not rely
 on those differences.
 
-## 8. Test the Contract Against Both Implementations
+## 8. Run Contract Tests Against Both Implementations
 
 To test representation independence, the companion project supplies both factories
 to one parameterized test suite. One of its tests is:
@@ -312,13 +313,15 @@ arguments, duplicate additions, input aliasing, and unmodifiable results.
 White-box tests still have a place. An implementation may need focused tests for a
 complicated private algorithm. Every implementation must also pass the shared
 contract tests before the factory can substitute it for another implementation.
+The shared factory also keeps implementation-specific setup out of individual test
+cases.
 
 Our design principle is:
 
-> **Design principle: make clients depend on the smallest useful behavioural
-> vocabulary, not on the data structures that happen to implement it.**
+> **Design principle: expose only the operations clients need, and keep the
+> representation data structures private.**
 
-This principle also makes clients easier to read because their operations use domain
+This principle also makes clients easier to read because their operations use transit
 terms. It simplifies correctness arguments by restricting clients to specified
 operations instead of arbitrary map mutation.
 
@@ -341,12 +344,12 @@ on every tested input and disagree on an untested boundary, mutation policy, or
 exception. Shared tests provide evidence, not a new definition of the ADT.
 
 Review the tests against the contract, then review each implementation's reasoning.
-The next chapter develops that inside view.
+The next chapter examines the implementation's correctness obligations.
 
-## 10. Reviewing a Generated ADT
+## 10. Review a Generated ADT
 
-Generated code often begins with a familiar container and lets that container shape
-the API. Before accepting it, ask:
+Generated code often exposes a familiar container through its public operations.
+Before accepting it, ask:
 
 - What are the abstract values, stated without Java fields?
 - Which operations do clients actually need?
@@ -369,7 +372,7 @@ observer: `String.valueOf(42)`, `text.substring(1)`, `text.length()`, and
 `text.charAt(0)`. Can one operation fit more than one reasonable classification?
 Defend the perspective you choose.
 
-### 2. Find the representation leak
+### 2. Find the representation exposure
 
 Suppose `TransitNetwork` adds this method:
 
@@ -377,7 +380,7 @@ Suppose `TransitNetwork` adds this method:
 HashMap<StopId, HashSet<StopId>> getOutgoingMap()
 ```
 
-Identify three dependencies a client could acquire. Propose domain operations that
+Identify three dependencies a client could acquire. Propose transit operations that
 serve plausible client needs without promising the map-of-sets representation.
 
 ### 3. Predict the two values
@@ -412,7 +415,7 @@ An ADT is defined by abstract values and specified operations. Creators introduc
 values, producers derive values, observers reveal information, and mutators change
 existing values. Our immutable network needs no mutators.
 
-The `TransitNetwork` interface gives clients a small domain vocabulary. A factory
+The `TransitNetwork` interface gives clients a small transit vocabulary. A factory
 returns that abstraction while a package-private implementation snapshots and owns
 its representation. We can store an adjacency map or separate stop and connection
 sets without changing contract-respecting clients.

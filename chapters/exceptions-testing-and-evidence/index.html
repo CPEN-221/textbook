@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 9600cccb4016b969b5456d75f0350c12c1012da354b0abb0e0a0221158c0542d -->
+  <!-- source-sha256: 7b429d3fc0fed3bc707a87b6e74d20c1b1954f9443ac68031943312071779a5e -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -22,8 +22,8 @@
       <p class="part-label">Foundations</p>
       <h2><a href="#top" aria-current="page">Exceptions, Testing, and Evidence <small>3</small></a></h2>
       <ul>
-        <li><a href="#1-name-the-failure-at-the-right-boundary"><small>3.1</small><span>Name the Failure at the Right Boundary</span></a></li>
-        <li><a href="#2-parse-in-small-observable-steps"><small>3.2</small><span>Parse in Small, Observable Steps</span></a></li>
+        <li><a href="#1-specify-failures-at-the-parser-boundary"><small>3.1</small><span>Specify Failures at the Parser Boundary</span></a></li>
+        <li><a href="#2-implement-the-parser-in-observable-steps"><small>3.2</small><span>Implement the Parser in Observable Steps</span></a></li>
         <li><a href="#3-exceptions-change-control-flow"><small>3.3</small><span>Exceptions Change Control Flow</span></a></li>
         <li><a href="#4-keep-resource-lifetimes-explicit"><small>3.4</small><span>Keep Resource Lifetimes Explicit</span></a></li>
         <li><a href="#5-derive-tests-from-the-contract"><small>3.5</small><span>Derive Tests from the Contract</span></a></li>
@@ -31,7 +31,7 @@
         <li><a href="#7-assertions-are-not-argument-validation"><small>3.7</small><span>Assertions Are Not Argument Validation</span></a></li>
         <li><a href="#8-design-for-testability"><small>3.8</small><span>Design for Testability</span></a></li>
         <li><a href="#9-common-misconceptions"><small>3.9</small><span>Common Misconceptions</span></a></li>
-        <li><a href="#10-generated-parsers-need-adversarial-tests"><small>3.10</small><span>Generated Parsers Need Adversarial Tests</span></a></li>
+        <li><a href="#10-test-generated-parsers-at-the-boundaries"><small>3.10</small><span>Test Generated Parsers at the Boundaries</span></a></li>
         <li><a href="#try-the-failure-paths"><small>§</small><span>Try the Failure Paths</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
         <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
@@ -89,7 +89,7 @@
 <li>distinguish black-box tests from implementation-aware tests;</li>
 <li>explain why coverage and passing tests are evidence, not proof.</li>
 </ul></section>
-<h2 id="1-name-the-failure-at-the-right-boundary"><a href="#1-name-the-failure-at-the-right-boundary"><span class="section-number">3.1</span>Name the Failure at the Right Boundary</a></h2>
+<h2 id="1-specify-failures-at-the-parser-boundary"><a href="#1-specify-failures-at-the-parser-boundary"><span class="section-number">3.1</span>Specify Failures at the Parser Boundary</a></h2>
 <p>Our parser has this contract:</p>
 <div class="code-block"><pre class="java"><code>/**
  * Parses {@code stop-id|minutes-until-arrival}.
@@ -102,8 +102,8 @@
  */
 public static ArrivalPrediction parse(String line) throws FeedFormatException</code></pre></div>
 <p>The contract distinguishes two origins of failure.</p>
-<p>Passing <code>null</code> violates our course's public API convention. The caller already has the reference and can obey the rule, so <code>NullPointerException</code> reports a programming error near its source.</p>
-<p>Malformed text is different. Even a correct caller cannot know that a downloaded line contains <code>soon</code> until something parses it. The failure is an ordinary risk of crossing the feed boundary, so we give it a domain-specific name:</p>
+<p>Passing <code>null</code> violates our course's public-method convention. The caller already has the reference and can obey the rule, so <code>NullPointerException</code> reports a programming error near its source.</p>
+<p>Malformed text is different. Even a correct caller cannot know that a downloaded line contains <code>soon</code> until something parses it. The failure is an ordinary risk of crossing the feed boundary, so we give it a transit-specific name:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
 
 public final class FeedFormatException extends Exception {
@@ -115,9 +115,9 @@ public final class FeedFormatException extends Exception {
         super(message, cause);
     }
 }</code></pre></div>
-<p><code>FeedFormatException</code> is a <strong>checked exception</strong> because it extends <code>Exception</code> but not <code>RuntimeException</code>. Java requires a caller either to catch it or to declare that it may propagate. The type system therefore keeps the malformed-feed path visible in each calling contract.</p>
-<p>That was a design choice rather than a universal rule. The statement "checked means expected; unchecked means bug" is too categorical. Java defines the categories by their class hierarchy and compiler rules. API designers choose between them based on client needs, recoverability, local conventions, and the cost of mandatory handling. A malformed command-line argument might reasonably produce an unchecked exception in one API and a result object in another.</p>
-<h2 id="2-parse-in-small-observable-steps"><a href="#2-parse-in-small-observable-steps"><span class="section-number">3.2</span>Parse in Small, Observable Steps</a></h2>
+<p><code>FeedFormatException</code> is a <strong>checked exception</strong> because it extends <code>Exception</code> but not <code>RuntimeException</code>. Java requires a caller either to catch it or to declare that it may propagate. The compiler therefore requires each caller to account for the malformed-feed case.</p>
+<p>That was a design choice rather than a universal rule. The statement "checked means expected; unchecked means bug" is too categorical. Java defines the categories by their class hierarchy and compiler rules. Application programming interface (API) designers choose between them based on client needs, recoverability, local conventions, and the cost of mandatory handling. A malformed command-line argument might reasonably produce an unchecked exception in one API and a result object in another.</p>
+<h2 id="2-implement-the-parser-in-observable-steps"><a href="#2-implement-the-parser-in-observable-steps"><span class="section-number">3.2</span>Implement the Parser in Observable Steps</a></h2>
 <p>The companion project uses this parser:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
 
@@ -143,7 +143,7 @@ public final class PredictionParser {
     }
 }</code></pre></div>
 <p>The <code>-1</code> argument to <code>split</code> preserves an empty final field, so <code>"UBC_EXCHANGE|"</code> still produces two fields and reaches the integer check. Without it, Java would drop that trailing empty string. That small library detail decides which diagnostic the client sees, so it belongs in a test.</p>
-<p>The parser delegates semantic checks to domain types. <code>StopId</code> rejects a blank identifier, and <code>ArrivalPrediction</code> rejects negative minutes:</p>
+<p>The parser delegates semantic checks to application-specific types. <code>StopId</code> rejects a blank identifier, and <code>ArrivalPrediction</code> rejects negative minutes:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
 
 import java.util.Objects;
@@ -163,7 +163,7 @@ public record ArrivalPrediction(StopId stopId, int minutesUntilArrival) {
 <p>When <code>Integer.parseInt("soon")</code> throws, the rest of the <code>try</code> block does not execute. Java looks for a compatible <code>catch</code> in the current method. It finds one, constructs a <code>FeedFormatException</code>, and throws again. The caller then gets the same choice: catch or propagate.</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-03/exception-translation-sequence.svg" alt="A board loader calls the prediction parser, parseInt throws NumberFormatException, the parser wraps it as FeedFormatException, and the loader reports the bad line while preserving the cause." /><figcaption>Figure 3.1: Exceptional control returns through callers until a compatible handler acts. Translation changes the abstraction level without erasing the original cause.</figcaption></figure>
 <p>A <code>catch</code> block should run where the program has enough context to take a meaningful action. A board loader might report the line number and reject the file. A user interface might show a message. The parser cannot decide either policy without becoming coupled to a particular client.</p>
-<p>This catch is therefore suspicious:</p>
+<p>The following catch discards the failure information:</p>
 <div class="code-block"><pre class="java"><code>try {
     return PredictionParser.parse(line);
 } catch (FeedFormatException exception) {
@@ -206,7 +206,7 @@ public final class PredictionFile {
     }
 }</code></pre></div>
 <p><code>BufferedReader</code> implements <code>AutoCloseable</code>, so Java calls <code>close</code> when control leaves the <code>try</code>, whether the body returns normally or throws. If both the body and <code>close</code> throw, the body's exception remains primary and the close failure is recorded as a suppressed exception.</p>
-<p>This guarantee applies to execution within the JVM's normal control model. Process termination, a crashed runtime, or failed hardware can prevent cleanup. “Always” is too strong for systems claims; state the boundary of the guarantee.</p>
+<p>This guarantee applies to execution within the Java Virtual Machine's (JVM's) normal control model. Process termination, a crashed runtime, or failed hardware can prevent cleanup. The program should not claim that cleanup occurs in those cases.</p>
 <h2 id="5-derive-tests-from-the-contract"><a href="#5-derive-tests-from-the-contract"><span class="section-number">3.5</span>Derive Tests from the Contract</a></h2>
 <p>The parser's input space contains every possible Java string, so we cannot enumerate it. We need a systematic way to select a small set of informative cases.</p>
 <p><strong>Partitioning</strong> divides the input space into subdomains whose members we expect the program to treat similarly. Boundaries between partitions deserve special attention because comparisons and indexing often fail there.</p>
@@ -316,24 +316,24 @@ void executesParserWithoutCheckingResult() throws FeedFormatException {
 <p><code>PredictionParser.parse</code> has a useful property: all input arrives through a parameter and all ordinary output leaves through a return value. It does not read a hard-coded file, consult the wall clock, modify global state, or print. A test can call it directly and observe the result.</p>
 <p><code>PredictionFile.load</code> owns file I/O separately. We can test the parser rapidly with strings and reserve a smaller set of integration tests for the file boundary. This separation is not a concession to the test framework. It is a modular design in which computation and effects have clear owners.</p>
 <p>Our design principle is:</p>
-<blockquote class="design-note"><p><strong>Design principle: make every failure an explicit part of a boundary, then derive evidence from that boundary's contract.</strong></p>
+<blockquote class="design-note"><p><strong>Design principle: specify each failure at the component boundary, then derive tests from the component's contract.</strong></p>
 </blockquote>
 <p>A named failure lets clients choose a response. A focused component makes that failure easy to provoke in a test. A test linked to a contract explains why its observation matters.</p>
 <h2 id="9-common-misconceptions"><a href="#9-common-misconceptions"><span class="section-number">3.9</span>Common Misconceptions</a></h2>
 <h3 id="catch-every-exception-so-the-program-does-not-crash"><a href="#catch-every-exception-so-the-program-does-not-crash">“Catch every exception so the program does not crash”</a></h3>
-<p>Catching an exception without restoring a valid state can make the system less reliable. It removes the signal while preserving the damage. Catch narrowly where you can recover, translate, or report; otherwise let the failure propagate.</p>
+<p>Catching an exception without restoring a valid state can make the system less reliable. It hides the failure and may leave the program in an invalid state. Catch narrowly where you can recover, translate, or report; otherwise let the failure propagate.</p>
 <p>Avoid catching <code>Throwable</code> or <code>Error</code> in ordinary application code. Errors such as <code>OutOfMemoryError</code> and <code>StackOverflowError</code> generally do not describe conditions from which a local method can sensibly recover.</p>
 <h3 id="all-tests-pass-so-there-are-no-bugs"><a href="#all-tests-pass-so-there-are-no-bugs">“All tests pass, so there are no bugs”</a></h3>
 <p>Tests sample executions. They can demonstrate a violation when they fail, and they can increase confidence when well-designed cases pass. They cannot establish that an unexamined input, interleaving, environment, or requirement contains no defect.</p>
 <p>The useful claim is specific: <em>the implementation produced these observations for these contract-derived cases</em>. That statement does not make claims about executions we did not test.</p>
-<h2 id="10-generated-parsers-need-adversarial-tests"><a href="#10-generated-parsers-need-adversarial-tests"><span class="section-number">3.10</span>Generated Parsers Need Adversarial Tests</a></h2>
+<h2 id="10-test-generated-parsers-at-the-boundaries"><a href="#10-test-generated-parsers-at-the-boundaries"><span class="section-number">3.10</span>Test Generated Parsers at the Boundaries</a></h2>
 <p>A generated parser will often handle <code>"UBC_EXCHANGE|4"</code> correctly. Review should concentrate on the boundaries and failure cases:</p>
 <ul>
 <li>empty fields;</li>
 <li>extra separators;</li>
 <li>leading or trailing whitespace;</li>
 <li>negative and overflowing numbers;</li>
-<li>non-ASCII stop identifiers if the specification allows them;</li>
+<li>stop identifiers containing characters outside the American Standard Code for Information Interchange (ASCII) character set, if the specification allows them;</li>
 <li>exception messages that leak or erase useful context.</li>
 </ul>
 <p>Write the contract first, partition its inputs, and run the generated code against the boundaries. If the generator also writes the tests, inspect whether both artefacts made the same unsupported assumption. Agreement between generated code and generated tests is not independent evidence.</p>
@@ -354,7 +354,7 @@ PredictionParser.parse(&quot;UBC_EXCHANGE|-1&quot;)</code></pre></div>
 <h3 id="5-place-responsibility"><a href="#5-place-responsibility">Place responsibility</a></h3>
 <p>Should <code>PredictionParser</code> skip malformed lines, should <code>PredictionFile</code> skip them, or should the application reject the whole file? There is no universal answer. Choose a policy for an arrival board, write the corresponding contract, and explain which layer has enough context to implement it.</p>
 <h2 id="summary"><a href="#summary">Summary</a></h2>
-<p>Exceptions give failures names and a separate control-flow path. Checked and unchecked exceptions differ by Java hierarchy and compiler treatment; choosing between them is an API design decision. Catch only where the program can recover, translate while preserving a cause, or report at an owning boundary. Use try-with-resources to tie resource cleanup to scope.</p>
+<p>Exception types identify failures, and exceptions use a separate control-flow path. Checked and unchecked exceptions differ by Java hierarchy and compiler treatment; choosing between them is an API design decision. Catch only where the program can recover, translate while preserving a cause, or report at an owning boundary. Use try-with-resources to tie resource cleanup to scope.</p>
 <p>Tests turn contracts into executable observations. Partition the input space, probe boundaries, add implementation-aware cases without depending on private behaviour, and interpret coverage as a prompt for investigation. Passing tests provide evidence about tested executions; they do not prove that the program has no other bugs.</p>
 <p>Our parser now produces records and lists, but those declarations alone do not make all reachable state immutable. A final field can still refer to a mutable object, and a returned list can give a client access to an object's representation. Chapter 4 examines those references.</p>
 <h2 id="sources-and-provenance"><a href="#sources-and-provenance">Sources and provenance</a></h2>

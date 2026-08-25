@@ -59,7 +59,7 @@ through an ordinary reference. An address is a tempting mental shortcut, but the
 semantic fact we need is simpler: a reference may designate an object, and two
 reference values may designate the same object.
 
-## 2. Follow the Arrows
+## 2. Draw the References
 
 An **instance diagram** records one runtime state. We draw variables or fields as
 labelled cells, objects as containers, primitive values inside their cells, and
@@ -72,8 +72,8 @@ representation.](../../assets/diagrams/rendered/chapter-04/arrival-board-represe
 *Figure 4.1: Representation exposure before the repair. The three references all
 designate the same mutable list.*
 
-The diagram is intentionally not a photograph of physical memory. A JVM may arrange
-or optimize storage in many ways. The model preserves the relationships Java makes
+The diagram is not a description of physical memory. A Java Virtual Machine (JVM)
+may arrange or optimize storage in many ways. The model preserves the relationships Java makes
 observable: which variables can reach which objects, and where a mutation can be
 seen.
 
@@ -109,7 +109,7 @@ message.append(" delayed");
 `StringBuilder` is mutable; `append` changes the existing builder. Syntax alone does
 not tell us whether a call mutates. The type's specification does.
 
-### What `final` fixes
+### What `final` guarantees
 
 `final` prevents a variable or field from being assigned again:
 
@@ -126,7 +126,7 @@ This distinction matters in almost every Java class. Declaring a collection fiel
 `final` guarantees that the field continues to designate the same collection. It
 does not guarantee that the collection keeps the same elements.
 
-## 4. How the Board Exposes Its Representation
+## 4. Identify Representation Exposure
 
 The following `ArrivalBoard` exposes its representation:
 
@@ -175,11 +175,11 @@ The observer returns the internal alias:
 board.upcoming().clear(); // clears the broken board directly
 ```
 
-A correct repair has to close both paths.
+A correct repair must eliminate both forms of exposure.
 
-## 5. Make an Unmodifiable Snapshot
+## 5. Create an Unmodifiable Snapshot
 
-For this representation, Java's `List.copyOf` gives us a compact repair:
+For this representation, we use Java's `List.copyOf`:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -215,7 +215,7 @@ snapshot avoids repeated allocation and is safe because the shared object cannot
 mutated through its public interface. Immutability can make sharing *cheaper* than
 defensive copying at every boundary.
 
-### The elements still matter
+### Check the element types
 
 `List.copyOf` makes an unmodifiable copy of the list structure. It does not recursively
 copy each element. Our element type is:
@@ -241,8 +241,8 @@ public record Departure(StopId stopId, String routeName,
 }
 ```
 
-`Departure` is immutable because its components are immutable values and it supplies
-no route to mutation. The list and every element can therefore be shared safely.
+`Departure` is immutable because its components are immutable values and its methods
+do not mutate them. The list and every element can therefore be shared safely.
 
 If `Departure` contained a mutable `List<String>` component, the record's final field
 would protect only the component reference. A client could still mutate the list.
@@ -277,13 +277,14 @@ questions:
 1. Can this reference modify the container?
 2. Can any reachable reference modify an element or backing object?
 
-The second question catches the bugs the first one leaves behind.
+The second question identifies mutations that remain possible through the elements
+or backing objects.
 
-## 7. Debug the Exposure Systematically
+## 7. Debug Representation Exposure
 
-Suppose the feed-order test fails only after the display code runs. Resist the urge
-to sort the list back inside `upcoming`. That would mask one observed symptom while
-leaving every client able to mutate the board.
+Suppose the feed-order test fails only after the display code runs. Sorting the list
+again inside `upcoming` would address that observation while leaving every client
+able to mutate the board.
 
 Use a repeatable process.
 
@@ -343,8 +344,8 @@ refactor cannot expose the representation again.
 discriminating experiment, a cause-level repair, and a regression test; contradictory
 evidence returns the debugger to a revised hypothesis.](../../assets/diagrams/rendered/chapter-04/debugging-evidence-loop.svg)
 
-*Figure 4.2: Debugging is an evidence loop. Change the program to repair a supported
-cause instead of hiding the latest symptom.*
+*Figure 4.2: Debugging is an evidence loop. Change the program to repair a cause
+supported by the evidence rather than addressing only the observed result.*
 
 ## 8. Confine Mutable State
 
@@ -354,14 +355,15 @@ Debugging technique matters, but design determines the size of the search.
 - Minimize variable scope so fewer statements can reassign or use a reference.
 - Avoid global mutable state; it gives distant code an invisible communication
   channel.
-- Use immutable domain values when sharing is common.
+- Use immutable application values when sharing is common.
 - State permitted mutation in specifications.
 - Fail near violated assumptions instead of carrying damaged state forward.
 
 These practices **confine** change. A mutable local `ArrayList` used to assemble an
 immutable result is often an effective design: mutation is efficient, its owner is
-clear, and no alias escapes. "Prefer immutability" does not prohibit every call to
-`add`; it asks us to keep the boundary of mutation small and deliberate.
+clear, and no reference to the list leaves the method. "Prefer immutability" does not
+prohibit every call to `add`; it asks us to keep the boundary of mutation small and
+deliberate.
 
 Our design principle is:
 
@@ -391,7 +393,7 @@ mutable element objects unless the contract controls their mutation.
 
 Draw one more level of references and check whether a client can mutate an element.
 
-## 10. Reviewing Generated State-Holding Code
+## 10. Review Generated Classes with Mutable State
 
 Generated getters often return fields directly because the code is compact and the
 types line up. Review every constructor and observer of a state-holding class with a
@@ -473,7 +475,7 @@ its internal state. We repaired `ArrivalBoard` with an unmodifiable snapshot and
 immutable elements. Shallow copies, deep copies, views, and snapshots provide
 different guarantees; name the one the design actually needs.
 
-When a state bug appears, reproduce it, study evidence, form a falsifiable hypothesis,
+When a state-related failure appears, reproduce it, study evidence, form a falsifiable hypothesis,
 run a discriminating experiment, repair the cause, and preserve the failure as a
 regression test. Confining mutation reduces the number of operations and aliases that
 must be examined when such a failure occurs.

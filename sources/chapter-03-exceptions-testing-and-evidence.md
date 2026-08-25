@@ -29,7 +29,7 @@ By the end of this chapter, you should be able to:
 - distinguish black-box tests from implementation-aware tests;
 - explain why coverage and passing tests are evidence, not proof.
 
-## 1. Name the Failure at the Right Boundary
+## 1. Specify Failures at the Parser Boundary
 
 Our parser has this contract:
 
@@ -48,13 +48,13 @@ public static ArrivalPrediction parse(String line) throws FeedFormatException
 
 The contract distinguishes two origins of failure.
 
-Passing `null` violates our course's public API convention. The caller already has
+Passing `null` violates our course's public-method convention. The caller already has
 the reference and can obey the rule, so `NullPointerException` reports a programming
 error near its source.
 
 Malformed text is different. Even a correct caller cannot know that a downloaded
 line contains `soon` until something parses it. The failure is an ordinary risk of
-crossing the feed boundary, so we give it a domain-specific name:
+crossing the feed boundary, so we give it a transit-specific name:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -72,17 +72,18 @@ public final class FeedFormatException extends Exception {
 
 `FeedFormatException` is a **checked exception** because it extends `Exception` but
 not `RuntimeException`. Java requires a caller either to catch it or to declare that
-it may propagate. The type system therefore keeps the malformed-feed path visible in
-each calling contract.
+it may propagate. The compiler therefore requires each caller to account for the
+malformed-feed case.
 
 That was a design choice rather than a universal rule. The statement "checked means
 expected; unchecked means bug" is too categorical. Java defines the categories by
-their class hierarchy and compiler rules. API designers choose between them based on
-client needs, recoverability, local conventions, and the cost of mandatory handling.
+their class hierarchy and compiler rules. Application programming interface (API)
+designers choose between them based on client needs, recoverability, local
+conventions, and the cost of mandatory handling.
 A malformed command-line argument might reasonably produce an unchecked exception
 in one API and a result object in another.
 
-## 2. Parse in Small, Observable Steps
+## 2. Implement the Parser in Observable Steps
 
 The companion project uses this parser:
 
@@ -117,7 +118,7 @@ still produces two fields and reaches the integer check. Without it, Java would 
 that trailing empty string. That small library detail decides which diagnostic the
 client sees, so it belongs in a test.
 
-The parser delegates semantic checks to domain types. `StopId` rejects a blank
+The parser delegates semantic checks to application-specific types. `StopId` rejects a blank
 identifier, and `ArrivalPrediction` rejects negative minutes:
 
 ```java
@@ -164,7 +165,7 @@ action. A board loader might report the line number and reject the file. A user
 interface might show a message. The parser cannot decide either policy without
 becoming coupled to a particular client.
 
-This catch is therefore suspicious:
+The following catch discards the failure information:
 
 ```java
 try {
@@ -229,9 +230,9 @@ the `try`, whether the body returns normally or throws. If both the body and `cl
 throw, the body's exception remains primary and the close failure is recorded as a
 suppressed exception.
 
-This guarantee applies to execution within the JVM's normal control model. Process
-termination, a crashed runtime, or failed hardware can prevent cleanup. “Always” is
-too strong for systems claims; state the boundary of the guarantee.
+This guarantee applies to execution within the Java Virtual Machine's (JVM's) normal
+control model. Process termination, a crashed runtime, or failed hardware can prevent
+cleanup. The program should not claim that cleanup occurs in those cases.
 
 ## 5. Derive Tests from the Contract
 
@@ -388,8 +389,8 @@ which computation and effects have clear owners.
 
 Our design principle is:
 
-> **Design principle: make every failure an explicit part of a boundary, then derive
-> evidence from that boundary's contract.**
+> **Design principle: specify each failure at the component boundary, then derive
+> tests from the component's contract.**
 
 A named failure lets clients choose a response. A focused component makes that
 failure easy to provoke in a test. A test linked to a contract explains why its
@@ -400,8 +401,9 @@ observation matters.
 ### “Catch every exception so the program does not crash”
 
 Catching an exception without restoring a valid state can make the system less
-reliable. It removes the signal while preserving the damage. Catch narrowly where
-you can recover, translate, or report; otherwise let the failure propagate.
+reliable. It hides the failure and may leave the program in an invalid state. Catch
+narrowly where you can recover, translate, or report; otherwise let the failure
+propagate.
 
 Avoid catching `Throwable` or `Error` in ordinary application code. Errors such as
 `OutOfMemoryError` and `StackOverflowError` generally do not describe conditions from
@@ -417,7 +419,7 @@ The useful claim is specific: *the implementation produced these observations fo
 these contract-derived cases*. That statement does not make claims about executions
 we did not test.
 
-## 10. Generated Parsers Need Adversarial Tests
+## 10. Test Generated Parsers at the Boundaries
 
 A generated parser will often handle `"UBC_EXCHANGE|4"` correctly. Review should
 concentrate on the boundaries and failure cases:
@@ -426,7 +428,8 @@ concentrate on the boundaries and failure cases:
 - extra separators;
 - leading or trailing whitespace;
 - negative and overflowing numbers;
-- non-ASCII stop identifiers if the specification allows them;
+- stop identifiers containing characters outside the American Standard Code for
+  Information Interchange (ASCII) character set, if the specification allows them;
 - exception messages that leak or erase useful context.
 
 Write the contract first, partition its inputs, and run the generated code against
@@ -476,8 +479,8 @@ layer has enough context to implement it.
 
 ## Summary
 
-Exceptions give failures names and a separate control-flow path. Checked and
-unchecked exceptions differ by Java hierarchy and compiler treatment; choosing
+Exception types identify failures, and exceptions use a separate control-flow path.
+Checked and unchecked exceptions differ by Java hierarchy and compiler treatment; choosing
 between them is an API design decision. Catch only where the program can recover,
 translate while preserving a cause, or report at an owning boundary. Use
 try-with-resources to tie resource cleanup to scope.

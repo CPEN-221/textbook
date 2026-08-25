@@ -1,7 +1,7 @@
 # Chapter 6 | Representation Invariants and Abstraction Functions
 
-Our `TransitNetwork` boundary keeps clients away from the adjacency map. The
-implementation still has to construct and query that map correctly.
+The `TransitNetwork` interface prevents clients from accessing the adjacency map.
+The implementation still has to construct and query that map correctly.
 
 Suppose one destination set contains `ALMA`, but `ALMA` is not a key in the map.
 `directDestinationsFrom(UBC)` may include it, while
@@ -11,11 +11,11 @@ inconsistent.
 Private fields prevent a client from creating that state directly. They do not
 prevent a constructor or producer from creating it by mistake. We need to state
 which concrete states are meaningful and how each meaningful state corresponds to
-the graph promised by the ADT.
+the graph promised by the abstract data type (ADT).
 
-We use two definitions to describe this relationship. A **representation invariant**
-selects the valid representations. An **abstraction function** explains which
-abstract value each valid representation denotes. Together they state what
+We use two definitions to describe this relationship. A **representation invariant
+(RI)** selects the valid representations. An **abstraction function (AF)** explains
+which abstract value each valid representation denotes. Together they state what
 constructors must establish, what operations must preserve, and what an internal
 checker should reject.
 
@@ -31,7 +31,7 @@ By the end of this chapter, you should be able to:
   representation invariant;
 - explain what invariant checking can and cannot establish.
 
-## 1. Two Spaces, One Implementation
+## 1. Abstract and Representation Spaces
 
 The `TransitNetwork` specification describes an **abstract space** `A`: all finite
 directed graphs over `StopId` values with no self-connections. A client reasons about
@@ -75,9 +75,9 @@ WESBROOK -> {ALMA}
 ALMA     -> {}
 ```
 
-The abstraction function gives us three vertices and two directed edges: UBC to
-Wesbrook, and Wesbrook to Alma. The empty set beside Alma is significant. Alma is a
-vertex even though it has no outgoing edge.
+The abstraction function maps this representation to three vertices and two directed
+edges: UBC to Wesbrook, and Wesbrook to Alma. The empty set beside Alma is
+significant. Alma is a vertex even though it has no outgoing edge.
 
 Several representations may map to the same abstract value. A map's iteration order
 does not belong to our graph, so two maps that iterate differently can mean the same
@@ -88,7 +88,7 @@ If we wrote only “the map stores the network,” we would not know whether key
 empty sets count as stops, whether direction matters, or whether duplicate-looking
 data has meaning.
 
-## 3. Select Valid Representations
+## 3. Define the Representation Invariant
 
 The **representation invariant**, or **RI**, is a predicate over candidate
 representations. It is true exactly for the representations our implementation
@@ -106,7 +106,7 @@ RI(r) is true exactly when:
 
 Conditions 1 and 2 make the map safe for our implementation to traverse. Condition
 3 coordinates the two roles a stop can play: a destination must also belong to the
-network's vertex set. Condition 4 carries the ADT's no-self-connection rule into
+network's vertex set. Condition 4 expresses the ADT's no-self-connection rule in
 this representation.
 
 That last rule starts in the abstract space. “A network has no self-connection” is
@@ -119,7 +119,7 @@ would need to equal the number of stored edges even if clients never see the cac
 A sorted-array representation would need to remain sorted so binary search works.
 Those obligations come from an implementation choice.
 
-## 4. Turn the RI into a Checker
+## 4. Implement `checkRep`
 
 An executable checker converts a violated assumption into evidence near its source:
 
@@ -142,8 +142,9 @@ private void checkRep() {
 ```
 
 We use Java assertions because an RI violation is an internal implementation bug,
-not a client input error. Assertions are disabled by default unless the JVM receives
-`-ea` (or `-enableassertions`). The companion build enables them while running tests.
+not a client input error. Assertions are disabled by default unless the Java Virtual
+Machine (JVM) receives `-ea` (or `-enableassertions`). The companion build enables
+them while running tests.
 Public argument checks still use ordinary conditionals and documented exceptions;
 Chapter 3 explained why assertions are unsuitable for enforcing preconditions.
 
@@ -158,10 +159,10 @@ its snapshots. We retain the non-null clauses in the RI because they document th
 assumptions used by every method. Some checks are redundant at runtime and still
 support the correctness argument.
 
-## 5. Establish, Preserve, and Protect
+## 5. Establish and Preserve the RI
 
-Writing an RI comment does not enforce it. We must inspect every route by which a
-representation comes into existence or changes.
+Writing an RI comment does not enforce it. We must inspect every operation that
+creates or changes a representation.
 
 For a mutable ADT, the standard obligations are:
 
@@ -170,10 +171,10 @@ For a mutable ADT, the standard obligations are:
 3. no representation exposure lets a client mutate the rep between calls.
 
 Our network is immutable, so producers build new representations rather than
-changing the receiver. The proof shape becomes: creators establish, producers return
-a valid new value, and observers neither mutate nor expose mutable state.
+changing the receiver. Creators must establish the RI, producers must return a new
+value that satisfies it, and observers must not mutate or expose mutable state.
 
-### The constructor establishes ownership
+### The constructor creates an owned representation
 
 The private constructor snapshots the nested containers before checking them:
 
@@ -198,9 +199,9 @@ Our creator supplies one empty destination set for every requested stop. It ther
 establishes the non-null and membership conditions and preserves isolated vertices.
 The constructor checks the result.
 
-### The producer preserves the graph rules
+### The producer preserves the RI
 
-Now trace the producer:
+The producer creates a modified copy:
 
 ```java
 @Override
@@ -220,8 +221,8 @@ public TransitNetwork withConnection(StopId from, StopId to) {
 
 `requireDistinctMembers` establishes that both endpoints are existing keys and are
 different. The method copies the outer map and the one destination set it changes.
-It leaves the receiver untouched. The private constructor takes a full immutable
-snapshot and checks the result before the new object escapes.
+It leaves the receiver unchanged. The private constructor takes a full immutable
+snapshot and checks the result before returning the new object to the caller.
 
 This is a local correctness argument. Assuming the receiver satisfies the RI and the
 argument check succeeds, the only new destination is a non-null existing key
@@ -231,7 +232,7 @@ map satisfies the RI.
 The duplicate case returns `this`. That preserves the RI because it creates no new
 representation and the receiver was valid on entry.
 
-### Observers protect the result
+### Observers do not expose the representation
 
 `stops()` returns the key-set view of an unmodifiable map.
 `directDestinationsFrom` returns an unmodifiable destination set. `StopId` values are
@@ -241,7 +242,7 @@ If the field held mutable sets, checking after construction would not be enough.
 leaked alias could invalidate the rep while no ADT method was running. Representation
 exposure breaks encapsulation and the invariant argument.
 
-## 6. Know What `checkRep` Cannot Prove
+## 6. Limits of `checkRep`
 
 An RI tells us whether a concrete state is well formed. It does not tell us whether
 that state is the *right* result of an operation.
@@ -268,7 +269,7 @@ implementation. Another test checks that a producer leaves the original network
 unchanged. Neither fact appears in the RI because both concern operation history and
 specified results, not the well-formedness of one representation.
 
-## 7. Change the Rep, Rewrite the Bridge
+## 7. Define the RI and AF for a Second Representation
 
 Chapter 5 introduced a second representation:
 
@@ -293,7 +294,7 @@ RI(r) is true exactly when:
 2. both endpoints of every connection occur in r.stops.
 ```
 
-Why does this list not repeat the no-self-connection rule? `Connection` is a record
+The RI does not repeat the no-self-connection rule because `Connection` is a record
 whose own specification and constructor require two distinct, non-null stops. The
 network implementation may rely on the public guarantees of its rep types. If
 `Connection` later permitted self-connections, the network RI would need an explicit
@@ -305,15 +306,15 @@ An array representation would need a concrete uniqueness condition if its algori
 depended on one stored copy per edge.
 
 The public `TransitNetwork` specification remains unchanged while RI and AF change
-with the representation. That is exactly where these documents belong: inside the
-implementation, close to its fields. Publishing them as client requirements would
-turn private choices back into dependencies.
+with the representation. These definitions belong inside the implementation, close
+to its fields. If they became client requirements, clients would depend on private
+representation choices.
 
 Both implementations pass the same 15 contract-test invocations. This is evidence
 that they produce the same public behaviour for those cases. It is not a
 mathematical proof over every possible graph.
 
-## 8. Build an RI Systematically
+## 8. Develop an RI Systematically
 
 To develop a representation invariant, inspect the representation from five
 directions.
@@ -343,12 +344,13 @@ must permit every value allowed by the ADT, including isolated terminal stops.
 
 Our design principle is:
 
-> **Design principle: document the meaning and validity of the representation,
-> then make every construction path preserve that argument.**
+> **Design principle: document the meaning and validity of the representation, then
+> verify that every creator and producer establishes those conditions.**
 
-The AF answers “what does this state mean?” The RI answers “may this state occur?”
-The operation proof answers “does this transition deliver the promised meaning?”
-Keeping the questions separate makes each answer easier to inspect.
+The AF defines what each valid state means. The RI defines which states may occur.
+The operation proof establishes that each transition produces the abstract value
+required by its specification. Keeping these obligations separate makes each one
+easier to inspect.
 
 ## 9. Common Misconceptions
 
@@ -377,7 +379,7 @@ The abstract graph is a mathematical model used in the specification. We do not 
 to allocate a second graph object whenever we call an observer. Implementations
 compute the observations promised by the ADT as if the abstract value existed.
 
-## 10. Reviewing Generated Representation Code
+## 10. Review Generated Representation Code
 
 Generated implementations often contain plausible fields and thin getters without a
 clear representation argument. Require that argument before trusting the design:
@@ -446,15 +448,15 @@ field values; the abstract space contains the values promised to clients. The
 abstraction function maps valid reps to abstract values. The representation invariant
 selects which reps are valid.
 
-For the adjacency map, the AF reads keys as vertices and destination memberships as
+For the adjacency map, the AF defines keys as vertices and destination memberships as
 edges. The RI rules out null parts, outside destinations, and self-connections. The
 constructor snapshots and checks its input, the producer preserves the conditions,
 and observers expose only immutable values. A connection-set implementation needs a
 different AF and RI while keeping the same public ADT.
 
-Invariant checking catches malformed internal states close to their source. It does
+Invariant checking reports malformed internal states when `checkRep` runs. It does
 not prove postconditions or replace contract tests. Together, AF, RI, operation
-reasoning, and tests give us a maintainable correctness argument.
+reasoning, and tests form a correctness argument that can be inspected and updated.
 
 The next chapter will ask when two separately represented ADT values count as equal,
 how that decision interacts with hashing, and what subtypes may promise without

@@ -12,17 +12,21 @@ It fails when `values` is `null` or empty. The exception points at `middle`, but
 earlier method may have supplied the invalid array. The failing line identifies where
 the program detected the problem, not necessarily where the problem began.
 
-To investigate, we need a picture of the computation that led to that line. We need
-to know which methods are active, what each invocation stores, and where execution
-continues after a method returns or throws. That picture is the **call stack**.
+To investigate, we need to reconstruct the computation that led to that line. We
+need to know which methods are active, what each invocation stores, and where
+execution continues after a method returns or throws. The **call stack** represents
+this information.
 
-We will build the picture one call at a time. By the end, you will be able to draw a stack, trace ordinary and exceptional returns, use a stack trace as evidence, and explain why a local reference can still lead to shared mutable state.
+We will develop the call-stack model one invocation at a time. By the end, you will
+be able to draw a stack, trace ordinary and exceptional returns, use a stack trace as
+evidence, and explain why a local reference can still lead to shared mutable state.
 
 > **Optional deep dive:** [Beyond the Java Call Stack](optional-beyond-the-java-call-stack.md) follows the same ideas into bytecode, thread dumps, and native machine stacks. Later chapters do not require that material.
 
 ## 1. From Source Code to Execution
 
-Before a method can run, our source code has to become something the JVM understands:
+Before a method can run, our source code has to become something the Java Virtual
+Machine (JVM) understands:
 
 ```text
 Java source (.java)
@@ -85,7 +89,7 @@ Calling a method adds a frame. Returning removes it and resumes the caller. `par
 must finish before `load` can continue, and `load` must finish before `main` can
 continue. Nested calls therefore use last-in, first-out order.
 
-### Watching frames come and go
+### Trace frame creation and removal
 
 Consider this call chain:
 
@@ -134,7 +138,7 @@ specification says what a frame must support, but a just-in-time compiler may ke
 value in a register, eliminate `doubled`, or inline `twice` into its caller. These
 choices must preserve the program's observable behaviour.
 
-## 3. What Is in a Frame?
+## 3. Frame Contents
 
 Our stack diagram records method names and a few variables, but the JVM needs a little more machinery. Conceptually, each frame carries three kinds of information.
 
@@ -166,7 +170,7 @@ That is enough machinery for the rest of this chapter: each invocation has its o
 state, space for intermediate computation, and a well-defined caller. The optional
 chapter examines the lower-level details.
 
-## 4. References, Objects, Stacks, and the Heap
+## 4. Local References Can Designate Shared Objects
 
 Frames separate invocations, but they do not automatically separate objects. This
 example shows the difference:
@@ -199,9 +203,12 @@ Programmers often summarize this model as “locals live on the stack and object
 - An object reachable through a local reference can also be reachable from fields or other threads.
 - A JVM may optimize storage as long as the optimization preserves Java's observable behaviour.
 
-For software design, “stack or heap?” is usually less useful than “who can reach this mutable object?” **Aliasing** gives multiple references access to one object. Reachability determines who can observe a mutation. We will use that question again when several threads enter the picture.
+For software design, "stack or heap?" is usually less useful than "who can reach
+this mutable object?" **Aliasing** gives multiple references access to one object.
+Reachability determines who can observe a mutation. The same question applies when
+several threads share objects.
 
-## 5. Recursion Repeats Method Invocation
+## 5. Recursive Calls Create Additional Frames
 
 Recursion can look as though a method loops back into itself. It does not. Every recursive call creates a fresh invocation and therefore a fresh frame.
 
@@ -226,7 +233,8 @@ factorial(4) -> factorial(3) -> factorial(2)
 factorial(4) -> factorial(3) -> factorial(2) -> factorial(1)
 ```
 
-At `factorial(1)`, the base case can answer without another call. Now the postponed work climbs back through the frames:
+At `factorial(1)`, the base case returns without another call. The remaining
+multiplications then complete as each invocation returns:
 
 ```text
 factorial(1) returns 1
@@ -258,7 +266,7 @@ iterative algorithm with an explicit work structure.
 
 Java does not guarantee tail-call optimization. Do not assume that a tail-recursive Java method uses constant stack space.
 
-## 6. Exceptions Unwind the Stack
+## 6. Exception Handling Removes Frames
 
 So far every invocation has completed through `return`. An exception completes an
 invocation by a different control-flow path.
@@ -321,7 +329,7 @@ static Configuration loadConfiguration(Path path) {
 
 The client now receives `ConfigurationException`, while a debugger or log can still follow the cause back to the original `IOException`. Translation changes the abstraction; it should not erase the trail.
 
-## 7. Each Thread Has a Stack
+## 7. Each Thread Uses a Separate Stack
 
 One call stack can describe one flow of control. A concurrent program has several flows, so each Java thread gets its own JVM stack:
 
@@ -351,13 +359,16 @@ input. We need both traces to see the dependency.
 
 We now have the bridge to concurrency: each thread owns its stack, but several threads may share mutable objects. Later chapters will show us how to control that sharing.
 
-## 8. Java Memory Safety and Native Stack Corruption
+## 8. Distinguish Java Stack Exhaustion from Native Stack Corruption
 
-Programmers use the phrase *stack overflow* for two failures that sound related but behave very differently. We should separate them before the vocabulary causes trouble.
+Programmers use the phrase *stack overflow* for two failures with different causes
+and consequences. The distinction matters when diagnosing or explaining a failure.
 
 ### Java `StackOverflowError`
 
-Too many active invocations exhaust the space available to one Java thread. The JVM detects the condition and throws `StackOverflowError`. The program does not gain permission to wander into neighbouring objects or redirect execution.
+Too many active invocations exhaust the space available to one Java thread. The JVM
+detects the condition and throws `StackOverflowError`. The failed operation does not
+write to adjacent memory or redirect execution.
 
 ### Native stack buffer overflow
 
@@ -378,9 +389,10 @@ This does not make Java programs automatically secure. Java software can still c
 
 > **Optional direction:** The companion chapter examines native frames, stack canaries, address randomization, and related mitigations. We stop here because the software-construction lesson does not need those details:
 
-> Prefer language and API designs that make invalid states or dangerous operations impossible, and otherwise make failures immediate and diagnosable.
+> Prefer language and library designs that make invalid states or dangerous
+> operations impossible, and otherwise make failures immediate and diagnosable.
 
-## 9. Debugging with the Stack Model
+## 9. Use the Stack Model for Debugging
 
 We began with a tiny method and a failure whose origin was unclear. The stack model now gives us a disciplined way to investigate it.
 
@@ -412,7 +424,7 @@ If a method received a bad argument, its caller may contain the defect. Walk dow
 Before repairing the implementation, turn the failing input into an automated test.
 The test records the failure and verifies the repair.
 
-## 10. Design Lessons
+## 10. Design Implications
 
 The stack model also informs several design decisions.
 
@@ -422,7 +434,10 @@ Small methods do not reduce the number of frames. They make those frames informa
 
 ### Fail near the violated assumption
 
-Check important preconditions at the abstraction boundary. When a method rejects a bad value there, it produces a useful failure. When the method allows the same value to drift through six calls, the value tends to fail later, farther from its cause.
+Check important preconditions at the abstraction boundary. When a method rejects a
+bad value there, it produces a useful failure. If the program passes the value
+through several calls without checking it, a later operation may fail farther from
+the cause.
 
 ### Do not expose mutable representation
 
@@ -430,7 +445,9 @@ Local references can alias shared objects. If an observer returns a private muta
 
 ### Preserve diagnostic context
 
-Use informative messages, preserve causes, and avoid catch blocks that swallow failures. A stack trace can only report evidence that the program kept.
+Use informative messages, preserve causes, and avoid catch blocks that discard
+failures. A stack trace can report only the diagnostic context that the program
+preserved.
 
 ### Treat diagrams as models
 

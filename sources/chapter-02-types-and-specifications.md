@@ -7,7 +7,7 @@ nearestStop(49.261, -123.249);
 ```
 
 The first number is a latitude and the second is a longitude. Reverse them and Java
-still sees two perfectly respectable `double` values:
+still sees two `double` arguments:
 
 ```java
 nearestStop(-123.249, 49.261);
@@ -26,13 +26,13 @@ By the end, you should be able to:
 
 - explain a type in terms of its values and permitted operations;
 - distinguish compile-time checks from checks performed while a program runs;
-- introduce domain types that prevent meaningless combinations;
+- introduce application-specific types that prevent meaningless combinations;
 - write a declarative method specification with preconditions, postconditions,
   mutation, null behaviour, and exceptions;
 - compare deterministic and underdetermined specifications;
 - compare specification strength by examining client and implementer freedom.
 
-## 1. Types Carry Meaning
+## 1. Types Define Values and Operations
 
 A **type** defines a set of values together with the operations available on those
 values. Java's `int` type contains the integers from −2<sup>31</sup> through
@@ -52,8 +52,8 @@ int minutesUntilArrival = 4;
 ```
 
 Java allows `stopId + routeId` and `routeId = minutesUntilArrival`. Integer arithmetic
-defines both operations even though the transit domain does not. Primitive types are
-useful, but they are often too permissive for the concepts we care about.
+defines both operations even though the transit application does not. Primitive
+types are useful, but they are often too permissive for the concepts we care about.
 
 ### Static and dynamic checks
 
@@ -73,9 +73,9 @@ Static checking prevents an ill-typed program from starting. It can enforce only
 rules represented in the type system. A variable called `latitude` still has type
 `double`; its name does not tell the compiler which values are valid latitudes.
 
-## 2. Build the Domain into the Type
+## 2. Define Types for Application Concepts
 
-Java records give us a compact way to model plain data. The companion project defines
+Java records provide a compact way to model plain data. The companion project defines
 `GeoPoint` as follows:
 
 ```java
@@ -144,18 +144,19 @@ If we later introduce `RouteId`, this call can fail at compile time:
 findStop(new RouteId("R4"));
 ```
 
-That is **making an invalid state harder to express**. Every domain type also adds a
-name and an abstraction for readers to learn. A private calculation may be clear
-with two `double` variables; a public boundary that accepts coordinates from many
-clients may justify stronger types. The expected reduction in errors should justify
-the additional abstraction.
+That is **making an invalid state harder to express**. Every application-specific
+type also adds a name and an abstraction for readers to learn. A private calculation
+may be clear with two `double` variables; a public boundary that accepts coordinates
+from many clients may justify stronger types. The expected reduction in errors
+should justify the additional abstraction.
 
-> **GTFS detail:** transit service times do not always fit a civil-time type such as
-> `LocalTime`. GTFS may write `25:35:00` for 1:35 a.m. after midnight on the same
-> service day. A later `ServiceTime` type should preserve that domain rule instead of
-> forcing the value into a clock type with a different meaning.
+> **General Transit Feed Specification (GTFS) detail:** transit service times do not
+> always fit a civil-time type such as `LocalTime`. GTFS may write `25:35:00` for
+> 1:35 a.m. after midnight on the same service day. A later `ServiceTime` type should
+> preserve that rule instead of forcing the value into a clock type with a different
+> meaning.
 
-## 3. A Signature Is Only the Beginning
+## 3. Specify Behaviour Beyond the Method Signature
 
 We can now give a nearest-stop query a useful signature:
 
@@ -193,7 +194,7 @@ without exposing its private algorithm.](../../assets/diagrams/rendered/chapter-
 *Figure 2.1: A specification separates responsibilities. The client depends on the
 promise without depending on the implementation's private algorithm.*
 
-## 4. Write the Nearest-Stop Contract
+## 4. Define the Nearest-Stop Contract
 
 For our teaching system, we will use squared coordinate distance. This metric is not
 walking distance and is not an accurate general-purpose geodesic calculation. It is
@@ -246,19 +247,20 @@ public static Stop nearestStop(GeoPoint origin, List<Stop> stops) {
 }
 ```
 
-The strict `<` comparison is not an incidental detail: it preserves the first stop
-when distances tie. The spec makes that observable behaviour part of the promise.
+The strict `<` comparison preserves the first stop when distances tie. The
+specification makes that observable behaviour part of the promise.
 
-The implementation also checks inputs even though the domain types already validate
-their own contents. A well-formed `GeoPoint` cannot carry an impossible latitude, but
-the reference to it can still be `null`, and a `List<Stop>` can still be empty or
-contain `null`. Type safety and input validation cover different ground.
+The implementation also checks inputs even though the application-specific types
+already validate their own contents. A well-formed `GeoPoint` cannot carry an
+impossible latitude, but the reference to it can still be `null`, and a `List<Stop>`
+can still be empty or contain `null`. Type safety and input validation cover
+different ground.
 
-## 5. Our Null and Mutation Conventions
+## 5. Null and Mutation Conventions
 
-Ambiguity about `null` spreads quickly. If one method uses it for "not found,"
-another for "not loaded," and a third silently forbids it, clients have to infer its
-meaning separately at every call.
+Inconsistent use of `null` makes public methods harder to use. If one method uses it
+for "not found," another for "not loaded," and a third silently forbids it, clients
+have to infer its meaning separately at every call.
 
 Unless a CPEN 221 specification says otherwise:
 
@@ -276,7 +278,7 @@ This convention reduces prose, but APIs must still describe surprising behaviour
 a method called `normalize` changes its input list, state that effect prominently or
 choose a name that indicates mutation.
 
-## 6. Determinism Is a Design Choice
+## 6. Choose Tie-Breaking Behaviour
 
 Suppose two stops have the same coordinate. We could write either contract:
 
@@ -305,9 +307,10 @@ may change.
 
 ## 7. Specification Strength
 
-Specifications allocate freedom. A client likes weak preconditions because more
-calls are legal, and strong postconditions because more results are guaranteed. An
-implementer likes the reverse.
+Specifications determine which calls are legal and which results are guaranteed. A
+weaker precondition permits more calls, while a stronger postcondition guarantees
+more about each result. Both choices place additional obligations on the
+implementation.
 
 We say specification A is **stronger than** specification B when A:
 
@@ -332,7 +335,7 @@ implementations and create more behaviour that clients may depend on. “Returns
 same object instance on every call” would be stronger and probably harmful. Good
 specifications promise what clients need while leaving irrelevant choices private.
 
-## 8. Specifications Define the Testable Surface
+## 8. Use Specifications to Design Tests
 
 The following test would be too strong for an underdetermined nearest-stop
 specification:
@@ -347,8 +350,8 @@ implementation detail into a permanent requirement by accident.
 
 For our deterministic contract, the assertion is appropriate because tie-breaking
 order is public. This is why test design begins with the specification rather than
-with a tour through the implementation. The contract tells us which observations
-mean something.
+with a tour through the implementation. The contract identifies the observations a
+test may require.
 
 It also reveals missing decisions. What should happen for an empty list? Does
 distance account for roads? Should a closed stop be a candidate? If we cannot write
@@ -356,22 +359,21 @@ the expected observation, we may not understand the requirement yet.
 
 Our design principle for this chapter is:
 
-> **Design principle: put domain distinctions in types, and put behavioural
+> **Design principle: put application distinctions in types, and put behavioural
 > obligations in specifications.**
 
 Types prevent broad classes of meaningless operations. Specifications cover semantic
 relationships that the type system cannot conveniently express. Neither replaces
 the other.
 
-## 9. A Common Misconception: If It Type-Checks, It Is Correct
+## 9. Common Misconception: Type-Checking Does Not Prove Correctness
 
 The original coordinate call type-checked. So does integer overflow. So does choosing
 the farthest stop when the return type is still `Stop`.
 
-Static typing proves a limited but powerful statement: the program obeys the
-language's type rules. Better domain types make those rules align more closely with
-our problem. They still do not prove the algorithm, the specification, or the user's
-need correct.
+Static typing establishes that the program obeys the language's type rules. More
+specific application types make those rules correspond more closely to the problem.
+They do not prove that the algorithm, specification, or requirement is correct.
 
 Records deserve one related warning. Their component fields are final, but records
 are only **shallowly immutable**. A record with a `List<String>` component can still
@@ -411,7 +413,7 @@ loses.
 Design separate `Latitude` and `Longitude` record headers. Which invalid programs
 become impossible to compile? Which invalid values still require constructor checks?
 
-### 5. Review an AI-generated contract
+### 5. Review a generated contract
 
 An assistant writes: “Loops through all stops and returns the nearest one.” Identify
 at least four client-visible questions that remain unanswered, and rewrite the
@@ -420,9 +422,9 @@ sentence declaratively.
 ## Summary
 
 Types define values and permitted operations. Static checks reject ill-typed program
-text; dynamic checks validate facts available only while the program runs. Domain
-types such as `StopId` and `GeoPoint` make important distinctions explicit and move
-failures closer to their source.
+text; dynamic checks validate facts available only while the program runs.
+Application-specific types such as `StopId` and `GeoPoint` make important distinctions
+explicit and reject invalid values when those values are constructed.
 
 Specifications define client and implementer responsibilities, describe normal and
 exceptional outcomes, and state whether mutation is allowed. Declarative
@@ -438,7 +440,7 @@ prevent a normal result.
 This chapter was written anew for the Fall 2026 CPEN 221 notes. It retains the old
 manuscript's central ideas that types combine values with operations and that
 specifications act as client–implementer contracts. The outline, prose, transit
-domain, `GeoPoint`/`StopId` examples, and Figure 2.1 are new. No old image or worked
+setting, `GeoPoint`/`StopId` examples, and Figure 2.1 are new. No old image or worked
 example was reused.
 
 Technical references:

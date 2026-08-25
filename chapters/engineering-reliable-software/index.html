@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: f0e60f75f1c677d7d6d9a5f3825a4433501524869a5753640e135ec849c57a7d -->
+  <!-- source-sha256: 4321b30e4a3f22e701ce02430b0e267328592d24e459834d2fb50c5ce5d9fb67 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -22,14 +22,14 @@
       <p class="part-label">Foundations</p>
       <h2><a href="#top" aria-current="page">Engineering Reliable Software <small>1</small></a></h2>
       <ul>
-        <li><a href="#1-a-program-is-more-than-its-happy-path"><small>1.1</small><span>A Program Is More Than Its Happy Path</span></a></li>
+        <li><a href="#1-match-the-implementation-to-the-requirement"><small>1.1</small><span>Match the Implementation to the Requirement</span></a></li>
         <li><a href="#2-what-we-mean-by-reliable"><small>1.2</small><span>What We Mean by Reliable</span></a></li>
         <li><a href="#3-a-running-example"><small>1.3</small><span>A Running Example</span></a></li>
-        <li><a href="#4-the-buildtestinspect-loop"><small>1.4</small><span>The Build–Test–Inspect Loop</span></a></li>
-        <li><a href="#5-our-first-regression-test"><small>1.5</small><span>Our First Regression Test</span></a></li>
-        <li><a href="#6-git-records-decisions"><small>1.6</small><span>Git Records Decisions</span></a></li>
-        <li><a href="#7-short-feedback-changes-how-we-design"><small>1.7</small><span>Short Feedback Changes How We Design</span></a></li>
-        <li><a href="#8-generated-code-enters-the-same-loop"><small>1.8</small><span>Generated Code Enters the Same Loop</span></a></li>
+        <li><a href="#4-build-test-and-inspect"><small>1.4</small><span>Build, Test, and Inspect</span></a></li>
+        <li><a href="#5-record-the-failure-with-a-regression-test"><small>1.5</small><span>Record the Failure with a Regression Test</span></a></li>
+        <li><a href="#6-use-git-to-record-changes"><small>1.6</small><span>Use Git to Record Changes</span></a></li>
+        <li><a href="#7-use-short-feedback-loops"><small>1.7</small><span>Use Short Feedback Loops</span></a></li>
+        <li><a href="#8-review-generated-code-with-the-same-process"><small>1.8</small><span>Review Generated Code with the Same Process</span></a></li>
         <li><a href="#9-a-common-misconception-green-means-correct"><small>1.9</small><span>A Common Misconception: Green Means Correct</span></a></li>
         <li><a href="#try-the-loop"><small>§</small><span>Try the Loop</span></a></li>
         <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
@@ -86,7 +86,7 @@
 <li>turn an observed failure into a regression test;</li>
 <li>treat generated code as an implementation to inspect, not as evidence of correctness.</li>
 </ul></section>
-<h2 id="1-a-program-is-more-than-its-happy-path"><a href="#1-a-program-is-more-than-its-happy-path"><span class="section-number">1.1</span>A Program Is More Than Its Happy Path</a></h2>
+<h2 id="1-match-the-implementation-to-the-requirement"><a href="#1-match-the-implementation-to-the-requirement"><span class="section-number">1.1</span>Match the Implementation to the Requirement</a></h2>
 <p>Suppose our first requirement reads:</p>
 <blockquote>
 <p>Given the scheduled and predicted arrival times, describe a vehicle as early, on time, or late.</p>
@@ -123,7 +123,7 @@ public final class ArrivalStatus {
 <p>Software is <strong>comprehensible</strong> when another person can form an accurate model of it without reconstructing every detail. Names, types, small methods, specifications, and tests all help. Comprehensibility matters because code spends much more time being read, reviewed, debugged, and changed than being typed for the first time.</p>
 <p>Compare <code>difference</code> with <code>x</code>, or <code>predictedMinute</code> with <code>b</code>. The longer names do not make the calculation more sophisticated. They make its meaning available.</p>
 <h3 id="changeable"><a href="#changeable">Changeable</a></h3>
-<p>Software is <strong>changeable</strong> when we can alter one decision without surprising damage elsewhere. Transit data supplies a steady stream of changes: a new route, a renamed stop, an accessibility rule, a feed-format revision, or a different way to classify lateness. Modules and specifications let us change a part while preserving the promises on which clients rely.</p>
+<p>Software is <strong>changeable</strong> when we can alter one decision without causing unintended changes elsewhere. Transit data and requirements may change because of a new route, a renamed stop, an accessibility rule, a feed-format revision, or a different way to classify lateness. Modules and specifications let us change one part while preserving the promises on which clients rely.</p>
 <p>These qualities reinforce one another. A precise contract makes code easier to test. Focused code is easier to understand. An automated test suite makes a later change safer. They can also compete: an abstraction may add complexity, or an exhaustive check may cost too much to run in production. We have to identify such trade-offs and explain each decision in the context of the system.</p>
 <h2 id="3-a-running-example"><a href="#3-a-running-example"><span class="section-number">1.3</span>A Running Example</a></h2>
 <p>We will use, as a running example, a system for journey planning using public transit in Metro Vancouver. We will start with simple requirements so that we can achieve deterministic outcomes initially. One can later extend this approach to use General Transit Feed Specification (GTFS) data and live updates.</p>
@@ -137,7 +137,7 @@ public final class ArrivalStatus {
 <li>network requests and caches that introduce concurrency.</li>
 </ul>
 <p>The running example is not intended to reproduce a production trip planner. We will state when it leaves out a production concern. It provides a consistent setting in which to examine each concept.</p>
-<h2 id="4-the-buildtestinspect-loop"><a href="#4-the-buildtestinspect-loop"><span class="section-number">1.4</span>The Build–Test–Inspect Loop</a></h2>
+<h2 id="4-build-test-and-inspect"><a href="#4-build-test-and-inspect"><span class="section-number">1.4</span>Build, Test, and Inspect</a></h2>
 <p>A modern Java project needs a repeatable process for turning source files into checked results.</p>
 <figure class="chapter-figure"><img src="../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg" alt="A source edit flows through compilation and tests to an observed result; failures return the developer to the source while successful results can become a small Git commit." /><figcaption>Figure 1.1: The course feedback loop. A failure provides information that sends us back to the source.</figcaption></figure>
 <p>The companion project for Chapters 1–4 lives in <a href="../../examples/chapters-01-04/"><code>examples/chapters-01-04</code></a>. Its important pieces are:</p>
@@ -150,8 +150,8 @@ public final class ArrivalStatus {
 <p><strong>Gradle</strong> describes and runs the build. The Java <strong>toolchain</strong> setting asks Gradle to compile and test with Java 25. <strong>JUnit</strong> supplies the test model and assertions. The Gradle <strong>wrapper</strong> pins a suitable Gradle version so that the same command works for the whole team.</p>
 <p>From the project directory, one command runs the tests:</p>
 <div class="code-block"><pre class="bash"><code>./gradlew test</code></pre></div>
-<p>That command does several jobs. Gradle locates the source sets and dependencies, invokes <code>javac</code>, runs the JUnit tests, and reports whether the build succeeded. Your IDE may run the same tasks through a graphical control. Learn the command as well; it gives your laptop, a teammate's laptop, and continuous integration a common entry point.</p>
-<h3 id="read-the-first-failure"><a href="#read-the-first-failure">Read the first failure</a></h3>
+<p>That command does several jobs. Gradle locates the source sets and dependencies, invokes <code>javac</code>, runs the JUnit tests, and reports whether the build succeeded. Your integrated development environment (IDE) may run the same tasks through a graphical control. Learn the command as well; it gives your laptop, a teammate's laptop, and continuous integration a common entry point.</p>
+<h3 id="classify-the-first-diagnostic"><a href="#classify-the-first-diagnostic">Classify the first diagnostic</a></h3>
 <p>When a build fails, begin with the first relevant diagnostic and classify the failure before deciding what to inspect next.</p>
 <ul>
 <li>A <strong>compilation failure</strong> means Java could not accept the program as well-typed, syntactically valid source.</li>
@@ -159,7 +159,7 @@ public final class ArrivalStatus {
 <li>A <strong>test error</strong> usually means the test encountered an exception or failed to set up its environment.</li>
 </ul>
 <p>These categories suggest different questions. A missing semicolon does not need a debugger. A wrong status at a boundary does not need a clean reinstall of the IDE. Match the tool to the evidence.</p>
-<h2 id="5-our-first-regression-test"><a href="#5-our-first-regression-test"><span class="section-number">1.5</span>Our First Regression Test</a></h2>
+<h2 id="5-record-the-failure-with-a-regression-test"><a href="#5-record-the-failure-with-a-regression-test"><span class="section-number">1.5</span>Record the Failure with a Regression Test</a></h2>
 <p>We will record the missing <code>EARLY</code> behaviour in a test before changing the implementation. This is the complete JUnit test class from the companion project:</p>
 <div class="code-block"><pre class="java"><code>package ca.ubc.ece.cpen221.transit;
 
@@ -195,8 +195,8 @@ class ArrivalStatusTest {
 }</code></pre></div>
 <p>Running <code>./gradlew test</code> now gives us an observation: all three tests pass. That is better than saying they <em>should</em> pass, but it remains a bounded claim. We checked three cases against a small contract. We did not prove the method correct for every integer, and we certainly did not prove the transit system reliable.</p>
 <p>We will design stronger tests in Chapter 3. At this stage, the work follows a short sequence: record the failure, make a focused change, and observe the result again.</p>
-<h2 id="6-git-records-decisions"><a href="#6-git-records-decisions"><span class="section-number">1.6</span>Git Records Decisions</a></h2>
-<p>The tests protect behaviour; Git records change. A <strong>repository</strong> stores a history of snapshots called <strong>commits</strong>. A useful commit records one coherent change, such as "classify early arrivals and test all three cases." Unrelated work belongs in a different commit.</p>
+<h2 id="6-use-git-to-record-changes"><a href="#6-use-git-to-record-changes"><span class="section-number">1.6</span>Use Git to Record Changes</a></h2>
+<p>Tests check behaviour after a change. Git stores snapshots of the source and tests. A <strong>repository</strong> stores a history of snapshots called <strong>commits</strong>. A useful commit records one coherent change, such as "classify early arrivals and test all three cases." Unrelated work belongs in a different commit.</p>
 <p>A typical local cycle is:</p>
 <div class="code-block"><pre class="bash"><code>git status
 git diff
@@ -213,22 +213,22 @@ git commit -m &quot;Classify early arrival predictions&quot;</code></pre></div>
 <blockquote>
 <p><strong>Recovery note:</strong> <code>git restore</code> can discard uncommitted work. That can be exactly what you want, but inspect the target and diff first. Version control is a safety system only for work that actually reached version control.</p>
 </blockquote>
-<h2 id="7-short-feedback-changes-how-we-design"><a href="#7-short-feedback-changes-how-we-design"><span class="section-number">1.7</span>Short Feedback Changes How We Design</a></h2>
+<h2 id="7-use-short-feedback-loops"><a href="#7-use-short-feedback-loops"><span class="section-number">1.7</span>Use Short Feedback Loops</a></h2>
 <p>Builds, tests, and commits are part of the design process. A short feedback loop changes which designs are practical.</p>
-<p>If a method can be tested in isolation, we can explore an alternative quickly. If a commit contains one idea, review can focus on that idea. If the build is reproducible, we can distinguish a code failure from a teammate's private machine setup. The tools shape the program by making some mistakes cheap to discover.</p>
+<p>If a method can be tested in isolation, we can explore an alternative quickly. If a commit contains one idea, review can focus on that idea. If the build is reproducible, we can distinguish a code failure from a teammate's private machine setup. These tools affect design decisions because they make some mistakes faster to detect.</p>
 <p>Our first design principle follows:</p>
-<blockquote class="design-note"><p><strong>Design principle: shorten the distance between a decision and trustworthy feedback about that decision.</strong></p>
+<blockquote class="design-note"><p><strong>Design principle: obtain trustworthy feedback soon after each design or implementation decision.</strong></p>
 </blockquote>
 <p>This does not mean running every conceivable analysis after every keystroke. It means matching the cost of feedback to the risk of the change. Compile often. Run focused tests while developing. Run the full suite before sharing. Ask for human review when the difficult question is whether the contract itself is sensible.</p>
-<h2 id="8-generated-code-enters-the-same-loop"><a href="#8-generated-code-enters-the-same-loop"><span class="section-number">1.8</span>Generated Code Enters the Same Loop</a></h2>
-<p>An AI tool can produce an <code>ArrivalStatus</code> implementation in seconds. It can also invent a threshold, omit an edge case, use an API that does not exist, or explain a wrong answer confidently.</p>
+<h2 id="8-review-generated-code-with-the-same-process"><a href="#8-review-generated-code-with-the-same-process"><span class="section-number">1.8</span>Review Generated Code with the Same Process</a></h2>
+<p>An artificial intelligence (AI) tool can produce an <code>ArrivalStatus</code> implementation in seconds. It can also invent a threshold, omit an edge case, call a library method that does not exist, or explain a wrong answer confidently.</p>
 <p>The engineering workflow does not change according to who typed the code:</p>
 <ol type="1">
 <li>Write or inspect the specification.</li>
 <li>Treat the generated implementation as untrusted input.</li>
 <li>Compile it with warnings enabled.</li>
 <li>Derive tests from the contract, especially boundaries and failure cases.</li>
-<li>Review surprising API calls against authoritative documentation.</li>
+<li>Review surprising library calls against authoritative documentation.</li>
 <li>Record what was generated and what you verified independently.</li>
 </ol>
 <p>Generated code can reduce mechanical effort. It cannot determine what "correct" means for our system unless the specification already supplies that meaning. Clear variable names and a confident explanation do not compensate for a missing contract.</p>
@@ -255,7 +255,7 @@ ArrivalStatus.describe(600, 601)</code></pre></div>
 <li>a test expected <code>"EARLY"</code> but observed <code>"LATE"</code>.</li>
 </ul>
 <h3 id="4-design-a-commit"><a href="#4-design-a-commit">Design a commit</a></h3>
-<p>You changed the classification logic, reformatted twenty unrelated files, and added a temporary log statement containing an API token. What belongs in the next commit? Explain what you would do with each remaining change instead of listing Git commands.</p>
+<p>You changed the classification logic, reformatted twenty unrelated files, and added a temporary log statement containing a service access token. What belongs in the next commit? Explain what you would do with each remaining change instead of listing Git commands.</p>
 <h3 id="5-audit-a-generated-answer"><a href="#5-audit-a-generated-answer">Audit a generated answer</a></h3>
 <p>An AI-generated implementation treats arrivals within five minutes of schedule as <code>ON TIME</code>. The prompt never mentioned a tolerance. Is the implementation wrong? What must you establish before that question has an answer?</p>
 <h2 id="summary"><a href="#summary">Summary</a></h2>
