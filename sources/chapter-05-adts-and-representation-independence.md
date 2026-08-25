@@ -6,20 +6,18 @@ Our first transit network is a map:
 Map<StopId, Set<StopId>> outgoing = new HashMap<>();
 ```
 
-The keys are stops. Each value is the set of stops reachable by one direct trip.
-That representation is workable, so we pass the map to the route finder, the map
-viewer, the feed loader, and eventually a test that repairs missing entries with
-`computeIfAbsent`.
+The keys are stops. Each value is the set of stops reachable by one direct trip. We
+initially pass this map to the route finder, map viewer, feed loader, and tests.
+Several of those clients begin to inspect or mutate it directly.
 
-Then we replace the map with a compact set of connections. The representation fits
-the feed better, but every client breaks. Worse, some clients had learned to mutate
-the old map directly. Changing one data structure pulled on a thread stitched through
-the whole program.
+We then replace the map with a compact set of connections. Every client that depends
+on the map representation breaks, even though the meaning of a transit network has
+not changed.
 
-An **abstract data type**, or **ADT**, cuts that thread. Clients work with a set of
-values and specified operations. The implementation chooses how to represent those
-values. If the boundary holds, we can change the representation without teaching
-the rest of the program a new private language.
+An **abstract data type**, or **ADT**, separates those clients from the representation.
+Clients use specified values and operations. The implementation decides how to store
+the values. We can then change the representation without changing clients that
+depend only on the specification.
 
 By the end of this chapter, you should be able to:
 
@@ -44,8 +42,8 @@ Before choosing fields, say what a value of the type *means*. Our
 - the network has no edge from a stop to itself.
 
 This is the **abstract value**. A client can ask whether an edge exists without
-knowing whether the implementation stores a map, a matrix, a collection of edge
-records, or a tiny clerk with an immaculate filing system.
+knowing whether the implementation stores a map, a matrix, or a collection of edge
+records.
 
 The word *directly* matters. An edge from UBC to Wesbrook and one from Wesbrook to
 Alma do not imply a direct edge from UBC to Alma. A later route-search operation may
@@ -113,8 +111,8 @@ returned abstract value, not a fresh object identity. A test that insists on
 The classification also exposes omissions. If an API has a creator and three
 mutators but no observer, clients cannot learn anything about the value except by
 remembering its history. If it returns a mutable `Map` as its only observer, it has
-mixed observation with unrestricted mutation. The table is a design probe, not a
-quota; useful types do not need one operation in every box.
+mixed observation with unrestricted mutation. The table helps us review the design;
+an ADT does not need one operation in every category.
 
 ## 4. Specify the Boundary
 
@@ -131,9 +129,9 @@ The creator has a compact promise:
 static TransitNetwork empty(Set<StopId> stops)
 ```
 
-“Exactly” protects isolated stops. An implementation that records only stops which
-occur in an edge would lose every stop in an empty network. The map might look tidy;
-the postcondition would still be false.
+"Exactly" protects isolated stops. An implementation that records only stops which
+occur in an edge would lose every stop in an empty network and violate the
+postcondition.
 
 The producer says what changes and, just as importantly, what does not:
 
@@ -154,9 +152,8 @@ implementation to return the receiver in that case.
 
 Our observers return unmodifiable sets. They do not promise an iteration order. That
 omission is deliberate: a client can test set membership and equality, but it cannot
-turn the current hash-table order into a user-interface requirement by accident. If
-stable order becomes a genuine need, we can add it explicitly and pay its cost
-deliberately.
+depend on the current hash-table order. If stable order becomes a requirement, we can
+add it to the specification and accept the associated implementation cost.
 
 Specifications do not need to expose every implementation failure. Running out of
 memory, for example, is not useful network behaviour to restate on each method.
@@ -185,9 +182,9 @@ constructed that class directly, the implementation name would leak into method
 signatures and tests. Changing representations would then become a migration rather
 than a private edit.
 
-A factory is not mystical. It is one operation that chooses an implementation while
-returning the abstraction. We could later make the choice depend on input size or a
-configuration setting, provided every returned object keeps the same contract.
+A factory chooses an implementation while returning the abstraction. We could later
+make that choice depend on input size or a configuration setting, provided every
+returned object satisfies the same contract.
 
 ## 6. Implement Without Reopening the Boundary
 
@@ -211,9 +208,9 @@ final class AdjacencyMapNetwork implements TransitNetwork {
 ```
 
 The constructor snapshots both levels of mutable container. Copying only the map
-would leave aliases to its destination sets. Chapter 4 taught us to follow those
-arrows; an abstraction boundary does not become solid merely because we have named
-it.
+would leave aliases to its destination sets. Naming an abstraction boundary does not
+enforce it; the implementation must prevent clients from reaching mutable
+representation objects.
 
 Because the stored map and its sets are unmodifiable, this observer can return one
 of those sets safely:
@@ -232,8 +229,8 @@ was retained. If any of those facts changed, returning the field's value could
 expose the representation.
 
 The public contract tells clients what they may assume. The private constructor and
-helpers may depend on representation details. Keeping those two vocabularies
-separate is the daily work of data abstraction.
+helpers may depend on representation details. Data abstraction requires us to keep
+those dependencies out of the public API.
 
 ## 7. Change the Representation
 
@@ -249,8 +246,9 @@ final class ConnectionSetNetwork implements TransitNetwork {
 
 Its direct-destination observer scans and filters `connections`; the adjacency-map
 implementation performs a lookup. The connection set makes bulk construction and
-whole-edge operations natural. The map makes neighbourhood queries natural. Neither
-representation wins every contest.
+whole-edge operations natural. The map makes neighbourhood queries natural. The
+better choice depends on the operations and performance requirements of the
+application.
 
 Now run ordinary client code:
 
@@ -287,9 +285,8 @@ on those differences.
 
 ## 8. Test the Contract Against Both Implementations
 
-Representation independence deserves better evidence than “we did not change the
-client.” The companion project supplies both factories to one parameterized test
-suite. Here is one of its tests:
+To test representation independence, the companion project supplies both factories
+to one parameterized test suite. One of its tests is:
 
 ```java
 @ParameterizedTest(name = "{0}: producer leaves original unchanged")
@@ -313,17 +310,17 @@ iteration order. The same tests also cover isolated stops, direction, invalid
 arguments, duplicate additions, input aliasing, and unmodifiable results.
 
 White-box tests still have a place. An implementation may need focused tests for a
-complicated private algorithm. Contract tests are the shared gate: every
-implementation must pass them before a factory can substitute one for another.
+complicated private algorithm. Every implementation must also pass the shared
+contract tests before the factory can substitute it for another implementation.
 
 Our design principle is:
 
 > **Design principle: make clients depend on the smallest useful behavioural
 > vocabulary, not on the data structures that happen to implement it.**
 
-This principle improves more than changeability. Clients become easier to read
-because their operations speak in domain terms. Correctness arguments shrink because
-clients cannot perform arbitrary map surgery. A good boundary removes possibilities.
+This principle also makes clients easier to read because their operations use domain
+terms. It simplifies correctness arguments by restricting clients to specified
+operations instead of arbitrary map mutation.
 
 ## 9. Common Misconceptions
 
@@ -360,9 +357,8 @@ the API. Before accepting it, ask:
 - Would the same contract make sense for a substantially different representation?
 - Do the tests observe the contract or inspect the current implementation?
 
-Ask an assistant for alternatives if that sharpens the design, but verify the
-result. Renaming `getMap` to `getNetworkData` gives the leak a hat; it does not close
-it.
+Ask an assistant for alternatives if that helps compare designs, but verify the
+result. Renaming `getMap` to `getNetworkData` still exposes the same representation.
 
 ## Try the Abstraction Boundary
 
@@ -410,7 +406,7 @@ map with a connection set. Consider query work, construction work, memory overhe
 and ease of validating the data. Choose one for that workload and state what evidence
 could change your choice.
 
-## Where We Have Arrived
+## Summary
 
 An ADT is defined by abstract values and specified operations. Creators introduce
 values, producers derive values, observers reveal information, and mutators change
@@ -422,10 +418,10 @@ its representation. We can store an adjacency map or separate stop and connectio
 sets without changing contract-respecting clients.
 
 That freedom is representation independence. Access control, specifications,
-immutable boundaries, and contract tests all help preserve it. One question remains:
-how does an implementer know that a particular map or pair of sets represents a
-valid network at all? Chapter 6 builds the bridge from concrete fields to abstract
-values.
+immutable boundaries, and contract tests all help preserve it. The next question is
+how an implementer determines whether a particular map or pair of sets represents a
+valid network. Chapter 6 defines that relationship between concrete fields and
+abstract values.
 
 ## Sources and provenance
 

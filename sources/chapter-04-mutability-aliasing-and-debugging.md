@@ -9,10 +9,9 @@ display.sort(Comparator.comparingInt(Departure::minutesUntilArrival));
 ```
 
 The display looks right. Later, a different client asks the board for feed order and
-receives the sorted order instead. No method named `reorderBoard` was called. Nothing
-inside `ArrivalBoard` ran when the damage happened.
-
-The bug travelled through a reference.
+receives the sorted order instead. No method on `ArrivalBoard` reordered the data.
+Both clients received a reference to the same mutable list, so sorting through one
+reference changed the state observed through the other.
 
 To diagnose this class of failure, we need to distinguish variables from objects,
 reassignment from mutation, and a copy of a container from a copy of everything
@@ -70,16 +69,16 @@ references as arrows to objects.
 mutable ArrayList; sorting through the client variable therefore changes the board's
 representation.](../../assets/diagrams/rendered/chapter-04/arrival-board-representation-exposure.svg)
 
-*Figure 4.1: Representation exposure before the repair. Three names do not imply
-three lists. Follow the arrows to count objects.*
+*Figure 4.1: Representation exposure before the repair. The three references all
+designate the same mutable list.*
 
 The diagram is intentionally not a photograph of physical memory. A JVM may arrange
 or optimize storage in many ways. The model preserves the relationships Java makes
 observable: which variables can reach which objects, and where a mutation can be
 seen.
 
-When a stateful bug feels spooky, draw the state before and after the suspicious
-operation. Spooky is often ordinary aliasing with poor lighting.
+When a stateful failure is difficult to explain, draw the state before and after the
+suspicious operation. The diagram makes aliases and visible mutations explicit.
 
 ## 3. Reassignment Is Not Mutation
 
@@ -129,7 +128,7 @@ does not guarantee that the collection keeps the same elements.
 
 ## 4. How the Board Exposes Its Representation
 
-Here is the broken `ArrivalBoard`:
+The following `ArrivalBoard` exposes its representation:
 
 ```java
 public final class ArrivalBoard {
@@ -145,10 +144,10 @@ public final class ArrivalBoard {
 }
 ```
 
-The representation is the private state used to implement the object—here, the list
-designated by `departures`. The `private` modifier prevents a client from naming the
-field directly, but the constructor stores the client's reference and `upcoming`
-returns that same reference. The wall has two neatly labelled doors standing open.
+The representation is the private state used to implement the object; here, it is
+the list designated by `departures`. The `private` modifier prevents a client from
+naming the field directly, but the constructor stores the client's reference and
+`upcoming` returns that same reference. Both operations expose the private list.
 
 This is **representation exposure**. A client gains a reference through which it can
 mutate an object's internal representation without using the object's specified
@@ -247,7 +246,8 @@ no route to mutation. The list and every element can therefore be shared safely.
 
 If `Departure` contained a mutable `List<String>` component, the record's final field
 would protect only the component reference. A client could still mutate the list.
-Records are shallowly immutable data carriers, not automatic deep-freeze machinery.
+Records provide final component fields, but they do not make mutable component
+objects immutable.
 
 ## 6. Snapshot, View, Shallow Copy, Deep Copy
 
@@ -258,10 +258,10 @@ A **shallow copy** creates a new outer object and copies references to its eleme
 elements are immutable or otherwise safe to share.
 
 A **deep copy** recursively creates independent copies of mutable reachable objects.
-“Recursively” needs a defined boundary: real object graphs may contain cycles,
+"Recursively" needs a defined boundary: real object graphs may contain cycles,
 shared subgraphs, operating-system resources, or objects with no meaningful copy.
-Deep copying is a design operation, not a button we can press on arbitrary Java
-values.
+The designer must define what to copy and how to handle shared or non-copyable
+objects.
 
 An **unmodifiable view** blocks mutation through one reference while reflecting
 changes made through another reference to its backing collection. For example,
@@ -337,7 +337,7 @@ paths. The repair is a design change, not a compensating sort.
 ### Preserve the failure as a regression test
 
 Run the focused test, then the whole suite. Keep the minimal reproducer so a later
-refactor cannot quietly reopen the representation.
+refactor cannot expose the representation again.
 
 ![An observed failure leads to a minimal reproducer, a reference-model hypothesis, a
 discriminating experiment, a cause-level repair, and a regression test; contradictory
@@ -346,7 +346,7 @@ evidence returns the debugger to a revised hypothesis.](../../assets/diagrams/re
 *Figure 4.2: Debugging is an evidence loop. Change the program to repair a supported
 cause instead of hiding the latest symptom.*
 
-## 8. Make Bugs Smaller Before They Happen
+## 8. Confine Mutable State
 
 Debugging technique matters, but design determines the size of the search.
 
@@ -359,9 +359,9 @@ Debugging technique matters, but design determines the size of the search.
 - Fail near violated assumptions instead of carrying damaged state forward.
 
 These practices **confine** change. A mutable local `ArrayList` used to assemble an
-immutable result is often excellent design: mutation is efficient, its owner is
-obvious, and no alias escapes. “Prefer immutability” does not mean “ban every call to
-`add`.” It means make mutation's boundary small and deliberate.
+immutable result is often an effective design: mutation is efficient, its owner is
+clear, and no alias escapes. "Prefer immutability" does not prohibit every call to
+`add`; it asks us to keep the boundary of mutation small and deliberate.
 
 Our design principle is:
 
@@ -369,8 +369,8 @@ Our design principle is:
 > reached.**
 
 When sharing is required, choose an explicit policy: immutable value, owner-confined
-mutation, unmodifiable snapshot, or carefully specified shared mutation. Accidental
-sharing is not a policy.
+mutation, unmodifiable snapshot, or carefully specified shared mutation. Do not let
+the sharing policy emerge accidentally from copied references.
 
 ## 9. Common Misconceptions
 
@@ -389,7 +389,7 @@ A shallow list copy removes the alias to the outer list. It intentionally preser
 aliases to its elements. That is safe for immutable `Departure` values and unsafe for
 mutable element objects unless the contract controls their mutation.
 
-Draw one more level of arrows before declaring victory.
+Draw one more level of references and check whether a client can mutate an element.
 
 ## 10. Reviewing Generated State-Holding Code
 
@@ -405,8 +405,8 @@ reference checklist:
 - Does the specification permit the sharing the implementation creates?
 
 Ask the generator to explain ownership if useful, but verify the explanation against
-the code and tests. An instance diagram is less eloquent and considerably harder to
-bluff.
+the code and tests. An instance diagram provides a concrete account of which objects
+each client can reach.
 
 ## Try the References
 
@@ -462,7 +462,7 @@ A test reports that a board becomes empty after a client runs. Write one hypothe
 about incoming exposure and one about outgoing exposure. For each, design an
 experiment whose result could contradict the hypothesis.
 
-## Where We Have Arrived
+## Summary
 
 Reference assignment can create aliases: separate variables that designate one
 object. Reassignment moves one reference; mutation changes an object visible through
@@ -475,13 +475,12 @@ different guarantees; name the one the design actually needs.
 
 When a state bug appears, reproduce it, study evidence, form a falsifiable hypothesis,
 run a discriminating experiment, repair the cause, and preserve the failure as a
-regression test. Better still, confine mutation so that the bug has fewer places to
-hide.
+regression test. Confining mutation reduces the number of operations and aliases that
+must be examined when such a failure occurs.
 
-We now have four pieces of a construction discipline: a feedback loop, meaningful
-types, explicit contracts and failure paths, and controlled mutable state. The next
-chapter will use those pieces to define abstract data types whose clients can depend
-on behaviour without depending on representation.
+We now have a feedback loop, meaningful types, explicit contracts and failure paths,
+and controlled mutable state. The next chapter uses these tools to define abstract
+data types whose clients can depend on behaviour without depending on representation.
 
 ## Sources and provenance
 

@@ -7,13 +7,14 @@ UBC_EXCHANGE|soon
 ```
 
 Our parser expects a stop identifier, a vertical bar, and a non-negative number of
-minutes. The stop is fine. `soon` is friendly prose and terrible arithmetic.
+minutes. `UBC_EXCHANGE` is a valid stop identifier, but `soon` cannot be parsed as an
+integer.
 
-What should happen next? Returning zero would put a phantom bus at the stop. Returning
-`null` would ask every client to remember what `null` means. Printing a warning inside
-the parser would entangle a reusable component with one user interface. Continuing
-with a half-created prediction would be the most adventurous choice, in the bad
-sense.
+The parser must report this failure without creating a misleading prediction.
+Returning zero would claim that a bus is at the stop. Returning `null` would require
+every client to interpret the absence. Printing inside the parser would couple a
+reusable component to one user interface. A partially created prediction would leave
+the program in an invalid state.
 
 Failures are part of a program's behaviour. We need to specify them, signal them at a
 useful abstraction level, and test them with the same care as ordinary results.
@@ -74,16 +75,16 @@ not `RuntimeException`. Java requires a caller either to catch it or to declare 
 it may propagate. The type system therefore keeps the malformed-feed path visible in
 each calling contract.
 
-That was a design choice, not a universal translation table. “Checked means expected;
-unchecked means bug” is too categorical. Java defines the categories by their class
-hierarchy and compiler rules. API designers then choose between them based on client
-needs, recoverability, local conventions, and the cost of mandatory handling. A
-malformed command-line argument might reasonably produce an unchecked exception in
-one API and a result object in another.
+That was a design choice rather than a universal rule. The statement "checked means
+expected; unchecked means bug" is too categorical. Java defines the categories by
+their class hierarchy and compiler rules. API designers choose between them based on
+client needs, recoverability, local conventions, and the cost of mandatory handling.
+A malformed command-line argument might reasonably produce an unchecked exception
+in one API and a result object in another.
 
 ## 2. Parse in Small, Observable Steps
 
-Here is the complete parser from the companion project:
+The companion project uses this parser:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -234,8 +235,8 @@ too strong for systems claims; state the boundary of the guarantee.
 
 ## 5. Derive Tests from the Contract
 
-The parser's input space contains every possible Java string—far too many examples to
-enumerate. Trying three memorable lines gives us three memories, not a strategy.
+The parser's input space contains every possible Java string, so we cannot enumerate
+it. We need a systematic way to select a small set of informative cases.
 
 **Partitioning** divides the input space into subdomains whose members we expect the
 program to treat similarly. Boundaries between partitions deserve special attention
@@ -252,8 +253,8 @@ The contract suggests these dimensions:
 | Reference | `null`, non-null |
 
 We do not need the Cartesian product of every row. Choose a compact set in which each
-test has a reason. Zero is especially valuable: it sits exactly where invalid
-negative minutes become valid.
+test has a reason. Zero is especially useful because it is the boundary between
+invalid negative minutes and valid times.
 
 The complete JUnit 6 test class begins like this:
 
@@ -309,8 +310,8 @@ method name records the rationale, not the private branch it happens to execute.
 The test for the cause checks a public diagnostic promise only if our contract makes
 cause preservation part of the API. If the contract merely promises
 `FeedFormatException`, insisting on `NumberFormatException` would couple the test to
-the current parsing technique. Tests do not receive diplomatic immunity from the
-abstraction barrier.
+the current parsing technique. Tests must respect the same abstraction boundary as
+other clients.
 
 ## 6. Black-Box and Glass-Box Evidence
 
@@ -327,7 +328,7 @@ Glass-box insight is useful for finding neglected paths. The assertions still mu
 describe public behaviour. We may use knowledge of a branch to reach it; we may not
 declare the branch itself part of the contract.
 
-### Coverage is a question, not an answer
+### Coverage reports execution, not correctness
 
 Coverage tools report which statements or branches a test run executed. A missed
 branch is a concrete prompt: why did no test reach it? One hundred percent coverage,
@@ -337,7 +338,7 @@ This test can execute the parser and check almost nothing:
 
 ```java
 @Test
-void hasExcellentPostureAndPoorJudgment() throws FeedFormatException {
+void executesParserWithoutCheckingResult() throws FeedFormatException {
     PredictionParser.parse("UBC_EXCHANGE|4");
 }
 ```
@@ -345,10 +346,10 @@ void hasExcellentPostureAndPoorJudgment() throws FeedFormatException {
 It may improve a coverage number while failing to verify the returned stop or time.
 Coverage measures reach, not correctness or test quality.
 
-One quick audit is to introduce a tiny defect deliberately—after committing your
-work—and confirm that a relevant test fails. Change `< 0` to `<= 0`, for example. If
-the suite stays green, it did not protect the boundary you thought it protected.
-Restore the change when the experiment is over.
+One quick audit is to commit your work, introduce a small defect deliberately, and
+confirm that a relevant test fails. Change `< 0` to `<= 0`, for example. If the suite
+still passes, it did not protect that boundary. Restore the change when the
+experiment is over.
 
 ## 7. Assertions Are Not Argument Validation
 
@@ -370,8 +371,8 @@ They run as part of the test regardless of Java's `-ea` setting.
 
 In our parser, explicit checks and exceptions enforce the public contract. An
 assertion after the field-count check could document an internal fact, but it adds
-little because the fact is already local and obvious. Assertions should reveal a
-meaningful invariant, not applaud the previous line.
+little because the fact is already local and obvious. Use assertions for meaningful
+invariants rather than restating a check performed immediately before them.
 
 ## 8. Design for Testability
 
@@ -413,13 +414,13 @@ can increase confidence when well-designed cases pass. They cannot establish tha
 unexamined input, interleaving, environment, or requirement contains no defect.
 
 The useful claim is specific: *the implementation produced these observations for
-these contract-derived cases*. Precision keeps confidence from quietly becoming
-folklore.
+these contract-derived cases*. That statement does not make claims about executions
+we did not test.
 
 ## 10. Generated Parsers Need Adversarial Tests
 
-A generated parser often handles the happy path impressively quickly. Ask it to parse
-`"UBC_EXCHANGE|4"`, and everyone goes for lunch. The seams are where review starts:
+A generated parser will often handle `"UBC_EXCHANGE|4"` correctly. Review should
+concentrate on the boundaries and failure cases:
 
 - empty fields;
 - extra separators;
@@ -429,9 +430,9 @@ A generated parser often handles the happy path impressively quickly. Ask it to 
 - exception messages that leak or erase useful context.
 
 Write the contract first, partition its inputs, and run the generated code against
-the boundaries. If the generator also writes the tests, inspect whether both artefacts
-made the same unsupported assumption. Two matching guesses do not form independent
-evidence.
+the boundaries. If the generator also writes the tests, inspect whether both
+artefacts made the same unsupported assumption. Agreement between generated code and
+generated tests is not independent evidence.
 
 ## Try the Failure Paths
 
@@ -462,7 +463,7 @@ separate policy for a missing file.
 
 ### 4. Distinguish coverage from checking
 
-The `hasExcellentPostureAndPoorJudgment` test executes the successful path. Write two
+The `executesParserWithoutCheckingResult` test executes the successful path. Write two
 assertions that would check the parser's public result. Then name one property that
 still remains untested.
 
@@ -473,7 +474,7 @@ should the application reject the whole file? There is no universal answer. Choo
 policy for an arrival board, write the corresponding contract, and explain which
 layer has enough context to implement it.
 
-## Where We Have Arrived
+## Summary
 
 Exceptions give failures names and a separate control-flow path. Checked and
 unchecked exceptions differ by Java hierarchy and compiler treatment; choosing
@@ -484,12 +485,12 @@ try-with-resources to tie resource cleanup to scope.
 Tests turn contracts into executable observations. Partition the input space, probe
 boundaries, add implementation-aware cases without depending on private behaviour,
 and interpret coverage as a prompt for investigation. Passing tests provide evidence
-about tested executions, not proof of an empty bug population.
+about tested executions; they do not prove that the program has no other bugs.
 
-Our parser now produces trustworthy immutable-looking records and lists. That last
-phrase deserves suspicion. A final field can still refer to a mutable object, and a
-list returned from an object can give a client a path back into its representation.
-Chapter 4 follows those references.
+Our parser now produces records and lists, but those declarations alone do not make
+all reachable state immutable. A final field can still refer to a mutable object,
+and a returned list can give a client access to an object's representation. Chapter
+4 examines those references.
 
 ## Sources and provenance
 
@@ -507,4 +508,3 @@ Technical references:
 - [`AutoCloseable` in Java SE 25](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/AutoCloseable.html)
 - [JUnit 6 user guide: writing tests](https://docs.junit.org/current/user-guide/#writing-tests)
 - [JUnit 6 user guide: Gradle build support](https://docs.junit.org/current/user-guide/#running-tests-build-gradle)
-

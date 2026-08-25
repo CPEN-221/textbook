@@ -1,24 +1,23 @@
 # Chapter 6 | Representation Invariants and Abstraction Functions
 
 Our `TransitNetwork` boundary keeps clients away from the adjacency map. The
-implementer, unfortunately, works there every day.
+implementation still has to construct and query that map correctly.
 
 Suppose one destination set contains `ALMA`, but `ALMA` is not a key in the map.
-`directDestinationsFrom(UBC)` may return it. A later call to
-`directDestinationsFrom(ALMA)` rejects it as an unknown stop. The same object says
-that Alma both belongs and does not belong to the network, depending on which
-operation asks.
+`directDestinationsFrom(UBC)` may include it, while
+`directDestinationsFrom(ALMA)` rejects it as an unknown stop. These two results are
+inconsistent.
 
 Private fields prevent a client from creating that state directly. They do not
 prevent a constructor or producer from creating it by mistake. We need to state
 which concrete states are meaningful and how each meaningful state corresponds to
 the graph promised by the ADT.
 
-Two tools provide that bridge. A **representation invariant** selects the valid
-representations. An **abstraction function** explains what abstract value each valid
-representation means. The names sound ceremonial; the job is practical. They tell
-us what constructors must establish, what operations must preserve, and what an
-internal checker should reject.
+We use two definitions to describe this relationship. A **representation invariant**
+selects the valid representations. An **abstraction function** explains which
+abstract value each valid representation denotes. Together they state what
+constructors must establish, what operations must preserve, and what an internal
+checker should reject.
 
 By the end of this chapter, you should be able to:
 
@@ -44,15 +43,14 @@ vertices and edges in this space.
 private final Map<StopId, Set<StopId>> outgoing;
 ```
 
-Candidate representation values include maps with several keys, an empty map, maps
-whose destination sets mention other keys, and—before our constructor rules them
-out—maps with `null` parts or destinations that have no key. Java's generic types
-say that keys and values have certain declared types. They do not express all the
-relationships our graph requires.
+Candidate representation values include maps with several keys, an empty map, and
+maps whose destination sets mention other keys. Before the constructor checks them,
+they also include maps with `null` parts or destinations that have no key. Java's
+generic types say that keys and values have certain declared types. They do not
+express all the relationships our graph requires.
 
-The implementation's task is to use selected values in `R` to realize values in
-`A`. Not every candidate representation deserves a meaning. A map that contradicts
-itself should be rejected, not interpreted with a shrug.
+The implementation uses selected values in `R` to realize values in `A`. Some
+candidate maps are inconsistent and must not represent an abstract network value.
 
 ## 2. State the Abstraction Function
 
@@ -83,8 +81,7 @@ vertex even though it has no outgoing edge.
 
 Several representations may map to the same abstract value. A map's iteration order
 does not belong to our graph, so two maps that iterate differently can mean the same
-network. An abstraction function need not be one-to-one. Hiding those irrelevant
-concrete differences is one of its talents.
+network. An abstraction function therefore need not be one-to-one.
 
 The abstraction function must be precise enough to settle every public observation.
 If we wrote only “the map stores the network,” we would not know whether keys with
@@ -120,7 +117,7 @@ abstract invariant with a different concrete condition, such as a `false` diagon
 Not every useful RI condition comes from an abstract invariant. A cached edge count
 would need to equal the number of stored edges even if clients never see the cache.
 A sorted-array representation would need to remain sorted so binary search works.
-Those are obligations created by an implementation choice.
+Those obligations come from an implementation choice.
 
 ## 4. Turn the RI into a Checker
 
@@ -159,12 +156,12 @@ trip over its own inspection.
 `Map.copyOf` and `Set.copyOf` already reject `null` while this implementation builds
 its snapshots. We retain the non-null clauses in the RI because they document the
 assumptions used by every method. Some checks are redundant at runtime and still
-valuable in the argument.
+support the correctness argument.
 
 ## 5. Establish, Preserve, and Protect
 
-Writing an RI comment does not constrain a single bit. We must inspect every route by
-which a representation comes into existence or changes.
+Writing an RI comment does not enforce it. We must inspect every route by which a
+representation comes into existence or changes.
 
 For a mutable ADT, the standard obligations are:
 
@@ -312,15 +309,14 @@ with the representation. That is exactly where these documents belong: inside th
 implementation, close to its fields. Publishing them as client requirements would
 turn private choices back into dependencies.
 
-Both implementations pass the same 15 contract-test invocations. The observation is
-evidence that their different bridges reach the same public behaviour. It is not a
-mathematical proof over every possible graph, but it gives our reasoning sharp edges
-to push against.
+Both implementations pass the same 15 contract-test invocations. This is evidence
+that they produce the same public behaviour for those cases. It is not a
+mathematical proof over every possible graph.
 
 ## 8. Build an RI Systematically
 
-When a blank `Representation invariant:` comment stares back at you, inspect the rep
-from five directions.
+To develop a representation invariant, inspect the representation from five
+directions.
 
 1. **Make the AF meaningful.** Exclude rep values for which you cannot assign an
    unambiguous abstract value.
@@ -342,9 +338,8 @@ than necessary.
 
 An unnecessarily strong invariant creates work and may eliminate useful
 representations. Requiring every stop to have an outgoing edge would simplify one
-loop, but it would make an isolated terminal stop impossible to represent. The
-implementation should serve the ADT, not quietly shrink it for the convenience of a
-loop.
+loop, but it would make an isolated terminal stop impossible to represent. The RI
+must permit every value allowed by the ADT, including isolated terminal stops.
 
 Our design principle is:
 
@@ -373,7 +368,8 @@ A valid representation can encode the wrong abstract result. The empty-map examp
 passes `checkRep` while violating the creator's postcondition. A checker can also
 contain a bug, omit an expensive condition, or be disabled with assertions.
 
-Treat it as high-value evidence and executable documentation, not a certificate.
+Treat a successful check as evidence that the tested conditions hold. It does not
+establish that every operation satisfies its specification.
 
 ### “The abstraction function should return a Java object”
 
@@ -383,8 +379,8 @@ compute the observations promised by the ADT as if the abstract value existed.
 
 ## 10. Reviewing Generated Representation Code
 
-Generated implementations are especially fond of plausible fields and thin getters.
-Require a written argument before trusting the shape:
+Generated implementations often contain plausible fields and thin getters without a
+clear representation argument. Require that argument before trusting the design:
 
 - What is the abstract value space?
 - What is the AF for these exact fields?
@@ -396,9 +392,9 @@ Require a written argument before trusting the shape:
 - Can an alias bypass those operations?
 - Which postconditions need tests because the RI cannot express them?
 
-Then compare the prose with the code. An RI that says “all destinations are known”
-while the checker only tests for `null` is not documentation; it is two competing
-stories.
+Then compare the prose with the code. If the RI says "all destinations are known"
+while the checker tests only for `null`, the checker does not implement the stated
+RI.
 
 ## Try the Representation
 
@@ -443,7 +439,7 @@ key and then removes incoming edges. The RI is temporarily false between those
 steps. Where should `checkRep` run? What must happen if an exception can escape from
 the middle?
 
-## Where We Have Arrived
+## Summary
 
 An implementation connects two spaces. The representation space contains concrete
 field values; the abstract space contains the values promised to clients. The

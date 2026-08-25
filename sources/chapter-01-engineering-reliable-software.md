@@ -30,7 +30,7 @@ Suppose our first requirement reads:
 > Given the scheduled and predicted arrival times, describe a vehicle as early, on
 > time, or late.
 
-Here is a plausible implementation:
+A plausible implementation is:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -52,17 +52,16 @@ It compiles. It returns `"LATE"` when a bus is two minutes late. It also calls a
 that is seven minutes early `"ON TIME"`. The code has no branch for an early arrival,
 so no input can produce the missing answer.
 
-This is not primarily a syntax problem. It is a mismatch among three things:
+The failure comes from a mismatch among three things:
 
 1. the behaviour we need;
 2. the behaviour the implementation provides;
 3. the evidence we collected before trusting it.
 
-The course will keep returning to those three views. A **specification** states the
+The course will keep returning to these three views. A **specification** states the
 required behaviour. An **implementation** attempts to provide it. Tests, reviews,
-static checks, and observations supply evidence about the attempt.
-
-No one tool closes the triangle by itself.
+static checks, and observations supply evidence about the implementation. We need
+all three views to make a useful claim about the program.
 
 ## 2. What We Mean by Reliable
 
@@ -72,13 +71,19 @@ we will evaluate our work along three recurring dimensions.
 ### Correct
 
 Software is **correct with respect to a specification** when its behaviour satisfies
-that specification. Correctness is not a glow that code acquires after enough
-polishing. We need a stated obligation before the word has technical meaning.
+that specification. Correctness is always relative to a stated obligation. Without
+one, a claim that code is correct is incomplete.
 
 If the specification says an arrival exactly on schedule is `ON_TIME`, then returning
 that status is correct for that input. If the specification says nothing about early
 arrivals, we have found a hole in the specification before we have found a bug in the
 implementation.
+
+Suppose the transit agency later defines arrivals within one minute of schedule as
+`ON_TIME`. The repaired method from the previous section would then be wrong for
+predictions at minutes 599 and 601, even if every test based on the old contract
+passed. We would need to update the specification, implementation, and tests. The
+same output can satisfy one contract and violate another.
 
 ### Comprehensible
 
@@ -101,8 +106,8 @@ promises on which clients rely.
 These qualities reinforce one another. A precise contract makes code easier to test.
 Focused code is easier to understand. An automated test suite makes a later change
 safer. They can also compete: an abstraction may add complexity, or an exhaustive
-check may cost too much to run in production. Engineering begins where slogans run
-out and trade-offs need reasons.
+check may cost too much to run in production. We have to identify such trade-offs
+and explain each decision in the context of the system.
 
 ## 3. The Course System
 
@@ -121,20 +126,20 @@ The domain will give us recurring objects with real design pressure:
 - network requests and caches that eventually introduce concurrency.
 
 We are not trying to reproduce a production trip planner in thirteen readings. The
-system is a teaching model, and we will say when it leaves out a production concern.
-Its job is to make abstract ideas earn their keep.
+system is a teaching model, and we will state when it leaves out a production
+concern. We use it to examine abstract ideas in one consistent, concrete setting.
 
 ## 4. The Build–Test–Inspect Loop
 
-A modern Java project is not a pile of `.java` files followed by good intentions. It
-has a repeatable process for turning sources into checked results.
+A modern Java project needs a repeatable process for turning source files into
+checked results.
 
 ![A source edit flows through compilation and tests to an observed result; failures
 return the developer to the source while successful results can become a small Git
 commit.](../../assets/diagrams/rendered/chapter-01/build-test-inspect-loop.svg)
 
-*Figure 1.1: The course feedback loop. A failure is information that sends us back
-around the loop; it is not a ceremonial red light at the end of the project.*
+*Figure 1.1: The course feedback loop. A failure provides information that sends us
+back to the source.*
 
 The companion project for Chapters 1–4 lives in
 [`examples/chapters-01-04`](../../examples/chapters-01-04/). Its important pieces are:
@@ -161,14 +166,14 @@ From the project directory, one command runs the tests:
 
 That command does several jobs. Gradle locates the source sets and dependencies,
 invokes `javac`, runs the JUnit tests, and reports whether the build succeeded. Your
-IDE may put a friendly green triangle over the same machinery. Learn the command as
-well; it gives your laptop, a teammate's laptop, and continuous integration a common
-entry point.
+IDE may run the same tasks through a graphical control. Learn the command as well; it
+gives your laptop, a teammate's laptop, and continuous integration a common entry
+point.
 
 ### Read the first failure
 
-When a build fails, begin with the first relevant diagnostic rather than scrolling
-to the bottom and negotiating with the stack trace as a whole.
+When a build fails, begin with the first relevant diagnostic and classify the
+failure before deciding what to inspect next.
 
 - A **compilation failure** means Java could not accept the program as well-typed,
   syntactically valid source.
@@ -183,8 +188,8 @@ Match the tool to the evidence.
 
 ## 5. Our First Regression Test
 
-The missing `EARLY` branch deserves a test before it deserves a fix. Here is the
-complete JUnit test class from the companion project:
+We will record the missing `EARLY` behaviour in a test before changing the
+implementation. This is the complete JUnit test class from the companion project:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -211,8 +216,8 @@ class ArrivalStatusTest {
 }
 ```
 
-The first test records the failure we observed. The other two pin down the boundaries
-on either side. Now we can repair the implementation:
+The first test records the failure we observed. The other two define the boundaries
+on either side. We can now repair the implementation:
 
 ```java
 public static String describe(int scheduledMinute, int predictedMinute) {
@@ -231,14 +236,15 @@ better than saying they *should* pass, but it remains a bounded claim. We checke
 three cases against a small contract. We did not prove the method correct for every
 integer, and we certainly did not prove the transit system reliable.
 
-We will design stronger tests in Chapter 3. For now, notice the shape of the work:
-failure, executable example, focused change, fresh observation.
+We will design stronger tests in Chapter 3. At this stage, the work follows a short
+sequence: record the failure, make a focused change, and observe the result again.
 
 ## 6. Git Records Decisions
 
 The tests protect behaviour; Git records change. A **repository** stores a history of
-snapshots called **commits**. A useful commit is a small, coherent claim: “classify
-early arrivals and test all three cases,” not “stuff from Tuesday.”
+snapshots called **commits**. A useful commit records one coherent change, such as
+"classify early arrivals and test all three cases." Unrelated work belongs in a
+different commit.
 
 A typical local cycle is:
 
@@ -257,11 +263,11 @@ snapshot. Only then does `git commit` add it to local history.
 
 There are two details worth making habitual.
 
-First, inspect before you record. Generated files, credentials, debug output, and an
-unrelated half-finished experiment do not improve when packed into the same commit.
+First, inspect before you record. Keep generated files, credentials, debug output,
+and unrelated unfinished work out of the commit.
 
 Second, run the tests on the content you intend to commit. A passing build from
-twenty minutes ago is evidence about twenty-minutes-ago code.
+twenty minutes ago does not describe changes made after that build.
 
 Branches let us develop a change without moving the main line of work:
 
@@ -270,8 +276,8 @@ git switch -c classify-arrivals
 ```
 
 A branch is a movable name for a commit, not a second copy of the entire project.
-That model becomes useful when we discuss collaboration. For now, one branch, small
-commits, and an honest `git status` are plenty.
+That model becomes useful when we discuss collaboration. For now, use one branch,
+small commits, and inspect `git status` before each commit.
 
 > **Recovery note:** `git restore` can discard uncommitted work. That can be exactly
 > what you want, but inspect the target and diff first. Version control is a safety
@@ -279,9 +285,8 @@ commits, and an honest `git status` are plenty.
 
 ## 7. Short Feedback Changes How We Design
 
-Builds, tests, and commits are often introduced as chores around “the real coding.”
-That gets the dependency backward. A short feedback loop changes which designs are
-practical.
+Builds, tests, and commits are part of the design process. A short feedback loop
+changes which designs are practical.
 
 If a method can be tested in isolation, we can explore an alternative quickly. If a
 commit contains one idea, review can focus on that idea. If the build is reproducible,
@@ -302,25 +307,25 @@ the difficult question is whether the contract itself is sensible.
 
 An AI tool can produce an `ArrivalStatus` implementation in seconds. It can also
 invent a threshold, omit an edge case, use an API that does not exist, or explain a
-wrong answer with impressive posture.
+wrong answer confidently.
 
 The engineering workflow does not change according to who typed the code:
 
 1. Write or inspect the specification.
 2. Treat the generated implementation as untrusted input.
 3. Compile it with warnings enabled.
-4. derive tests from the contract, especially boundaries and failure cases;
-5. review surprising API calls against authoritative documentation;
-6. record what was generated and what you verified independently.
+4. Derive tests from the contract, especially boundaries and failure cases.
+5. Review surprising API calls against authoritative documentation.
+6. Record what was generated and what you verified independently.
 
-Generated code can reduce mechanical effort. It cannot decide what “correct” means
-for our system unless we have already supplied that meaning. A fluent implementation
-with no contract is merely a mystery wearing good variable names.
+Generated code can reduce mechanical effort. It cannot determine what "correct"
+means for our system unless the specification already supplies that meaning. Clear
+variable names and a confident explanation do not compensate for a missing contract.
 
 ## 9. A Common Misconception: Green Means Correct
 
 Passing tests mean that the tested executions produced the asserted observations.
-That is valuable and precise. It is not the same as proving the software correct.
+That is useful and precise evidence, but it does not prove the software correct.
 
 Our three tests do not establish that the integers are plausible service-day times.
 They do not define whether a one-minute deviation should count as on time. They use
@@ -328,14 +333,12 @@ strings, so a client can mistype `"ON_TIME"`. They say nothing about stale
 predictions. Some of those gaps belong in more tests; others call for better types or
 a stronger specification.
 
-The right response to a green build is neither distrust nor celebration without
-limit. Say what the evidence supports: *these tests passed for this version in this
-environment*. Then decide what risk remains.
+A green build supports a limited statement: *these tests passed for this version in
+this environment*. State that result and then decide what risk remains.
 
 ## Try the Loop
 
-Answer these before running code. Prediction turns the tool's output into evidence
-about your model instead of screen weather.
+Answer these before running code. Then compare the observed output with your model.
 
 ### 1. Predict the status
 
@@ -377,15 +380,16 @@ An AI-generated implementation treats arrivals within five minutes of schedule a
 `ON TIME`. The prompt never mentioned a tolerance. Is the implementation wrong? What
 must you establish before that question has an answer?
 
-## Where We Have Arrived
+## Summary
 
 Software construction connects an intended behaviour, an implementation, and
 evidence. We want programs that are correct with respect to their contracts,
-comprehensible to their maintainers, and changeable without collateral damage.
+comprehensible to their maintainers, and changeable without causing unrelated
+failures.
 
 Java 25, Gradle, JUnit, and Git support one repeatable loop: edit, build, test,
-inspect, and record. A short loop does more than save time. It lets us discover a
-wrong assumption while the decision that caused it is still close at hand.
+inspect, and record. Short feedback makes it more likely that we find an incorrect
+assumption soon after we introduce it.
 
 Our example still describes times with ordinary integers and statuses with ordinary
 strings. The compiler cannot tell a scheduled time from a predicted time, or a route

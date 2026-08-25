@@ -13,14 +13,14 @@ still sees two perfectly respectable `double` values:
 nearestStop(-123.249, 49.261);
 ```
 
-The compiler accepts the call. The Earth is less accommodating: a latitude cannot be
-−123 degrees. We represented two different ideas with one broad machine type, then
-expected position to carry the meaning.
+The compiler accepts the call even though a latitude cannot be −123 degrees. We
+represented two different concepts with the same machine type, so only argument
+position distinguishes them.
 
-This chapter gives the missing meaning two forms. A **type** defines which values and
-operations belong to a concept. A **specification** defines what a program component
-requires and guarantees. Together they move assumptions out of a programmer's memory
-and into artefacts that code, tools, and teammates can inspect.
+We will express that missing meaning with types and specifications. A **type** defines
+which values and operations belong to a concept. A **specification** defines what a
+program component requires and guarantees. Both make assumptions available for code,
+tools, and other programmers to inspect.
 
 By the end, you should be able to:
 
@@ -53,7 +53,7 @@ int minutesUntilArrival = 4;
 
 Java allows `stopId + routeId` and `routeId = minutesUntilArrival`. Integer arithmetic
 defines both operations even though the transit domain does not. Primitive types are
-valuable, but they are often too permissive for the concepts we care about.
+useful, but they are often too permissive for the concepts we care about.
 
 ### Static and dynamic checks
 
@@ -69,15 +69,14 @@ A **dynamic check** happens during execution and can use the actual input. Java 
 decide at compile time whether a coordinate read from a file is within range. Our code
 has to test that value when it arrives.
 
-Static checking has a wonderful property: every execution of ill-typed code is
-prevented because the program never starts. Its reach has a limit. A variable called
-`latitude` still has type `double`; the name does not teach the compiler a valid
-range.
+Static checking prevents an ill-typed program from starting. It can enforce only the
+rules represented in the type system. A variable called `latitude` still has type
+`double`; its name does not tell the compiler which values are valid latitudes.
 
 ## 2. Build the Domain into the Type
 
-Java records give us a compact way to model plain data. Here is the complete
-`GeoPoint` type from the companion project:
+Java records give us a compact way to model plain data. The companion project defines
+`GeoPoint` as follows:
 
 ```java
 package ca.ubc.ece.cpen221.transit;
@@ -117,10 +116,9 @@ new GeoPoint(-123.249, 49.261); // throws IllegalArgumentException
 
 The compiler still cannot detect the reversal because both components are `double`.
 The constructor catches it dynamically because this particular longitude lies
-outside the latitude range. If both numbers happened to fit both ranges, only a
-more distinctive type design—such as separate `Latitude` and `Longitude` types—could
-prevent the reversal mechanically. Types can narrow a mistake's habitat; they do not
-make semantics omniscient.
+outside the latitude range. If both numbers fit both ranges, the check cannot detect
+the reversal. Separate `Latitude` and `Longitude` types could prevent that mistake at
+compile time. A type prevents only the errors that its design distinguishes.
 
 We will also stop treating identifiers as interchangeable strings:
 
@@ -146,11 +144,11 @@ If we later introduce `RouteId`, this call can fail at compile time:
 findStop(new RouteId("R4"));
 ```
 
-That is **making an invalid state harder to express**. It is not free. Every domain
-type adds a name and an abstraction for readers to learn. A private calculation may
-be perfectly clear with two `double` variables; a public boundary that accepts
-coordinates from many clients deserves stronger protection. We choose types where
-the distinction pays rent.
+That is **making an invalid state harder to express**. Every domain type also adds a
+name and an abstraction for readers to learn. A private calculation may be clear
+with two `double` variables; a public boundary that accepts coordinates from many
+clients may justify stronger types. The expected reduction in errors should justify
+the additional abstraction.
 
 > **GTFS detail:** transit service times do not always fit a civil-time type such as
 > `LocalTime`. GTFS may write `25:35:00` for 1:35 a.m. after midnight on the same
@@ -193,7 +191,7 @@ boundary, and the implementation returns a result satisfying the postcondition
 without exposing its private algorithm.](../../assets/diagrams/rendered/chapter-02/specification-boundary.svg)
 
 *Figure 2.1: A specification separates responsibilities. The client depends on the
-promise, not on the private route by which the implementation keeps it.*
+promise without depending on the implementation's private algorithm.*
 
 ## 4. Write the Nearest-Stop Contract
 
@@ -221,7 +219,8 @@ This specification is **declarative**: it describes a property of the result. It
 not require a loop, sorting, a stream, a spatial index, or any particular local
 variable. An implementation can change algorithms without changing its contract.
 
-Here is the complete implementation:
+The complete implementation checks the boundary conditions before scanning the
+candidate stops:
 
 ```java
 public static Stop nearestStop(GeoPoint origin, List<Stop> stops) {
@@ -257,9 +256,9 @@ contain `null`. Type safety and input validation cover different ground.
 
 ## 5. Our Null and Mutation Conventions
 
-Ambiguity about `null` spreads quickly. If one method uses it for “not found,” another
-for “not loaded,” and a third forbids it silently, every call becomes an archaeology
-exercise.
+Ambiguity about `null` spreads quickly. If one method uses it for "not found,"
+another for "not loaded," and a third silently forbids it, clients have to infer its
+meaning separately at every call.
 
 Unless a CPEN 221 specification says otherwise:
 
@@ -273,9 +272,9 @@ Mutation needs the same clarity. Unless the specification explicitly says that a
 method modifies an argument, clients may assume it does not. `nearestStop` observes
 the list and its stops; it does not reorder or replace them.
 
-This convention reduces prose, but it is not an excuse to make surprising APIs. If a
-method called `normalize` changes its input list, say so prominently—or choose a name
-that does not set a trap.
+This convention reduces prose, but APIs must still describe surprising behaviour. If
+a method called `normalize` changes its input list, state that effect prominently or
+choose a name that indicates mutation.
 
 ## 6. Determinism Is a Design Choice
 
@@ -294,13 +293,13 @@ returns the first stop in stops whose distance from origin is minimal
 The first is **underdetermined**: more than one result may satisfy it. The second is
 **deterministic** for a fixed input: it identifies one result.
 
-Underdetermination is not carelessness. The first contract gives an implementer
-freedom to choose a faster data structure or parallel search. A client that genuinely
-does not care which equally near stop wins should not seize that freedom without a
-reason.
+An underdetermined specification can be deliberate. The first contract gives an
+implementer freedom to choose a faster data structure or parallel search. If a
+client does not care which equally near stop wins, the specification need not impose
+a tie-breaking rule.
 
-Determinism can also be valuable. Stable results make interfaces predictable and
-tests easier to interpret. Here, preserving the list's order is inexpensive, so we
+Determinism can also be useful. Stable results make interfaces predictable and tests
+easier to interpret. Here, preserving the list's order is inexpensive, so we
 choose the deterministic contract. In a large parallel route search, the trade-off
 may change.
 
@@ -312,8 +311,8 @@ implementer likes the reverse.
 
 We say specification A is **stronger than** specification B when A:
 
-1. has a precondition no stronger than B's—it accepts at least the calls B accepts;
-2. has a postcondition at least as strong as B's—it makes at least the promises B
+1. has a precondition no stronger than B's, so it accepts at least the calls B accepts;
+2. has a postcondition at least as strong as B's, so it makes at least the promises B
    makes for those calls.
 
 Consider a weaker nearest-stop contract:
@@ -335,7 +334,8 @@ specifications promise what clients need while leaving irrelevant choices privat
 
 ## 8. Specifications Define the Testable Surface
 
-Here is a tempting test for an underdetermined nearest-stop specification:
+The following test would be too strong for an underdetermined nearest-stop
+specification:
 
 ```java
 assertEquals(exchange, nearestStop(origin, List.of(exchange, loop)));
@@ -376,8 +376,9 @@ need correct.
 Records deserve one related warning. Their component fields are final, but records
 are only **shallowly immutable**. A record with a `List<String>` component can still
 refer to a mutable list. Our `GeoPoint` is immutable because its components are
-primitive values and it exposes no mutation—not because the word `record` casts a
-protective spell. Chapter 4 will follow that reference.
+primitive values and exposes no mutation. Declaring a type as a record does not make
+objects reachable through its components immutable. Chapter 4 examines those
+references.
 
 ## Try the Contract
 
@@ -416,21 +417,21 @@ An assistant writes: “Loops through all stops and returns the nearest one.” 
 at least four client-visible questions that remain unanswered, and rewrite the
 sentence declaratively.
 
-## Where We Have Arrived
+## Summary
 
 Types define values and permitted operations. Static checks reject ill-typed program
 text; dynamic checks validate facts available only while the program runs. Domain
 types such as `StopId` and `GeoPoint` make important distinctions explicit and move
 failures closer to their source.
 
-Specifications complete the picture. A contract assigns client and implementer
-responsibilities, describes normal and exceptional outcomes, and says whether
-mutation is allowed. Declarative specifications preserve implementation freedom.
-Determinism and strength are choices, not automatic virtues.
+Specifications define client and implementer responsibilities, describe normal and
+exceptional outcomes, and state whether mutation is allowed. Declarative
+specifications preserve implementation freedom. The appropriate degree of
+determinism and specification strength depends on client needs.
 
-We can now say what our transit query must do. The next problem is evidence: how do we
-select tests that are likely to expose a violation, and how should the program report
-inputs or external events that prevent a normal result?
+We can now state what our transit query must do. The next chapter uses that contract
+to select tests and to decide how the program reports inputs or external events that
+prevent a normal result.
 
 ## Sources and provenance
 

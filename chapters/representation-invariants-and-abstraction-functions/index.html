@@ -10,7 +10,7 @@
   <script src="../../assets/js/typeface-switcher.js"></script>
 </head>
 <body id="top">
-  <!-- source-sha256: 95e75e585a6803f3b46047d57e3078a4ae75372a9a6765412aadf1e861cb6902 -->
+  <!-- source-sha256: 3b12f9cbb7ddb0f546abe4c487ef865db2791805dc180bb7c9b82871278826e1 -->
   <a class="skip-link" href="#chapter-content">Skip to chapter content</a>
 
   <nav class="book-nav" aria-label="Chapter navigation">
@@ -33,7 +33,7 @@
         <li><a href="#9-common-misconceptions"><small>6.9</small><span>Common Misconceptions</span></a></li>
         <li><a href="#10-reviewing-generated-representation-code"><small>6.10</small><span>Reviewing Generated Representation Code</span></a></li>
         <li><a href="#try-the-representation"><small>§</small><span>Try the Representation</span></a></li>
-        <li><a href="#where-we-have-arrived"><small>§</small><span>Where We Have Arrived</span></a></li>
+        <li><a href="#summary"><small>§</small><span>Summary</span></a></li>
         <li><a href="#sources-and-provenance"><small>§</small><span>Sources and provenance</span></a></li>
       </ul>
       <div class="prev-next">
@@ -76,10 +76,10 @@
         </ul>
       </header>
 
-<p>Our <code>TransitNetwork</code> boundary keeps clients away from the adjacency map. The implementer, unfortunately, works there every day.</p>
-<p>Suppose one destination set contains <code>ALMA</code>, but <code>ALMA</code> is not a key in the map. <code>directDestinationsFrom(UBC)</code> may return it. A later call to <code>directDestinationsFrom(ALMA)</code> rejects it as an unknown stop. The same object says that Alma both belongs and does not belong to the network, depending on which operation asks.</p>
+<p>Our <code>TransitNetwork</code> boundary keeps clients away from the adjacency map. The implementation still has to construct and query that map correctly.</p>
+<p>Suppose one destination set contains <code>ALMA</code>, but <code>ALMA</code> is not a key in the map. <code>directDestinationsFrom(UBC)</code> may include it, while <code>directDestinationsFrom(ALMA)</code> rejects it as an unknown stop. These two results are inconsistent.</p>
 <p>Private fields prevent a client from creating that state directly. They do not prevent a constructor or producer from creating it by mistake. We need to state which concrete states are meaningful and how each meaningful state corresponds to the graph promised by the ADT.</p>
-<p>Two tools provide that bridge. A <strong>representation invariant</strong> selects the valid representations. An <strong>abstraction function</strong> explains what abstract value each valid representation means. The names sound ceremonial; the job is practical. They tell us what constructors must establish, what operations must preserve, and what an internal checker should reject.</p>
+<p>We use two definitions to describe this relationship. A <strong>representation invariant</strong> selects the valid representations. An <strong>abstraction function</strong> explains which abstract value each valid representation denotes. Together they state what constructors must establish, what operations must preserve, and what an internal checker should reject.</p>
 <section class="chapter-note" aria-labelledby="learning-outcomes"><h2 id="learning-outcomes"><a href="#learning-outcomes">By the end of this chapter</a></h2><ul>
 <li>distinguish the abstract value space from the representation space;</li>
 <li>write an abstraction function for a Java representation;</li>
@@ -93,8 +93,8 @@
 <p>The <code>TransitNetwork</code> specification describes an <strong>abstract space</strong> <code>A</code>: all finite directed graphs over <code>StopId</code> values with no self-connections. A client reasons about vertices and edges in this space.</p>
 <p><code>AdjacencyMapNetwork</code> has a <strong>representation space</strong> <code>R</code> determined by this field:</p>
 <div class="code-block"><pre class="java"><code>private final Map&lt;StopId, Set&lt;StopId&gt;&gt; outgoing;</code></pre></div>
-<p>Candidate representation values include maps with several keys, an empty map, maps whose destination sets mention other keys, and—before our constructor rules them out—maps with <code>null</code> parts or destinations that have no key. Java's generic types say that keys and values have certain declared types. They do not express all the relationships our graph requires.</p>
-<p>The implementation's task is to use selected values in <code>R</code> to realize values in <code>A</code>. Not every candidate representation deserves a meaning. A map that contradicts itself should be rejected, not interpreted with a shrug.</p>
+<p>Candidate representation values include maps with several keys, an empty map, and maps whose destination sets mention other keys. Before the constructor checks them, they also include maps with <code>null</code> parts or destinations that have no key. Java's generic types say that keys and values have certain declared types. They do not express all the relationships our graph requires.</p>
+<p>The implementation uses selected values in <code>R</code> to realize values in <code>A</code>. Some candidate maps are inconsistent and must not represent an abstract network value.</p>
 <h2 id="2-state-the-abstraction-function"><a href="#2-state-the-abstraction-function"><span class="section-number">6.2</span>State the Abstraction Function</a></h2>
 <p>For a valid adjacency map <code>r</code>, the correspondence is:</p>
 <div class="code-block"><pre class="text"><code>AF(r) is the directed graph (V, E) where
@@ -106,7 +106,7 @@ E = { (from, to) | to is in r.outgoing.get(from) }.</code></pre></div>
 WESBROOK -&gt; {ALMA}
 ALMA     -&gt; {}</code></pre></div>
 <p>The abstraction function gives us three vertices and two directed edges: UBC to Wesbrook, and Wesbrook to Alma. The empty set beside Alma is significant. Alma is a vertex even though it has no outgoing edge.</p>
-<p>Several representations may map to the same abstract value. A map's iteration order does not belong to our graph, so two maps that iterate differently can mean the same network. An abstraction function need not be one-to-one. Hiding those irrelevant concrete differences is one of its talents.</p>
+<p>Several representations may map to the same abstract value. A map's iteration order does not belong to our graph, so two maps that iterate differently can mean the same network. An abstraction function therefore need not be one-to-one.</p>
 <p>The abstraction function must be precise enough to settle every public observation. If we wrote only “the map stores the network,” we would not know whether keys with empty sets count as stops, whether direction matters, or whether duplicate-looking data has meaning.</p>
 <h2 id="3-select-valid-representations"><a href="#3-select-valid-representations"><span class="section-number">6.3</span>Select Valid Representations</a></h2>
 <p>The <strong>representation invariant</strong>, or <strong>RI</strong>, is a predicate over candidate representations. It is true exactly for the representations our implementation allows between public operations.</p>
@@ -118,7 +118,7 @@ ALMA     -&gt; {}</code></pre></div>
 4. no key occurs in its own destination set.</code></pre></div>
 <p>Conditions 1 and 2 make the map safe for our implementation to traverse. Condition 3 coordinates the two roles a stop can play: a destination must also belong to the network's vertex set. Condition 4 carries the ADT's no-self-connection rule into this representation.</p>
 <p>That last rule starts in the abstract space. “A network has no self-connection” is an <strong>abstract invariant</strong>: a property of every value the public ADT permits. The RI is representation-specific. A boolean adjacency matrix would enforce the same abstract invariant with a different concrete condition, such as a <code>false</code> diagonal.</p>
-<p>Not every useful RI condition comes from an abstract invariant. A cached edge count would need to equal the number of stored edges even if clients never see the cache. A sorted-array representation would need to remain sorted so binary search works. Those are obligations created by an implementation choice.</p>
+<p>Not every useful RI condition comes from an abstract invariant. A cached edge count would need to equal the number of stored edges even if clients never see the cache. A sorted-array representation would need to remain sorted so binary search works. Those obligations come from an implementation choice.</p>
 <h2 id="4-turn-the-ri-into-a-checker"><a href="#4-turn-the-ri-into-a-checker"><span class="section-number">6.4</span>Turn the RI into a Checker</a></h2>
 <p>An executable checker converts a violated assumption into evidence near its source:</p>
 <div class="code-block"><pre class="java"><code>private void checkRep() {
@@ -138,9 +138,9 @@ ALMA     -&gt; {}</code></pre></div>
 }</code></pre></div>
 <p>We use Java assertions because an RI violation is an internal implementation bug, not a client input error. Assertions are disabled by default unless the JVM receives <code>-ea</code> (or <code>-enableassertions</code>). The companion build enables them while running tests. Public argument checks still use ordinary conditionals and documented exceptions; Chapter 3 explained why assertions are unsuitable for enforcing preconditions.</p>
 <p>There is a small defensive detail in the loop. We inspect each destination for <code>null</code> instead of calling <code>destinations.contains(null)</code>. Some unmodifiable collection implementations are permitted to reject an ineligible query with <code>NullPointerException</code>. An invariant checker should report the broken invariant, not trip over its own inspection.</p>
-<p><code>Map.copyOf</code> and <code>Set.copyOf</code> already reject <code>null</code> while this implementation builds its snapshots. We retain the non-null clauses in the RI because they document the assumptions used by every method. Some checks are redundant at runtime and still valuable in the argument.</p>
+<p><code>Map.copyOf</code> and <code>Set.copyOf</code> already reject <code>null</code> while this implementation builds its snapshots. We retain the non-null clauses in the RI because they document the assumptions used by every method. Some checks are redundant at runtime and still support the correctness argument.</p>
 <h2 id="5-establish-preserve-and-protect"><a href="#5-establish-preserve-and-protect"><span class="section-number">6.5</span>Establish, Preserve, and Protect</a></h2>
-<p>Writing an RI comment does not constrain a single bit. We must inspect every route by which a representation comes into existence or changes.</p>
+<p>Writing an RI comment does not enforce it. We must inspect every route by which a representation comes into existence or changes.</p>
 <p>For a mutable ADT, the standard obligations are:</p>
 <ol type="1">
 <li>every creator establishes the RI;</li>
@@ -208,9 +208,9 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <p>Why does this list not repeat the no-self-connection rule? <code>Connection</code> is a record whose own specification and constructor require two distinct, non-null stops. The network implementation may rely on the public guarantees of its rep types. If <code>Connection</code> later permitted self-connections, the network RI would need an explicit clause or a stronger component type.</p>
 <p>Likewise, a <code>Set</code> already has set semantics. We need not write “connections contains no duplicates” in the RI; the field's abstract type makes duplicates unobservable. An array representation would need a concrete uniqueness condition if its algorithms depended on one stored copy per edge.</p>
 <p>The public <code>TransitNetwork</code> specification remains unchanged while RI and AF change with the representation. That is exactly where these documents belong: inside the implementation, close to its fields. Publishing them as client requirements would turn private choices back into dependencies.</p>
-<p>Both implementations pass the same 15 contract-test invocations. The observation is evidence that their different bridges reach the same public behaviour. It is not a mathematical proof over every possible graph, but it gives our reasoning sharp edges to push against.</p>
+<p>Both implementations pass the same 15 contract-test invocations. This is evidence that they produce the same public behaviour for those cases. It is not a mathematical proof over every possible graph.</p>
 <h2 id="8-build-an-ri-systematically"><a href="#8-build-an-ri-systematically"><span class="section-number">6.8</span>Build an RI Systematically</a></h2>
-<p>When a blank <code>Representation invariant:</code> comment stares back at you, inspect the rep from five directions.</p>
+<p>To develop a representation invariant, inspect the representation from five directions.</p>
 <ol type="1">
 <li><strong>Make the AF meaningful.</strong> Exclude rep values for which you cannot assign an unambiguous abstract value.</li>
 <li><strong>Support the algorithms.</strong> Record ordering, balance, acyclicity, uniqueness, or other conditions that private algorithms assume.</li>
@@ -219,7 +219,7 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <li><strong>Carry abstract invariants into the rep.</strong> Translate every constraint on valid abstract values into a concrete condition.</li>
 </ol>
 <p>Do not include how the object arrived there. “Connections were added in feed order” is a history property unless the current rep records enough information to check it. Do not restate facts guaranteed by Java primitive types or by the specifications of rep components. An RI should be strong enough for the implementation and no stronger than necessary.</p>
-<p>An unnecessarily strong invariant creates work and may eliminate useful representations. Requiring every stop to have an outgoing edge would simplify one loop, but it would make an isolated terminal stop impossible to represent. The implementation should serve the ADT, not quietly shrink it for the convenience of a loop.</p>
+<p>An unnecessarily strong invariant creates work and may eliminate useful representations. Requiring every stop to have an outgoing edge would simplify one loop, but it would make an isolated terminal stop impossible to represent. The RI must permit every value allowed by the ADT, including isolated terminal stops.</p>
 <p>Our design principle is:</p>
 <blockquote class="design-note"><p><strong>Design principle: document the meaning and validity of the representation, then make every construction path preserve that argument.</strong></p>
 </blockquote>
@@ -230,11 +230,11 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <p>Public methods may <em>assume</em> the RI on entry because earlier implementation code was responsible for establishing it. That assumption is part of an internal proof, not a new demand on callers.</p>
 <h3 id="if-checkrep-passes-the-implementation-is-correct"><a href="#if-checkrep-passes-the-implementation-is-correct">“If <code>checkRep</code> passes, the implementation is correct”</a></h3>
 <p>A valid representation can encode the wrong abstract result. The empty-map example passes <code>checkRep</code> while violating the creator's postcondition. A checker can also contain a bug, omit an expensive condition, or be disabled with assertions.</p>
-<p>Treat it as high-value evidence and executable documentation, not a certificate.</p>
+<p>Treat a successful check as evidence that the tested conditions hold. It does not establish that every operation satisfies its specification.</p>
 <h3 id="the-abstraction-function-should-return-a-java-object"><a href="#the-abstraction-function-should-return-a-java-object">“The abstraction function should return a Java object”</a></h3>
 <p>The abstract graph is a mathematical model used in the specification. We do not need to allocate a second graph object whenever we call an observer. Implementations compute the observations promised by the ADT as if the abstract value existed.</p>
 <h2 id="10-reviewing-generated-representation-code"><a href="#10-reviewing-generated-representation-code"><span class="section-number">6.10</span>Reviewing Generated Representation Code</a></h2>
-<p>Generated implementations are especially fond of plausible fields and thin getters. Require a written argument before trusting the shape:</p>
+<p>Generated implementations often contain plausible fields and thin getters without a clear representation argument. Require that argument before trusting the design:</p>
 <ul>
 <li>What is the abstract value space?</li>
 <li>What is the AF for these exact fields?</li>
@@ -246,7 +246,7 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <li>Can an alias bypass those operations?</li>
 <li>Which postconditions need tests because the RI cannot express them?</li>
 </ul>
-<p>Then compare the prose with the code. An RI that says “all destinations are known” while the checker only tests for <code>null</code> is not documentation; it is two competing stories.</p>
+<p>Then compare the prose with the code. If the RI says "all destinations are known" while the checker tests only for <code>null</code>, the checker does not implement the stated RI.</p>
 <h2 id="try-the-representation"><a href="#try-the-representation">Try the Representation</a></h2>
 <h3 id="1-evaluate-candidate-maps"><a href="#1-evaluate-candidate-maps">Evaluate candidate maps</a></h3>
 <p>For each map, decide whether it satisfies the adjacency-map RI. For valid maps, state the graph produced by the AF.</p>
@@ -263,7 +263,7 @@ E = { (c.from(), c.to()) | c is in r.connections }.</code></pre></div>
 <p>Represent the same network with a <code>List&lt;StopId&gt;</code> and a square <code>boolean[][]</code>. Write an AF and RI. Include dimensions, uniqueness of stop identifiers, row/column meaning, and the no-self-connection abstract invariant. Which condition prevents one stop from having two matrix indices?</p>
 <h3 id="5-place-the-checker"><a href="#5-place-the-checker">Place the checker</a></h3>
 <p>Suppose a mutable network adds <code>removeStop</code>. During the method, it first removes the key and then removes incoming edges. The RI is temporarily false between those steps. Where should <code>checkRep</code> run? What must happen if an exception can escape from the middle?</p>
-<h2 id="where-we-have-arrived"><a href="#where-we-have-arrived">Where We Have Arrived</a></h2>
+<h2 id="summary"><a href="#summary">Summary</a></h2>
 <p>An implementation connects two spaces. The representation space contains concrete field values; the abstract space contains the values promised to clients. The abstraction function maps valid reps to abstract values. The representation invariant selects which reps are valid.</p>
 <p>For the adjacency map, the AF reads keys as vertices and destination memberships as edges. The RI rules out null parts, outside destinations, and self-connections. The constructor snapshots and checks its input, the producer preserves the conditions, and observers expose only immutable values. A connection-set implementation needs a different AF and RI while keeping the same public ADT.</p>
 <p>Invariant checking catches malformed internal states close to their source. It does not prove postconditions or replace contract tests. Together, AF, RI, operation reasoning, and tests give us a maintainable correctness argument.</p>
