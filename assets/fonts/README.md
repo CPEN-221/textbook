@@ -19,7 +19,7 @@ page needs.
 To update the assets deliberately, run this from the repository root:
 
 ```bash
-python3 www/scripts/vendor_google_fonts.py
+python3 scripts/vendor_google_fonts.py
 ```
 
 The script's CSS request is the provenance record for the selected variants. It

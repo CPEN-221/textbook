@@ -1,7 +1,7 @@
 # CPEN 221 readings website
 
 This repository is the source for the reading materials for CPEN 221 (Software
-Construction I). The materials are published to https://cpen-221.github.io/.
+Construction I). The materials are published to https://cpen-221.github.io/textbook/.
 
 ## To preview the website locally
 

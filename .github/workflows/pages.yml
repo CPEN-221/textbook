@@ -48,7 +48,7 @@ jobs:
           python3 scripts/build_site.py
           changes="$(git status --porcelain)"
           if [ -n "$changes" ]; then
-            echo "::error::The committed pages differ from a rebuild of the committed sources. Run python3 www/scripts/build_site.py and commit the result."
+            echo "::error::The committed pages differ from a rebuild of the committed sources. Run python3 scripts/build_site.py and commit the result."
             echo "$changes"
             git diff --stat
             exit 1
