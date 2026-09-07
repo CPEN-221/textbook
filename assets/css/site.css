@@ -816,34 +816,35 @@ blockquote.epigraph cite {
 }
 
 .typeface-tools {
-  position: fixed;
-  z-index: 5;
-  bottom: 1.8rem;
-  left: 2.7rem;
-  width: 14.6rem;
-  color: var(--nav-muted);
+  width: 100%;
+  margin: 4rem 0 0;
+  padding-top: 1rem;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
   font: 600 0.65rem/1.35 var(--sans);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .typeface-tools label {
-  display: block;
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .typeface-tools span {
-  display: block;
-  margin-bottom: 0.3rem;
+  margin: 0;
 }
 
 .typeface-tools select {
-  width: 100%;
+  width: auto;
   max-width: 100%;
   min-height: 2.1rem;
   padding: 0.25rem 1.8rem 0.25rem 0.55rem;
-  color: #dce8ee;
-  background: #344151;
-  border: 1px solid var(--nav-rule);
+  color: var(--ink);
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
   border-radius: 2px;
   font: 400 0.75rem/1.3 var(--sans);
   letter-spacing: 0;
@@ -870,10 +871,8 @@ blockquote.epigraph cite {
   }
 
   .typeface-tools {
-    position: static;
-    width: min(32rem, calc(100% - 3rem));
-    margin: 0.8rem auto 0;
-    color: var(--muted);
+    width: 100%;
+    margin: 4rem 0 0;
   }
 
   .typeface-tools label {

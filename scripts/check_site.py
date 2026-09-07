@@ -129,6 +129,14 @@ for path, page in pages.items():
             failures.append(
                 f"{display_name}: typeface options do not match the contract"
             )
+        if "<span>Typeface option</span>" not in page_source:
+            failures.append(f"{display_name}: missing the typeface-option label")
+        if not (
+            page_source.find("<main")
+            < page_source.find('class="typeface-tools"')
+            < page_source.find('class="book-footer"')
+        ):
+            failures.append(f"{display_name}: typeface option is not at the page bottom")
 
     source_file, source_digest = read_provenance(page_source)
     if is_chapter_page(path):

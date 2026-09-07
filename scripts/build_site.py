@@ -158,8 +158,8 @@ def transform_body(body: str, chapter: Chapter) -> tuple[str, list[tuple[str, st
 def typeface_tools(prefix: str) -> str:
     return f"""  <div class="typeface-tools">
     <label>
-      <span>Reading type</span>
-      <select data-typeface-picker aria-label="Reading typeface combination">
+      <span>Typeface option</span>
+      <select data-typeface-picker aria-label="Typeface option">
         <option value="plex">IBM Plex Serif + IBM Plex Sans + IBM Plex Mono</option>
         <option value="google-sans">Google Sans Flex + Google Sans Code</option>
       </select>
@@ -247,8 +247,6 @@ def chapter_page(
     <a class="mobile-arrow" href="{mobile_next}" aria-label="Next: {escape(mobile_next_label)}">{'→' if following else '↑'}</a>
   </nav>
 
-{typeface_tools('../..')}
-
   <main id="chapter-content" class="page">
     <article class="chapter">
       <div class="chapter-number" aria-hidden="true">{escape(chapter.number)}</div>
@@ -259,6 +257,8 @@ def chapter_page(
 {body}
 
       <p class="chapter-examples"><a href="../../examples/{escape(chapter.slug)}/">Java examples for this reading →</a></p>
+
+{typeface_tools('../..')}
 
       <footer class="book-footer">
         {footer_next}
@@ -272,26 +272,16 @@ def chapter_page(
 
 
 def contents_page() -> str:
-    # The labs archive is hand-maintained under labs/ rather than generated from
-    # Markdown. The contents page links to it only when it is present, so a rebuild
-    # neither invents the link nor discards it.
-    has_labs = (SITE_ROOT / "labs" / "index.html").is_file()
     labs_nav_item = (
-        '\n        <li><a href="labs/"><small>Lab</small>'
+        '\n        <li><a href="https://cpen-221.github.io/labs/"><small>Lab</small>'
         "<span>Laboratory activities</span></a></li>"
-        if has_labs
-        else ""
     )
-    labs_section = (
-        """
+    labs_section = """
       <section class="home-labs" aria-labelledby="labs-heading">
         <h2 id="labs-heading">Laboratory activities</h2>
-        <p><a href="labs/">Browse the 2025 lab archive \u2192</a></p>
+        <p><a href="https://cpen-221.github.io/labs/">Open the laboratory activities site \u2192</a></p>
       </section>
 """
-        if has_labs
-        else ""
-    )
     core_items = []
     optional_items = []
     for chapter in CHAPTERS:
@@ -349,8 +339,6 @@ def contents_page() -> str:
     <a class="mobile-arrow" href="chapters/engineering-reliable-software/" aria-label="Next: Engineering Reliable Software">→</a>
   </nav>
 
-{typeface_tools('.')}
-
   <main id="main-content" class="page">
     <article class="contents-page">
       <header class="contents-header">
@@ -379,6 +367,8 @@ def contents_page() -> str:
         </section>
       </div>
 {labs_section}
+{typeface_tools('.')}
+
       <footer class="book-footer">
         <a class="next" href="chapters/engineering-reliable-software/">Begin Chapter 1 →</a>
         CPEN 221 · University of British Columbia · Fall 2026

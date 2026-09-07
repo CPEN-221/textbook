@@ -31,10 +31,7 @@ The build requires Pandoc:
 
 ```bash
 python3 scripts/build_site.py
-python3 scripts/build_labs.py
 ```
-
-Run the readings build first. 
 
 Generated pages carry a SHA-256 digest of their Markdown source. The site checker
 fails if a source changes without a corresponding rebuild.
@@ -68,10 +65,9 @@ push to `main`.
 - `assets/` contains the stylesheet, JavaScript, fonts, and static SVG figures.
 - `examples/` contains one downloadable and testable Java project for each core
   chapter, plus the standalone examples for the supplemental readings.
-- `labs/` contains the generated public lab archive.
-- `lab-sources/2025/` preserves the public 2025 Markdown and image layout; TA guides
-  are not copied into the website repository.
+- Laboratory activities are maintained in the separate `CPEN-221/labs` repository
+  and published at <https://cpen-221.github.io/labs/>. No lab handouts or generated
+  lab pages belong in this repository.
 - `scripts/build_site.py` performs the deterministic Markdown-to-HTML build.
-- `scripts/build_labs.py` builds the public lab archive after the readings build.
 - `scripts/check_site.py` checks links, fragments, page landmarks, image text,
   source freshness, and SVG metadata.
