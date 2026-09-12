@@ -37,6 +37,13 @@ By the end, you should be able to:
 - compare deterministic and underdetermined specifications;
 - compare specification strength by examining client and implementer freedom.
 
+To follow along, open this chapter's companion project in the textbook repository you
+cloned earlier:
+
+```sh
+cd textbook/examples/types-and-specifications
+```
+
 ## 1. Types Define Values and Operations
 
 A type defines a set of values together with the operations available on those

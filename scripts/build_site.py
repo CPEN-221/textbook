@@ -116,16 +116,14 @@ def transform_body(body: str, chapter: Chapter) -> tuple[str, list[tuple[str, st
     )
 
     follow_pattern = re.compile(
-        r"<p>To follow along,.*?</p>\n(<div class=\"code-block\">.*?</div>)",
+        r"(<p>To follow along,.*?</p>)\n(<div class=\"code-block\">.*?</div>)",
         flags=re.DOTALL,
     )
     body = follow_pattern.sub(
         lambda match: (
             '<section class="chapter-note" aria-labelledby="follow-along">'
             '<h2 id="follow-along">To follow along</h2>'
-            "<p>Clone the textbook repository and open this chapter&#39;s "
-            "companion project:</p>"
-            f"{match.group(1)}</section>"
+            f"{_strip_follow_prefix(match.group(1))}{match.group(2)}</section>"
         ),
         body,
         count=1,
@@ -285,6 +283,12 @@ def chapter_page(
 </body>
 </html>
 """
+
+
+def _strip_follow_prefix(paragraph: str) -> str:
+    """Drop the trigger words, which the box heading already states."""
+    rest = paragraph[len("<p>To follow along, ") :]
+    return "<p>" + rest[:1].upper() + rest[1:]
 
 
 def contents_page() -> str:
