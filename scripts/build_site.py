@@ -272,16 +272,6 @@ def chapter_page(
 
 
 def contents_page() -> str:
-    labs_nav_item = (
-        '\n        <li><a href="https://cpen-221.github.io/labs/"><small>Lab</small>'
-        "<span>Laboratory activities</span></a></li>"
-    )
-    labs_section = """
-      <section class="home-labs" aria-labelledby="labs-heading">
-        <h2 id="labs-heading">Laboratory activities</h2>
-        <p><a href="https://cpen-221.github.io/labs/">Open the laboratory activities site \u2192</a></p>
-      </section>
-"""
     core_items = []
     optional_items = []
     for chapter in CHAPTERS:
@@ -324,7 +314,7 @@ def contents_page() -> str:
       <h2><a href="#top" aria-current="page">Contents</a></h2>
       <ul>
         <li><a href="chapters/engineering-reliable-software/"><small>1</small><span>Begin the core readings</span></a></li>
-        <li><a href="#further-exploration"><small>+</small><span>Supplemental readings</span></a></li>{labs_nav_item}
+        <li><a href="#further-exploration"><small>+</small><span>Supplemental readings</span></a></li>
       </ul>
       <div class="prev-next">
         <a href="#core-heading">Readings</a>
@@ -366,7 +356,6 @@ def contents_page() -> str:
           </ol>
         </section>
       </div>
-{labs_section}
 {typeface_tools('.')}
 
       <footer class="book-footer">
