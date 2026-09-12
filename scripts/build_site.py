@@ -115,6 +115,22 @@ def transform_body(body: str, chapter: Chapter) -> tuple[str, list[tuple[str, st
         count=1,
     )
 
+    follow_pattern = re.compile(
+        r"<p>To follow along,.*?</p>\n(<div class=\"code-block\">.*?</div>)",
+        flags=re.DOTALL,
+    )
+    body = follow_pattern.sub(
+        lambda match: (
+            '<section class="chapter-note" aria-labelledby="follow-along">'
+            '<h2 id="follow-along">To follow along</h2>'
+            "<p>Clone the textbook repository and open this chapter&#39;s "
+            "companion project:</p>"
+            f"{match.group(1)}</section>"
+        ),
+        body,
+        count=1,
+    )
+
     sections: list[tuple[str, str, str]] = []
 
     def heading_replacement(match: re.Match[str]) -> str:
@@ -134,7 +150,7 @@ def transform_body(body: str, chapter: Chapter) -> tuple[str, list[tuple[str, st
                 if chapter.optional
                 else f"{chapter.number}.{local_number}"
             )
-        if level == "2" and identifier != "learning-outcomes":
+        if level == "2" and identifier not in ("learning-outcomes", "follow-along"):
             sections.append((identifier, display_number or "§", visible))
         number_html = (
             f'<span class="section-number">{escape(display_number)}</span>'

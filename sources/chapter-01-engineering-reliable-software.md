@@ -26,6 +26,14 @@ By the end, you should be able to:
 - treat generated code as an implementation to inspect, not as evidence of
   correctness.
 
+To follow along, clone the textbook repository and open this chapter's companion
+project:
+
+```sh
+git clone https://github.com/CPEN-221/textbook.git
+cd textbook/examples/engineering-reliable-software
+```
+
 ## 1. Match the Implementation to the Requirement
 
 Suppose our first requirement reads:
